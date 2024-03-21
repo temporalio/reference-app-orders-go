@@ -1,6 +1,8 @@
 package workflows
 
 import (
+	"time"
+
 	"go.temporal.io/sdk/workflow"
 
 	"github.com/temporalio/orders-reference-app-go/activities"
@@ -10,9 +12,15 @@ import (
 func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {
 	var result shipmentapi.ShipmentResult
 
-	err := workflow.ExecuteActivity(ctx,
-		a.CreateShipment,
-		activities.CreateShipmentInput{
+	aCtx := workflow.WithActivityOptions(ctx,
+		workflow.ActivityOptions{
+			StartToCloseTimeout: 5 * time.Second,
+		},
+	)
+
+	err := workflow.ExecuteActivity(aCtx,
+		a.RegisterShipment,
+		activities.RegisterShipmentInput{
 			OrderID: input.OrderID,
 			Items:   input.Items,
 		},
@@ -21,7 +29,7 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 		return result, err
 	}
 
-	err = workflow.ExecuteActivity(ctx,
+	err = workflow.ExecuteActivity(aCtx,
 		a.ShipmentCreatedNotification,
 		activities.ShipmentCreatedNotificationInput{
 			OrderID: input.OrderID,
@@ -35,7 +43,7 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 		shipmentapi.ShipmentDispatchedSignalName,
 	).Receive(ctx, nil)
 
-	err = workflow.ExecuteActivity(ctx,
+	err = workflow.ExecuteActivity(aCtx,
 		a.ShipmentDispatchedNotification,
 		activities.ShipmentDispatchedNotificationInput{
 			OrderID: input.OrderID,
@@ -49,7 +57,7 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 		shipmentapi.ShipmentDeliveredSignalName,
 	).Receive(ctx, nil)
 
-	err = workflow.ExecuteActivity(ctx,
+	err = workflow.ExecuteActivity(aCtx,
 		a.ShipmentDeliveredNotification,
 		activities.ShipmentDeliveredNotificationInput{
 			OrderID: input.OrderID,

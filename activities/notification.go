@@ -3,7 +3,6 @@ package activities
 import (
 	"context"
 
-	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
 	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 )
 
@@ -13,16 +12,7 @@ type ShipmentCreatedNotificationInput struct {
 type ShipmentCreatedNotificationResult struct{}
 
 func (a *Activities) ShipmentCreatedNotification(ctx context.Context, input ShipmentCreatedNotificationInput) (ShipmentCreatedNotificationResult, error) {
-	// Auto-dispatch for now
-	err := a.client.SignalWorkflow(ctx,
-		shipmentapi.ShipmentWorkflowID(input.OrderID), "",
-		shipmentapi.ShipmentDispatchedSignalName,
-		shipmentapi.ShipmentDispatchedSignal{},
-	)
-
-	// TODO: Hit Notification API
-
-	return ShipmentCreatedNotificationResult{}, err
+	return ShipmentCreatedNotificationResult{}, nil
 }
 
 type ShipmentDispatchedNotificationInput struct {
@@ -31,16 +21,7 @@ type ShipmentDispatchedNotificationInput struct {
 type ShipmentDispatchedNotificationResult struct{}
 
 func (a *Activities) ShipmentDispatchedNotification(ctx context.Context, input ShipmentDispatchedNotificationInput) (ShipmentDispatchedNotificationResult, error) {
-	// Auto-deliver for now
-	err := a.client.SignalWorkflow(ctx,
-		shipmentapi.ShipmentWorkflowID(input.OrderID), "",
-		shipmentapi.ShipmentDeliveredSignalName,
-		shipmentapi.ShipmentDeliveredSignal{},
-	)
-
-	// TODO: Hit Notification API
-
-	return ShipmentDispatchedNotificationResult{}, err
+	return ShipmentDispatchedNotificationResult{}, nil
 }
 
 type ShipmentDeliveredNotificationInput struct {
@@ -49,7 +30,5 @@ type ShipmentDeliveredNotificationInput struct {
 type ShipmentDeliveredNotificationResult struct{}
 
 func (a *Activities) ShipmentDeliveredNotification(ctx context.Context, input ShipmentDeliveredNotificationInput) (ShipmentDeliveredNotificationResult, error) {
-	// TODO: Hit Notification API
-
 	return ShipmentDeliveredNotificationResult{}, nil
 }
