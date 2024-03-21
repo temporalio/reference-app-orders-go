@@ -3,23 +3,24 @@ package workflows
 import (
 	"go.temporal.io/sdk/workflow"
 
-	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
-
 	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
+	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 )
 
 func Order(ctx workflow.Context, order ordersapi.OrderInput) (ordersapi.OrderResult, error) {
+	var result ordersapi.OrderResult
+
 	shipment := createShipment(ctx, order.ID, order.Items)
 
 	err := waitForDelivery(ctx, shipment)
 	if err != nil {
-		return ordersapi.OrderResult{}, err
+		return result, err
 	}
 
-	return ordersapi.OrderResult{}, nil
+	return result, nil
 }
 
-func createShipment(ctx workflow.Context, orderID string, items []ordersapi.Item) workflow.Future {
+func createShipment(ctx workflow.Context, orderID ordersapi.OrderID, items []ordersapi.Item) workflow.Future {
 	cctx := workflow.WithChildOptions(ctx,
 		workflow.ChildWorkflowOptions{
 			WorkflowID: shipmentapi.ShipmentWorkflowID(orderID),

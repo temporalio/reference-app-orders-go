@@ -1,12 +1,14 @@
 package ordersapi
 
+type OrderID string
+
 type Item struct {
 	SKU      string
 	Quantity int32
 }
 
 type OrderInput struct {
-	ID    string
+	ID    OrderID
 	Items []Item
 }
 
