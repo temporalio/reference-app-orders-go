@@ -1,6 +1,6 @@
 module github.com/temporalio/orders-reference-app-go
 
-go 1.20
+go 1.22
 
 require go.temporal.io/sdk v1.26.0
 
