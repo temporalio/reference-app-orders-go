@@ -14,13 +14,13 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 
 	workflow.Go(ctx, handleStatusUpdates(ctx, &status))
 
-	aCtx := workflow.WithActivityOptions(ctx,
+	ctx = workflow.WithActivityOptions(ctx,
 		workflow.ActivityOptions{
 			StartToCloseTimeout: 5 * time.Second,
 		},
 	)
 
-	err := workflow.ExecuteActivity(aCtx,
+	err := workflow.ExecuteActivity(ctx,
 		a.RegisterShipment,
 		activities.RegisterShipmentInput{
 			OrderID: input.OrderID,
@@ -31,7 +31,7 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 		return result, err
 	}
 
-	err = workflow.ExecuteActivity(aCtx,
+	err = workflow.ExecuteActivity(ctx,
 		a.ShipmentCreatedNotification,
 		activities.ShipmentCreatedNotificationInput{
 			OrderID: input.OrderID,
@@ -45,7 +45,7 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 		return status == shipmentapi.ShipmentStatusDispatched
 	})
 
-	err = workflow.ExecuteActivity(aCtx,
+	err = workflow.ExecuteActivity(ctx,
 		a.ShipmentDispatchedNotification,
 		activities.ShipmentDispatchedNotificationInput{
 			OrderID: input.OrderID,
@@ -59,7 +59,7 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 		return status == shipmentapi.ShipmentStatusDelivered
 	})
 
-	err = workflow.ExecuteActivity(aCtx,
+	err = workflow.ExecuteActivity(ctx,
 		a.ShipmentDeliveredNotification,
 		activities.ShipmentDeliveredNotificationInput{
 			OrderID: input.OrderID,
