@@ -18,7 +18,9 @@ import (
 func TestShipmentWorkflow(t *testing.T) {
 	s := testsuite.WorkflowTestSuite{}
 	env := s.NewTestWorkflowEnvironment()
-	var a *activities.Activities
+	a := &activities.Activities{
+		SMTPStub: true,
+	}
 
 	shipmentInput := shipmentapi.ShipmentInput{
 		OrderID: "test",
