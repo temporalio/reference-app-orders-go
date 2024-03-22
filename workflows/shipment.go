@@ -3,10 +3,9 @@ package workflows
 import (
 	"time"
 
-	"go.temporal.io/sdk/workflow"
-
 	"github.com/temporalio/orders-reference-app-go/activities"
 	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
+	"go.temporal.io/sdk/workflow"
 )
 
 func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {

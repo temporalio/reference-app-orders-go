@@ -6,12 +6,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
 	"github.com/temporalio/orders-reference-app-go/activities"
 	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
 	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 	"github.com/temporalio/orders-reference-app-go/workflows"
-
 	"go.temporal.io/sdk/testsuite"
 )
 

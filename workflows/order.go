@@ -1,10 +1,9 @@
 package workflows
 
 import (
-	"go.temporal.io/sdk/workflow"
-
 	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
 	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
+	"go.temporal.io/sdk/workflow"
 )
 
 func Order(ctx workflow.Context, order ordersapi.OrderInput) (ordersapi.OrderResult, error) {
