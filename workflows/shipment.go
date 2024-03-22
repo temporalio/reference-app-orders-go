@@ -8,15 +8,18 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-type shipmentStatus struct {
+type shipment struct {
 	status shipmentapi.ShipmentStatus
 }
 
 func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {
-	var result shipmentapi.ShipmentResult
-	var status shipmentStatus
+	return new(shipment).run(ctx, input)
+}
 
-	workflow.Go(ctx, status.handleUpdates(ctx))
+func (s *shipment) run(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {
+	workflow.Go(ctx, s.statusUpdater)
+
+	var result shipmentapi.ShipmentResult
 
 	ctx = workflow.WithActivityOptions(ctx,
 		workflow.ActivityOptions{
@@ -45,7 +48,7 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 		return result, err
 	}
 
-	status.waitUntil(ctx, shipmentapi.ShipmentStatusDispatched)
+	s.waitForStatus(ctx, shipmentapi.ShipmentStatusDispatched)
 
 	err = workflow.ExecuteActivity(ctx,
 		a.ShipmentDispatchedNotification,
@@ -57,7 +60,7 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 		return result, err
 	}
 
-	status.waitUntil(ctx, shipmentapi.ShipmentStatusDelivered)
+	s.waitForStatus(ctx, shipmentapi.ShipmentStatusDelivered)
 
 	err = workflow.ExecuteActivity(ctx,
 		a.ShipmentDeliveredNotification,
@@ -72,20 +75,17 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 	return result, nil
 }
 
-func (s *shipmentStatus) handleUpdates(ctx workflow.Context) func(workflow.Context) {
+func (s *shipment) statusUpdater(ctx workflow.Context) {
+	var signal shipmentapi.ShipmentUpdateSignal
+
 	ch := workflow.GetSignalChannel(ctx, shipmentapi.ShipmentUpdateSignalName)
-
-	return func(ctx workflow.Context) {
-		var signal shipmentapi.ShipmentUpdateSignal
-
-		for {
-			ch.Receive(ctx, &signal)
-			s.status = signal.Status
-		}
+	for {
+		ch.Receive(ctx, &signal)
+		s.status = signal.Status
 	}
 }
 
-func (s *shipmentStatus) waitUntil(ctx workflow.Context, status shipmentapi.ShipmentStatus) {
+func (s *shipment) waitForStatus(ctx workflow.Context, status shipmentapi.ShipmentStatus) {
 	workflow.Await(ctx, func() bool {
 		return s.status == status
 	})

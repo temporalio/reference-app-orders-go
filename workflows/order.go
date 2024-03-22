@@ -9,32 +9,22 @@ import (
 func Order(ctx workflow.Context, order ordersapi.OrderInput) (ordersapi.OrderResult, error) {
 	var result ordersapi.OrderResult
 
-	shipment := createShipment(ctx, order.ID, order.Items)
+	ctx = workflow.WithChildOptions(ctx,
+		workflow.ChildWorkflowOptions{
+			WorkflowID: shipmentapi.ShipmentWorkflowID(order.ID),
+		},
+	)
 
-	err := waitForDelivery(ctx, shipment)
+	err := workflow.ExecuteChildWorkflow(ctx,
+		Shipment,
+		shipmentapi.ShipmentInput{
+			OrderID: order.ID,
+			Items:   order.Items,
+		},
+	).Get(ctx, nil)
 	if err != nil {
 		return result, err
 	}
 
 	return result, nil
-}
-
-func createShipment(ctx workflow.Context, orderID ordersapi.OrderID, items []ordersapi.Item) workflow.Future {
-	cctx := workflow.WithChildOptions(ctx,
-		workflow.ChildWorkflowOptions{
-			WorkflowID: shipmentapi.ShipmentWorkflowID(orderID),
-		},
-	)
-
-	return workflow.ExecuteChildWorkflow(cctx,
-		Shipment,
-		shipmentapi.ShipmentInput{
-			OrderID: orderID,
-			Items:   items,
-		},
-	)
-}
-
-func waitForDelivery(ctx workflow.Context, shipment workflow.Future) error {
-	return shipment.Get(ctx, nil)
 }
