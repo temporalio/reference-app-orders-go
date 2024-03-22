@@ -11,6 +11,9 @@ import (
 
 func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {
 	var result shipmentapi.ShipmentResult
+	var status shipmentapi.ShipmentStatus
+
+	workflow.Go(ctx, handleStatusUpdates(ctx, &status))
 
 	aCtx := workflow.WithActivityOptions(ctx,
 		workflow.ActivityOptions{
@@ -39,9 +42,9 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 		return result, err
 	}
 
-	workflow.GetSignalChannel(ctx,
-		shipmentapi.ShipmentDispatchedSignalName,
-	).Receive(ctx, nil)
+	workflow.Await(ctx, func() bool {
+		return status == shipmentapi.ShipmentStatusDispatched
+	})
 
 	err = workflow.ExecuteActivity(aCtx,
 		a.ShipmentDispatchedNotification,
@@ -53,9 +56,9 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 		return result, err
 	}
 
-	workflow.GetSignalChannel(ctx,
-		shipmentapi.ShipmentDeliveredSignalName,
-	).Receive(ctx, nil)
+	workflow.Await(ctx, func() bool {
+		return status == shipmentapi.ShipmentStatusDelivered
+	})
 
 	err = workflow.ExecuteActivity(aCtx,
 		a.ShipmentDeliveredNotification,
@@ -68,4 +71,17 @@ func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentap
 	}
 
 	return result, nil
+}
+
+func handleStatusUpdates(ctx workflow.Context, status *shipmentapi.ShipmentStatus) func(workflow.Context) {
+	ch := workflow.GetSignalChannel(ctx, shipmentapi.ShipmentUpdateSignalName)
+
+	return func(ctx workflow.Context) {
+		var signal shipmentapi.ShipmentUpdateSignal
+
+		for {
+			ch.Receive(ctx, &signal)
+			*status = signal.Status
+		}
+	}
 }

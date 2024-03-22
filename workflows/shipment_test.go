@@ -33,8 +33,10 @@ func TestShipmentWorkflow(t *testing.T) {
 	env.OnActivity(a.ShipmentCreatedNotification, mock.Anything, mock.Anything).Return(
 		func(ctx context.Context, input activities.ShipmentCreatedNotificationInput) (activities.ShipmentCreatedNotificationResult, error) {
 			env.SignalWorkflow(
-				shipmentapi.ShipmentDispatchedSignalName,
-				shipmentapi.ShipmentDispatchedSignal{},
+				shipmentapi.ShipmentUpdateSignalName,
+				shipmentapi.ShipmentUpdateSignal{
+					Status: shipmentapi.ShipmentStatusDispatched,
+				},
 			)
 
 			return activities.ShipmentCreatedNotificationResult{}, nil
@@ -44,8 +46,10 @@ func TestShipmentWorkflow(t *testing.T) {
 	env.OnActivity(a.ShipmentDispatchedNotification, mock.Anything, mock.Anything).Return(
 		func(ctx context.Context, input activities.ShipmentDispatchedNotificationInput) (activities.ShipmentDispatchedNotificationResult, error) {
 			env.SignalWorkflow(
-				shipmentapi.ShipmentDeliveredSignalName,
-				shipmentapi.ShipmentDeliveredSignal{},
+				shipmentapi.ShipmentUpdateSignalName,
+				shipmentapi.ShipmentUpdateSignal{
+					Status: shipmentapi.ShipmentStatusDelivered,
+				},
 			)
 
 			return activities.ShipmentDispatchedNotificationResult{}, nil

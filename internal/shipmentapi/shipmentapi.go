@@ -20,12 +20,18 @@ type ShipmentInput struct {
 	Items   []ordersapi.Item
 }
 
-const ShipmentDispatchedSignalName = "ShipmentDispatched"
+const ShipmentUpdateSignalName = "ShipmentUpdate"
 
-type ShipmentDispatchedSignal struct{}
+type ShipmentStatus int
 
-const ShipmentDeliveredSignalName = "ShipmentDelivered"
+const (
+	ShipmentStatusRegistered ShipmentStatus = iota
+	ShipmentStatusDispatched
+	ShipmentStatusDelivered
+)
 
-type ShipmentDeliveredSignal struct{}
+type ShipmentUpdateSignal struct {
+	Status ShipmentStatus
+}
 
 type ShipmentResult struct{}
