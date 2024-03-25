@@ -12,3 +12,5 @@ Order processing reference application
 * `pkg/` Externally shared code
 * `web/` Web interface and assets
 * `workflows/` Code for Temporal Workflows
+
+Note: the `activities/` directory will be restructured to separate the activities once we have the need for different task queues/workers.
