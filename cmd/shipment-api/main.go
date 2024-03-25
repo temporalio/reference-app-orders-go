@@ -30,6 +30,8 @@ var rootCmd = &cobra.Command{
 			Handler: shipmentapi.Router(c),
 		}
 
+		fmt.Printf("Listening on http://0.0.0.0:%d\n", port)
+
 		errCh := make(chan error, 1)
 		go func() { errCh <- srv.ListenAndServe() }()
 
