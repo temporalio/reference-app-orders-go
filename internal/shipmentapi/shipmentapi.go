@@ -8,7 +8,7 @@ import (
 
 // The Shipment interfaces are only used internally.
 
-// Signals will be sent by the courier via a local API service,
+// Signals will be sent by couriers via a local API service,
 // so we don't need to expose these.
 
 func ShipmentWorkflowID(orderID ordersapi.OrderID) string {
