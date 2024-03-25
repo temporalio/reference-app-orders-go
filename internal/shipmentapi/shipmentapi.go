@@ -11,7 +11,7 @@ import (
 // Signals will be sent by the courier via a local API service,
 // so we don't need to expose these.
 
-func ShipmentWorkflowID(orderID ordersapi.OrderID, fulfilment int) string {
+func ShipmentWorkflowID(orderID ordersapi.OrderID, fulfillmentID int) string {
 	return fmt.Sprintf("shipment:%s:%d", orderID, fulfilment)
 }
 
