@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/temporalio/orders-reference-app-go/activities"
 	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
 	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 	"github.com/temporalio/orders-reference-app-go/workflows"
@@ -15,8 +16,10 @@ import (
 func TestOrderWorkflow(t *testing.T) {
 	s := testsuite.WorkflowTestSuite{}
 	env := s.NewTestWorkflowEnvironment()
+	var a *activities.Activities
 
 	env.RegisterWorkflow(workflows.Order)
+	env.RegisterActivity(a.FulfillOrder)
 
 	orderInput := ordersapi.OrderInput{
 		Items: []ordersapi.Item{

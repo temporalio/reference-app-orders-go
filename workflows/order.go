@@ -1,6 +1,9 @@
 package workflows
 
 import (
+	"time"
+
+	"github.com/temporalio/orders-reference-app-go/activities"
 	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
 	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 	"go.temporal.io/sdk/workflow"
@@ -8,12 +11,8 @@ import (
 
 type orderImpl struct {
 	ID           ordersapi.OrderID
-	fulfillments []fulfillment
+	fulfillments []activities.Fulfillment
 	shipments    []workflow.Future
-}
-
-type fulfillment struct {
-	Items []ordersapi.Item
 }
 
 func Order(ctx workflow.Context, input ordersapi.OrderInput) (ordersapi.OrderResult, error) {
@@ -24,34 +23,37 @@ func (o *orderImpl) run(ctx workflow.Context, order ordersapi.OrderInput) (order
 	var result ordersapi.OrderResult
 
 	o.ID = order.ID
-	o.fulfill(order.Items)
+	err := o.fulfill(ctx, order.Items)
+	if err != nil {
+		return result, err
+	}
 	o.createShipments(ctx)
 
 	return result, o.waitForDeliveries(ctx)
 }
 
-func (o *orderImpl) fulfill(items []ordersapi.Item) {
-	// Hard coded. Open discussion where this stub boundary should live.
-
-	// First item from one warehouse
-	o.fulfillments = append(
-		o.fulfillments,
-		fulfillment{
-			Items: items[0:1],
+func (o *orderImpl) fulfill(ctx workflow.Context, items []ordersapi.Item) error {
+	ctx = workflow.WithActivityOptions(ctx,
+		workflow.ActivityOptions{
+			StartToCloseTimeout: 30 * time.Second,
 		},
 	)
 
-	if len(items) <= 1 {
-		return
+	var result activities.FulfillOrderResult
+
+	err := workflow.ExecuteActivity(ctx,
+		a.FulfillOrder,
+		activities.FulfillOrderInput{
+			Items: items,
+		},
+	).Get(ctx, &result)
+	if err != nil {
+		return err
 	}
 
-	// Second fulfillment with all other items
-	o.fulfillments = append(
-		o.fulfillments,
-		fulfillment{
-			Items: items[1 : len(items)-1],
-		},
-	)
+	o.fulfillments = result.Fulfillments
+
+	return nil
 }
 
 func (o *orderImpl) createShipments(ctx workflow.Context) {
