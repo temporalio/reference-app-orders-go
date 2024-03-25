@@ -16,6 +16,7 @@ type handlers struct {
 	temporal client.Client
 }
 
+// Router implements the http.Handler interface for the Shipment API
 func Router(c client.Client) *mux.Router {
 	r := mux.NewRouter()
 	h := handlers{temporal: c}

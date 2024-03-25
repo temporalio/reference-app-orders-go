@@ -6,6 +6,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
+// Order implements the Order workflow.
 func Order(ctx workflow.Context, order ordersapi.OrderInput) (ordersapi.OrderResult, error) {
 	var result ordersapi.OrderResult
 
