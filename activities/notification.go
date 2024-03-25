@@ -3,10 +3,9 @@ package activities
 import (
 	"context"
 	"fmt"
-	"time"
+	"net/smtp"
 
 	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
-	mail "github.com/xhit/go-simple-mail/v2"
 )
 
 const from = "orders@reference-app.example"
@@ -52,30 +51,11 @@ func (a *Activities) ShipmentDeliveredNotification(ctx context.Context, input Sh
 }
 
 func (a *Activities) sendMail(from string, to string, subject string, body string) error {
-	email := mail.NewMSG()
-	email.SetFrom(from).
-		AddTo(to).
-		SetSubject(subject).
-		SetBody(mail.TextPlain, body)
-
-	if email.Error != nil {
-		return email.Error
-	}
-
-	if a.SMTPStub {
-		return nil
-	}
-
-	server := mail.NewSMTPClient()
-	server.Host = a.SMTPHost
-	server.Port = a.SMTPPort
-	server.ConnectTimeout = time.Second
-	server.SendTimeout = time.Second
-
-	client, err := server.Connect()
-	if err != nil {
-		return err
-	}
-
-	return email.Send(client)
+	return smtp.SendMail(
+		fmt.Sprintf("%s:%d", a.SMTPHost, a.SMTPPort),
+		nil,
+		from,
+		[]string{to},
+		[]byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s", to, subject, body)),
+	)
 }
