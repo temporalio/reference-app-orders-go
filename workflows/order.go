@@ -1,6 +1,7 @@
 package workflows
 
 import (
+	"log"
 	"time"
 
 	"github.com/temporalio/orders-reference-app-go/activities"
@@ -10,9 +11,7 @@ import (
 )
 
 type orderImpl struct {
-	ID           ordersapi.OrderID
-	fulfillments []activities.Fulfillment
-	shipments    []workflow.Future
+	ID ordersapi.OrderID
 }
 
 func Order(ctx workflow.Context, input ordersapi.OrderInput) (ordersapi.OrderResult, error) {
@@ -23,16 +22,18 @@ func (o *orderImpl) run(ctx workflow.Context, order ordersapi.OrderInput) (order
 	var result ordersapi.OrderResult
 
 	o.ID = order.ID
-	err := o.fulfill(ctx, order.Items)
+
+	fulfillments, err := o.fulfill(ctx, order.Items)
 	if err != nil {
 		return result, err
 	}
-	o.createShipments(ctx)
 
-	return result, o.waitForDeliveries(ctx)
+	o.processShipments(ctx, fulfillments)
+
+	return result, nil
 }
 
-func (o *orderImpl) fulfill(ctx workflow.Context, items []ordersapi.Item) error {
+func (o *orderImpl) fulfill(ctx workflow.Context, items []ordersapi.Item) ([]activities.Fulfillment, error) {
 	ctx = workflow.WithActivityOptions(ctx,
 		workflow.ActivityOptions{
 			StartToCloseTimeout: 30 * time.Second,
@@ -48,39 +49,40 @@ func (o *orderImpl) fulfill(ctx workflow.Context, items []ordersapi.Item) error 
 		},
 	).Get(ctx, &result)
 	if err != nil {
-		return err
+		return []activities.Fulfillment{}, err
 	}
 
-	o.fulfillments = result.Fulfillments
-
-	return nil
+	return result.Fulfillments, nil
 }
 
-func (o *orderImpl) createShipments(ctx workflow.Context) {
-	for i, f := range o.fulfillments {
+func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []activities.Fulfillment) {
+	s := workflow.NewSelector(ctx)
+
+	for i, f := range fulfillments {
 		ctx = workflow.WithChildOptions(ctx,
 			workflow.ChildWorkflowOptions{
 				WorkflowID: shipmentapi.ShipmentWorkflowID(o.ID, i),
 			},
 		)
 
-		o.shipments = append(o.shipments, workflow.ExecuteChildWorkflow(ctx,
+		shipment := workflow.ExecuteChildWorkflow(ctx,
 			Shipment,
 			shipmentapi.ShipmentInput{
 				OrderID: o.ID,
 				Items:   f.Items,
 			},
-		))
-	}
-}
-
-func (o *orderImpl) waitForDeliveries(ctx workflow.Context) error {
-	for _, d := range o.shipments {
-		err := d.Get(ctx, nil)
-		if err != nil {
-			return err
-		}
+		)
+		s.AddFuture(shipment, func(f workflow.Future) {
+			err := f.Get(ctx, nil)
+			if err != nil {
+				// TODO: Explore shipping failure cases/handling.
+				log.Printf("shipment error: %v", err)
+			}
+		})
 	}
 
-	return nil
+	// Handle each shipment success/failure as they happen.
+	for range fulfillments {
+		s.Select(ctx)
+	}
 }
