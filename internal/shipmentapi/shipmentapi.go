@@ -12,7 +12,7 @@ import (
 // so we don't need to expose these.
 
 func ShipmentWorkflowID(orderID ordersapi.OrderID, fulfillmentID int) string {
-	return fmt.Sprintf("shipment:%s:%d", orderID, fulfilment)
+	return fmt.Sprintf("shipment:%s:%d", orderID, fulfillmentID)
 }
 
 type ShipmentInput struct {
