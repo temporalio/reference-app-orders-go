@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/temporalio/orders-reference-app-go/cmd/shipment-api/api"
-	"github.com/temporalio/orders-reference-app-go/workflows"
+	"github.com/temporalio/orders-reference-app-go/shipment"
+	"github.com/temporalio/orders-reference-app-go/shipment/cmd/shipment-api/api"
 	"go.temporal.io/sdk/mocks"
 )
 
@@ -34,8 +34,8 @@ func TestShipmentUpdate(t *testing.T) {
 		mock.Anything,
 		"test", "",
 		"ShipmentUpdate",
-		workflows.ShipmentUpdateSignal{
-			Status: workflows.ShipmentStatusDispatched,
+		shipment.ShipmentUpdateSignal{
+			Status: shipment.ShipmentStatusDispatched,
 		},
 	)
 }

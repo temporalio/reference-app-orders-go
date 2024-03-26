@@ -8,7 +8,7 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
-	"github.com/temporalio/orders-reference-app-go/cmd/shipment-api/api"
+	"github.com/temporalio/orders-reference-app-go/shipment/cmd/shipment-api/api"
 
 	"go.temporal.io/sdk/client"
 )

@@ -1,25 +1,24 @@
-package workflows
+package order
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/temporalio/orders-reference-app-go/activities"
-	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
+	"github.com/temporalio/orders-reference-app-go/shipment"
 	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 )
 
 type orderImpl struct {
-	ID ordersapi.OrderID
+	ID string
 }
 
-func Order(ctx workflow.Context, input ordersapi.OrderInput) (ordersapi.OrderResult, error) {
+func Order(ctx workflow.Context, input OrderInput) (OrderResult, error) {
 	return new(orderImpl).run(ctx, input)
 }
 
-func (o *orderImpl) run(ctx workflow.Context, order ordersapi.OrderInput) (ordersapi.OrderResult, error) {
-	var result ordersapi.OrderResult
+func (o *orderImpl) run(ctx workflow.Context, order OrderInput) (OrderResult, error) {
+	var result OrderResult
 
 	o.ID = order.ID
 
@@ -33,29 +32,29 @@ func (o *orderImpl) run(ctx workflow.Context, order ordersapi.OrderInput) (order
 	return result, nil
 }
 
-func (o *orderImpl) fulfill(ctx workflow.Context, items []ordersapi.Item) ([]activities.Fulfillment, error) {
+func (o *orderImpl) fulfill(ctx workflow.Context, items []Item) ([]Fulfillment, error) {
 	ctx = workflow.WithActivityOptions(ctx,
 		workflow.ActivityOptions{
 			StartToCloseTimeout: 30 * time.Second,
 		},
 	)
 
-	var result activities.FulfillOrderResult
+	var result FulfillOrderResult
 
 	err := workflow.ExecuteActivity(ctx,
 		a.FulfillOrder,
-		activities.FulfillOrderInput{
+		FulfillOrderInput{
 			Items: items,
 		},
 	).Get(ctx, &result)
 	if err != nil {
-		return []activities.Fulfillment{}, err
+		return []Fulfillment{}, err
 	}
 
 	return result.Fulfillments, nil
 }
 
-func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []activities.Fulfillment) {
+func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []Fulfillment) {
 	s := workflow.NewSelector(ctx)
 
 	for i, f := range fulfillments {
@@ -65,11 +64,16 @@ func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []activi
 			},
 		)
 
+		var items []shipment.Item
+		for _, i := range f.Items {
+			items = append(items, shipment.Item{SKU: i.SKU, Quantity: i.Quantity})
+		}
+
 		shipment := workflow.ExecuteChildWorkflow(ctx,
-			Shipment,
-			ShipmentInput{
+			shipment.Shipment,
+			shipment.ShipmentInput{
 				OrderID: o.ID,
-				Items:   f.Items,
+				Items:   items,
 			},
 		)
 		s.AddFuture(shipment, func(f workflow.Future) {
@@ -88,6 +92,6 @@ func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []activi
 }
 
 // ShipmentWorkflowID creates a shipment workflow ID from an order ID.
-func ShipmentWorkflowID(orderID ordersapi.OrderID, fulfillmentID int) string {
+func ShipmentWorkflowID(orderID string, fulfillmentID int) string {
 	return fmt.Sprintf("shipment:%s:%d", orderID, fulfillmentID)
 }

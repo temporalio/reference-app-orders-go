@@ -1,4 +1,4 @@
-package workflows_test
+package shipment_test
 
 import (
 	"context"
@@ -6,22 +6,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/temporalio/orders-reference-app-go/activities"
-	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
-	"github.com/temporalio/orders-reference-app-go/workflows"
+	"github.com/temporalio/orders-reference-app-go/shipment"
 	"go.temporal.io/sdk/testsuite"
 )
 
 func TestShipmentWorkflow(t *testing.T) {
 	s := testsuite.WorkflowTestSuite{}
 	env := s.NewTestWorkflowEnvironment()
-	a := &activities.Activities{
+	a := &shipment.Activities{
 		SMTPStub: true,
 	}
 
-	shipmentInput := workflows.ShipmentInput{
+	shipmentInput := shipment.ShipmentInput{
 		OrderID: "test",
-		Items: []ordersapi.Item{
+		Items: []shipment.Item{
 			{SKU: "test1", Quantity: 1},
 			{SKU: "test2", Quantity: 3},
 		},
@@ -30,11 +28,11 @@ func TestShipmentWorkflow(t *testing.T) {
 	env.RegisterActivity(a.RegisterShipment)
 
 	env.OnActivity(a.ShipmentCreatedNotification, mock.Anything, mock.Anything).Return(
-		func(ctx context.Context, input activities.ShipmentCreatedNotificationInput) error {
+		func(ctx context.Context, input shipment.ShipmentCreatedNotificationInput) error {
 			env.SignalWorkflow(
-				workflows.ShipmentUpdateSignalName,
-				workflows.ShipmentUpdateSignal{
-					Status: workflows.ShipmentStatusDispatched,
+				shipment.ShipmentUpdateSignalName,
+				shipment.ShipmentUpdateSignal{
+					Status: shipment.ShipmentStatusDispatched,
 				},
 			)
 
@@ -43,11 +41,11 @@ func TestShipmentWorkflow(t *testing.T) {
 	)
 
 	env.OnActivity(a.ShipmentDispatchedNotification, mock.Anything, mock.Anything).Return(
-		func(ctx context.Context, input activities.ShipmentDispatchedNotificationInput) error {
+		func(ctx context.Context, input shipment.ShipmentDispatchedNotificationInput) error {
 			env.SignalWorkflow(
-				workflows.ShipmentUpdateSignalName,
-				workflows.ShipmentUpdateSignal{
-					Status: workflows.ShipmentStatusDelivered,
+				shipment.ShipmentUpdateSignalName,
+				shipment.ShipmentUpdateSignal{
+					Status: shipment.ShipmentStatusDelivered,
 				},
 			)
 
@@ -58,11 +56,11 @@ func TestShipmentWorkflow(t *testing.T) {
 	env.RegisterActivity(a.ShipmentDeliveredNotification)
 
 	env.ExecuteWorkflow(
-		workflows.Shipment,
+		shipment.Shipment,
 		shipmentInput,
 	)
 
-	var result workflows.ShipmentResult
+	var result shipment.ShipmentResult
 	err := env.GetWorkflowResult(&result)
 	assert.NoError(t, err)
 }

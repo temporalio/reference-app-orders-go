@@ -1,9 +1,6 @@
-package ordersapi
+package order
 
 // The Orders API is exposed as the JSON equivalents will be used to start Orders via the local API.
-
-// OrderID holds an Order ID.
-type OrderID string
 
 // Item represents an item being ordered.
 // All fields are required.
@@ -15,7 +12,7 @@ type Item struct {
 // OrderInput is the input for an Order workflow.
 // All fields are required.
 type OrderInput struct {
-	ID    OrderID
+	ID    string
 	Items []Item
 }
 

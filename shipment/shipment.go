@@ -1,18 +1,23 @@
-package workflows
+package shipment
 
 import (
 	"time"
 
-	"github.com/temporalio/orders-reference-app-go/activities"
-	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 	"go.temporal.io/sdk/workflow"
 )
+
+// Item represents an item being ordered.
+// All fields are required.
+type Item struct {
+	SKU      string
+	Quantity int32
+}
 
 // ShipmentInput is the input for a Shipment workflow.
 // All fields are required.
 type ShipmentInput struct {
-	OrderID ordersapi.OrderID
-	Items   []ordersapi.Item
+	OrderID string
+	Items   []Item
 }
 
 // ShipmentUpdateSignalName is the name for a signal to update a shipment's status.
@@ -62,7 +67,7 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 
 	err := workflow.ExecuteActivity(ctx,
 		a.RegisterShipment,
-		activities.RegisterShipmentInput{
+		RegisterShipmentInput{
 			OrderID: input.OrderID,
 			Items:   input.Items,
 		},
@@ -73,7 +78,7 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 
 	err = workflow.ExecuteActivity(ctx,
 		a.ShipmentCreatedNotification,
-		activities.ShipmentCreatedNotificationInput{
+		ShipmentCreatedNotificationInput{
 			OrderID: input.OrderID,
 		},
 	).Get(ctx, nil)
@@ -85,7 +90,7 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 
 	err = workflow.ExecuteActivity(ctx,
 		a.ShipmentDispatchedNotification,
-		activities.ShipmentDispatchedNotificationInput{
+		ShipmentDispatchedNotificationInput{
 			OrderID: input.OrderID,
 		},
 	).Get(ctx, nil)
@@ -97,7 +102,7 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 
 	err = workflow.ExecuteActivity(ctx,
 		a.ShipmentDeliveredNotification,
-		activities.ShipmentDeliveredNotificationInput{
+		ShipmentDeliveredNotificationInput{
 			OrderID: input.OrderID,
 		},
 	).Get(ctx, nil)
