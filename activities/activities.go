@@ -1,3 +1,7 @@
 package activities
 
-type Activities struct{}
+type Activities struct {
+	SMTPStub bool
+	SMTPHost string
+	SMTPPort int
+}
