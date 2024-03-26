@@ -1,4 +1,7 @@
 package activities
 
-// Activities holds Temporal Activity methods.
-type Activities struct{}
+type Activities struct {
+	SMTPStub bool
+	SMTPHost string
+	SMTPPort int
+}
