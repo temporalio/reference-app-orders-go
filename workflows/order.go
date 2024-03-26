@@ -6,6 +6,7 @@ import (
 	"github.com/temporalio/orders-reference-app-go/activities"
 	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
 	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
+	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -75,7 +76,7 @@ func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []activi
 			err := f.Get(ctx, nil)
 			if err != nil {
 				// TODO: Explore shipping failure cases/handling.
-				workflow.GetLogger(ctx).Error("shipment error: %v", err)
+				log.With(workflow.GetLogger(ctx), "order", o.ID).Error("Shipment Error", "error", err)
 			}
 		})
 	}
