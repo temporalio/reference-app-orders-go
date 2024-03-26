@@ -3,7 +3,10 @@ module github.com/temporalio/orders-reference-app-go
 go 1.22
 
 require (
+	github.com/gorilla/mux v1.8.1
+	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
+	go.temporal.io/api v1.29.1
 	go.temporal.io/sdk v1.26.0
 )
 
@@ -16,11 +19,12 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/robfig/cron v1.2.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	go.temporal.io/api v1.29.1 // indirect
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e // indirect
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect

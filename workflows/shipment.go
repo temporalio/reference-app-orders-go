@@ -8,15 +8,16 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-type shipment struct {
+type shipmentImpl struct {
 	status shipmentapi.ShipmentStatus
 }
 
+// Shipment implements the Shipment workflow.
 func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {
-	return new(shipment).run(ctx, input)
+	return new(shipmentImpl).run(ctx, input)
 }
 
-func (s *shipment) run(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {
+func (s *shipmentImpl) run(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {
 	workflow.Go(ctx, s.statusUpdater)
 
 	var result shipmentapi.ShipmentResult
@@ -75,7 +76,7 @@ func (s *shipment) run(ctx workflow.Context, input shipmentapi.ShipmentInput) (s
 	return result, nil
 }
 
-func (s *shipment) statusUpdater(ctx workflow.Context) {
+func (s *shipmentImpl) statusUpdater(ctx workflow.Context) {
 	var signal shipmentapi.ShipmentUpdateSignal
 
 	ch := workflow.GetSignalChannel(ctx, shipmentapi.ShipmentUpdateSignalName)
@@ -85,7 +86,7 @@ func (s *shipment) statusUpdater(ctx workflow.Context) {
 	}
 }
 
-func (s *shipment) waitForStatus(ctx workflow.Context, status shipmentapi.ShipmentStatus) {
+func (s *shipmentImpl) waitForStatus(ctx workflow.Context, status shipmentapi.ShipmentStatus) {
 	workflow.Await(ctx, func() bool {
 		return s.status == status
 	})
