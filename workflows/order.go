@@ -1,7 +1,6 @@
 package workflows
 
 import (
-	"log"
 	"time"
 
 	"github.com/temporalio/orders-reference-app-go/activities"
@@ -76,7 +75,7 @@ func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []activi
 			err := f.Get(ctx, nil)
 			if err != nil {
 				// TODO: Explore shipping failure cases/handling.
-				log.Printf("shipment error: %v", err)
+				workflow.GetLogger(ctx).Error("shipment error: %v", err)
 			}
 		})
 	}
