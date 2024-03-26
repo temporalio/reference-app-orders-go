@@ -12,8 +12,8 @@ import (
 // so we don't need to expose these.
 
 // ShipmentWorkflowID creates a shipment workflow ID from an order ID.
-func ShipmentWorkflowID(orderID ordersapi.OrderID) string {
-	return fmt.Sprintf("shipment:%s", orderID)
+func ShipmentWorkflowID(orderID ordersapi.OrderID, fulfillmentID int) string {
+	return fmt.Sprintf("shipment:%s:%d", orderID, fulfillmentID)
 }
 
 // ShipmentInput is the input for a Shipment workflow.
