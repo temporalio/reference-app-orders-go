@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/temporalio/orders-reference-app-go/activities"
-	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
 	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 	"github.com/temporalio/orders-reference-app-go/workflows"
 	"go.temporal.io/sdk/testsuite"
@@ -28,8 +27,8 @@ func TestOrderWorkflow(t *testing.T) {
 		},
 	}
 
-	env.OnWorkflow(workflows.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {
-		return shipmentapi.ShipmentResult{}, nil
+	env.OnWorkflow(workflows.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input workflows.ShipmentInput) (workflows.ShipmentResult, error) {
+		return workflows.ShipmentResult{}, nil
 	})
 
 	env.ExecuteWorkflow(

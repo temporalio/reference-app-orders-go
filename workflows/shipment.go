@@ -4,23 +4,55 @@ import (
 	"time"
 
 	"github.com/temporalio/orders-reference-app-go/activities"
-	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
+	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 	"go.temporal.io/sdk/workflow"
 )
 
+// ShipmentInput is the input for a Shipment workflow.
+// All fields are required.
+type ShipmentInput struct {
+	OrderID ordersapi.OrderID
+	Items   []ordersapi.Item
+}
+
+// ShipmentUpdateSignalName is the name for a signal to update a shipment's status.
+const ShipmentUpdateSignalName = "ShipmentUpdate"
+
+// ShipmentStatus holds a shipment's status.
+type ShipmentStatus int
+
+const (
+	// ShipmentStatusRegistered represents a shipment which has been registered but not dispatched.
+	ShipmentStatusRegistered ShipmentStatus = iota
+	// ShipmentStatusDispatched represents a shipment which has been dispatched but not delivered.
+	ShipmentStatusDispatched
+	// ShipmentStatusDelivered represents a shipment which has been delivered.
+	ShipmentStatusDelivered
+)
+
+// ShipmentUpdateSignal is used by couriers to update a shipment's status.
+type ShipmentUpdateSignal struct {
+	Status ShipmentStatus
+}
+
+// ShipmentResult is the result of a Shipment workflow.
+type ShipmentResult struct {
+	CourierReference string
+}
+
 type shipmentImpl struct {
-	status shipmentapi.ShipmentStatus
+	status ShipmentStatus
 }
 
 // Shipment implements the Shipment workflow.
-func Shipment(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {
+func Shipment(ctx workflow.Context, input ShipmentInput) (ShipmentResult, error) {
 	return new(shipmentImpl).run(ctx, input)
 }
 
-func (s *shipmentImpl) run(ctx workflow.Context, input shipmentapi.ShipmentInput) (shipmentapi.ShipmentResult, error) {
+func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentResult, error) {
 	workflow.Go(ctx, s.statusUpdater)
 
-	var result shipmentapi.ShipmentResult
+	var result ShipmentResult
 
 	ctx = workflow.WithActivityOptions(ctx,
 		workflow.ActivityOptions{
@@ -49,7 +81,7 @@ func (s *shipmentImpl) run(ctx workflow.Context, input shipmentapi.ShipmentInput
 		return result, err
 	}
 
-	s.waitForStatus(ctx, shipmentapi.ShipmentStatusDispatched)
+	s.waitForStatus(ctx, ShipmentStatusDispatched)
 
 	err = workflow.ExecuteActivity(ctx,
 		a.ShipmentDispatchedNotification,
@@ -61,7 +93,7 @@ func (s *shipmentImpl) run(ctx workflow.Context, input shipmentapi.ShipmentInput
 		return result, err
 	}
 
-	s.waitForStatus(ctx, shipmentapi.ShipmentStatusDelivered)
+	s.waitForStatus(ctx, ShipmentStatusDelivered)
 
 	err = workflow.ExecuteActivity(ctx,
 		a.ShipmentDeliveredNotification,
@@ -77,16 +109,16 @@ func (s *shipmentImpl) run(ctx workflow.Context, input shipmentapi.ShipmentInput
 }
 
 func (s *shipmentImpl) statusUpdater(ctx workflow.Context) {
-	var signal shipmentapi.ShipmentUpdateSignal
+	var signal ShipmentUpdateSignal
 
-	ch := workflow.GetSignalChannel(ctx, shipmentapi.ShipmentUpdateSignalName)
+	ch := workflow.GetSignalChannel(ctx, ShipmentUpdateSignalName)
 	for {
 		ch.Receive(ctx, &signal)
 		s.status = signal.Status
 	}
 }
 
-func (s *shipmentImpl) waitForStatus(ctx workflow.Context, status shipmentapi.ShipmentStatus) {
+func (s *shipmentImpl) waitForStatus(ctx workflow.Context, status ShipmentStatus) {
 	workflow.Await(ctx, func() bool {
 		return s.status == status
 	})

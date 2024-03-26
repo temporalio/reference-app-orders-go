@@ -1,4 +1,4 @@
-package shipmentapi_test
+package api_test
 
 import (
 	"net/http"
@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	api "github.com/temporalio/orders-reference-app-go/api/shipmentapi"
-	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
+	"github.com/temporalio/orders-reference-app-go/cmd/shipment-api/api"
+	"github.com/temporalio/orders-reference-app-go/workflows"
 	"go.temporal.io/sdk/mocks"
 )
 
@@ -34,8 +34,8 @@ func TestShipmentUpdate(t *testing.T) {
 		mock.Anything,
 		"test", "",
 		"ShipmentUpdate",
-		shipmentapi.ShipmentUpdateSignal{
-			Status: shipmentapi.ShipmentStatusDispatched,
+		workflows.ShipmentUpdateSignal{
+			Status: workflows.ShipmentStatusDispatched,
 		},
 	)
 }

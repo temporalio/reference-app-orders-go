@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/temporalio/orders-reference-app-go/activities"
-	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
 	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 	"github.com/temporalio/orders-reference-app-go/workflows"
 	"go.temporal.io/sdk/testsuite"
@@ -20,7 +19,7 @@ func TestShipmentWorkflow(t *testing.T) {
 		SMTPStub: true,
 	}
 
-	shipmentInput := shipmentapi.ShipmentInput{
+	shipmentInput := workflows.ShipmentInput{
 		OrderID: "test",
 		Items: []ordersapi.Item{
 			{SKU: "test1", Quantity: 1},
@@ -33,9 +32,9 @@ func TestShipmentWorkflow(t *testing.T) {
 	env.OnActivity(a.ShipmentCreatedNotification, mock.Anything, mock.Anything).Return(
 		func(ctx context.Context, input activities.ShipmentCreatedNotificationInput) error {
 			env.SignalWorkflow(
-				shipmentapi.ShipmentUpdateSignalName,
-				shipmentapi.ShipmentUpdateSignal{
-					Status: shipmentapi.ShipmentStatusDispatched,
+				workflows.ShipmentUpdateSignalName,
+				workflows.ShipmentUpdateSignal{
+					Status: workflows.ShipmentStatusDispatched,
 				},
 			)
 
@@ -46,9 +45,9 @@ func TestShipmentWorkflow(t *testing.T) {
 	env.OnActivity(a.ShipmentDispatchedNotification, mock.Anything, mock.Anything).Return(
 		func(ctx context.Context, input activities.ShipmentDispatchedNotificationInput) error {
 			env.SignalWorkflow(
-				shipmentapi.ShipmentUpdateSignalName,
-				shipmentapi.ShipmentUpdateSignal{
-					Status: shipmentapi.ShipmentStatusDelivered,
+				workflows.ShipmentUpdateSignalName,
+				workflows.ShipmentUpdateSignal{
+					Status: workflows.ShipmentStatusDelivered,
 				},
 			)
 
@@ -63,7 +62,7 @@ func TestShipmentWorkflow(t *testing.T) {
 		shipmentInput,
 	)
 
-	var result shipmentapi.ShipmentResult
+	var result workflows.ShipmentResult
 	err := env.GetWorkflowResult(&result)
 	assert.NoError(t, err)
 }

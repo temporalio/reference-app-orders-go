@@ -1,10 +1,10 @@
 package workflows
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/temporalio/orders-reference-app-go/activities"
-	"github.com/temporalio/orders-reference-app-go/internal/shipmentapi"
 	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
@@ -61,13 +61,13 @@ func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []activi
 	for i, f := range fulfillments {
 		ctx = workflow.WithChildOptions(ctx,
 			workflow.ChildWorkflowOptions{
-				WorkflowID: shipmentapi.ShipmentWorkflowID(o.ID, i),
+				WorkflowID: ShipmentWorkflowID(o.ID, i),
 			},
 		)
 
 		shipment := workflow.ExecuteChildWorkflow(ctx,
 			Shipment,
-			shipmentapi.ShipmentInput{
+			ShipmentInput{
 				OrderID: o.ID,
 				Items:   f.Items,
 			},
@@ -85,4 +85,9 @@ func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []activi
 	for range fulfillments {
 		s.Select(ctx)
 	}
+}
+
+// ShipmentWorkflowID creates a shipment workflow ID from an order ID.
+func ShipmentWorkflowID(orderID ordersapi.OrderID, fulfillmentID int) string {
+	return fmt.Sprintf("shipment:%s:%d", orderID, fulfillmentID)
 }
