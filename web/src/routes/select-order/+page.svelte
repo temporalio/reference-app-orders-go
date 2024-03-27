@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { items, order, type Order } from "$lib/stores/order";
+	import { generateOrders, items, order, type Order } from "$lib/stores/order";
 
-	const onItemClick = (item: Order) => {
-		if (item.id === $order?.id) {
+	const onItemClick = (order: Order) => {
+		if (order.id === $order?.id) {
 			$order = undefined;
 		} else {
-			$order = item;
+			$order = order;
 		}
 	}
+
+  const orders = generateOrders(20)
 </script>
 
 <svelte:head>
@@ -19,16 +21,20 @@
 <section>
 	<div class="container">
 		<div class="list">
-			{#each items as item}
-				<button class="item" class:active={item.id === $order?.id} on:click={() => onItemClick(item)}>
-					<div class="name">{item.name}</div>
+			{#each orders as order}
+				<button class="item" class:active={false} on:click={() => onItemClick(order)}>
+					<div class="name">{order.id}</div>
         </button>
 			{/each}
 		</div>
 		<div class="details">
 			{#if $order}
-				<h3 class="name">{$order.name}</h3>
-				<div class="description">{$order.description}</div>
+				<h3 class="name">{$order.id}</h3>
+        {#each $order.items as item}
+          <div class="description">{item.name}</div>
+          <div class="description">{item.description}</div>
+          <div class="description">{item.quantity}</div>
+        {/each}
 			{:else}
 			<h3>Pick order to view details</h3>
 			{/if}
