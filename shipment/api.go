@@ -1,4 +1,4 @@
-package api
+package shipment
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/temporalio/orders-reference-app-go/shipment"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 )
@@ -29,7 +28,7 @@ func Router(c client.Client) *mux.Router {
 func (h *handlers) handleShipmentStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var signal shipment.ShipmentUpdateSignal
+	var signal ShipmentUpdateSignal
 
 	err := json.NewDecoder(r.Body).Decode(&signal)
 	if err != nil {
@@ -40,7 +39,7 @@ func (h *handlers) handleShipmentStatus(w http.ResponseWriter, r *http.Request) 
 
 	err = h.temporal.SignalWorkflow(context.Background(),
 		vars["id"], "",
-		shipment.ShipmentUpdateSignalName,
+		ShipmentUpdateSignalName,
 		signal,
 	)
 	if err != nil {
