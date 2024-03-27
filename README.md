@@ -3,6 +3,7 @@ Order processing reference application
 
 ## Finding your way around the repository
 
+* `cmd/` Command line tools for the application
 * `deployments/` Tools to deploy the application
 * `docs/` Documentation
 * `order/` Workflows and activities for the Order system
