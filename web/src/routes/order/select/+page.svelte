@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { generateOrders, items, order, type Order } from "$lib/stores/order";
+	import OrderDetails from "$lib/components/order-details.svelte";
+	import { generateOrders, order, type Order } from "$lib/stores/order";
 
 	const onItemClick = (order: Order) => {
 		if (order.id === $order?.id) {
@@ -21,27 +22,16 @@
 <section>
 	<div class="container">
 		<div class="list">
-			{#each orders as order}
-				<button class="item" class:active={false} on:click={() => onItemClick(order)}>
-					<div class="name">{order.id}</div>
+			{#each orders as _order, index}
+				<button class="item" class:active={_order.id === $order?.id} on:click={() => onItemClick(_order)}>
+					<div class="name">Package {index + 1}</div>
         </button>
 			{/each}
 		</div>
-		<div class="details">
-			{#if $order}
-				<h3 class="name">{$order.id}</h3>
-        {#each $order.items as item}
-          <div class="description">{item.name}</div>
-          <div class="description">{item.description}</div>
-          <div class="description">{item.quantity}</div>
-        {/each}
-			{:else}
-			<h3>Pick order to view details</h3>
-			{/if}
-		</div>
+		<OrderDetails order={$order} />
 	</div>
 	<div class="container submit">
-		<button class="submit-button" disabled={!$order} class:disabled={!$order} on:click={() => goto('/order-status')}>Submit</button>
+		<button class="submit-button" disabled={!$order} class:disabled={!$order} on:click={() => goto('/order/status')}>Submit</button>
 	</div>
 </section>
 
