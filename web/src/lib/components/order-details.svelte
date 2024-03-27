@@ -1,48 +1,46 @@
 <script lang="ts">
-	import { type Order } from "$lib/stores/order";
+	import { type Order } from '$lib/stores/order';
 
-  export let order: Order | undefined;
+	export let order: Order | undefined;
 </script>
 
-
 <div class="details">
-  {#if order}
-    {#each order.items as item}
-      <div class="title">
-        <div class="quantity">{item.quantity}</div>
-        <h3 class="name">{item.name}</h3>
-      </div>
-      <div class="description">{item.description}</div>
-    {/each}
-  {:else}
-    <h3>Pick order to view details</h3>
-  {/if}
+	{#if order}
+		{#each order.items as item}
+			<div class="title">
+				<div class="quantity">{item.quantity}</div>
+				<h3 class="name">{item.name}</h3>
+			</div>
+			<div class="description">{item.description}</div>
+		{/each}
+	{:else}
+		<h3>Pick order to view details</h3>
+	{/if}
 </div>
 
 <style>
-  .title {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-  }
+	.title {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+	}
 
-  .quantity {
-		font-size: .85rem;
-    border-radius: 9999px;
-    background-color: #788F9C;
-    width: 2rem;
-    height: 2rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
+	.quantity {
+		font-size: 0.85rem;
+		border-radius: 9999px;
+		background-color: #788f9c;
+		width: 2rem;
+		height: 2rem;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		color: white;
 	}
 
 	.name {
 		font-weight: bold;
 		font-size: 1rem;
 	}
-
 
 	.details {
 		display: flex;

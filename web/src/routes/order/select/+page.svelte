@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
-	import OrderDetails from "$lib/components/order-details.svelte";
-	import { generateOrders, order, type Order } from "$lib/stores/order";
+	import { goto } from '$app/navigation';
+	import OrderDetails from '$lib/components/order-details.svelte';
+	import { generateOrders, order, type Order } from '$lib/stores/order';
 
 	const onItemClick = (order: Order) => {
 		if (order.id === $order?.id) {
@@ -9,9 +9,9 @@
 		} else {
 			$order = order;
 		}
-	}
+	};
 
-  const orders = generateOrders(20)
+	const orders = generateOrders(20);
 </script>
 
 <svelte:head>
@@ -23,15 +23,24 @@
 	<div class="container">
 		<div class="list">
 			{#each orders as _order, index}
-				<button class="item" class:active={_order.id === $order?.id} on:click={() => onItemClick(_order)}>
+				<button
+					class="item"
+					class:active={_order.id === $order?.id}
+					on:click={() => onItemClick(_order)}
+				>
 					<div class="name">Package {index + 1}</div>
-        </button>
+				</button>
 			{/each}
 		</div>
 		<OrderDetails order={$order} />
 	</div>
 	<div class="container submit">
-		<button class="submit-button" disabled={!$order} class:disabled={!$order} on:click={() => goto('/order/status')}>Submit</button>
+		<button
+			class="submit-button"
+			disabled={!$order}
+			class:disabled={!$order}
+			on:click={() => goto('/order/status')}>Submit</button
+		>
 	</div>
 </section>
 
@@ -57,16 +66,16 @@
 
 	.item {
 		height: 2rem;
-    width: 100%;
+		width: 100%;
 		display: flex;
 		flex-direction: row;
 		justify-content: center;
-    align-items: center;
+		align-items: center;
 		cursor: pointer;
-    border-radius: 0;
-    border: none;
-    border-bottom: 2px solid #ccc;
-    background-color: white;
+		border-radius: 0;
+		border: none;
+		border-bottom: 2px solid #ccc;
+		background-color: white;
 	}
 
 	.active {
@@ -78,7 +87,6 @@
 		font-weight: bold;
 		font-size: 1rem;
 	}
-
 
 	.details {
 		display: flex;
