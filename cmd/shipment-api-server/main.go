@@ -8,7 +8,7 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
-	"github.com/temporalio/orders-reference-app-go/api/shipmentapi"
+	"github.com/temporalio/orders-reference-app-go/shipment"
 
 	"go.temporal.io/sdk/client"
 )
@@ -16,7 +16,7 @@ import (
 var port int
 
 var rootCmd = &cobra.Command{
-	Use:   "shipment-api",
+	Use:   "shipment-api-server",
 	Short: "API Server for Shipments",
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := client.Dial(client.Options{})
@@ -27,7 +27,7 @@ var rootCmd = &cobra.Command{
 
 		srv := &http.Server{
 			Addr:    fmt.Sprintf("0.0.0.0:%d", port),
-			Handler: shipmentapi.Router(c),
+			Handler: shipment.Router(c),
 		}
 
 		fmt.Printf("Listening on http://0.0.0.0:%d\n", port)

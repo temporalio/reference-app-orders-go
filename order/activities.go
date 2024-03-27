@@ -1,14 +1,14 @@
-package activities
+package order
 
-import (
-	"context"
+import "context"
 
-	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
-)
+type Activities struct{}
+
+var a Activities
 
 // FulfillOrderInput is the input to the FulfillOrder activity.
 type FulfillOrderInput struct {
-	Items []ordersapi.Item
+	Items []Item
 }
 
 // Fulfillment holds a set of items that will be delivered in one shipment (due to location and stock level).
@@ -16,7 +16,7 @@ type Fulfillment struct {
 	// Location is the address for courier pickup (the warehouse).
 	Location string
 	// Items is the set of the items that will be part of this shipment.
-	Items []ordersapi.Item
+	Items []Item
 }
 
 // FulfillOrderResult is the result from the FulfillOrder activity.

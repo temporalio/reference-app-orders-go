@@ -1,25 +1,49 @@
-package activities
+package shipment
 
 import (
 	"context"
 	"fmt"
 	"net/smtp"
-
-	"github.com/temporalio/orders-reference-app-go/pkg/ordersapi"
 )
+
+type Activities struct {
+	SMTPStub bool
+	SMTPHost string
+	SMTPPort int
+}
+
+var a Activities
+
+// RegisterShipmentInput is the input for the RegisterShipment operation.
+// All fields are required.
+type RegisterShipmentInput struct {
+	OrderID string
+	Items   []Item
+}
+
+// RegisterShipmentResult is the result for the RegisterShipment operation.
+// CourierReference is recorded where available, to allow tracking enquiries.
+type RegisterShipmentResult struct {
+	CourierReference string
+}
+
+// RegisterShipment registers a shipment with a courier.
+func (a *Activities) RegisterShipment(ctx context.Context, input RegisterShipmentInput) (RegisterShipmentResult, error) {
+	return RegisterShipmentResult{}, nil
+}
 
 const from = "orders@reference-app.example"
 const to = "customer@reference-app.example"
 
 // ShipmentCreatedNotificationInput is the input for a ShipmentCreated notification.
 type ShipmentCreatedNotificationInput struct {
-	OrderID ordersapi.OrderID
+	OrderID string
 }
 
 // ShipmentCreatedNotification sends a ShipmentCreated notification to a user.
 func (a *Activities) ShipmentCreatedNotification(ctx context.Context, input ShipmentCreatedNotificationInput) error {
 	err := a.sendMail(from, to,
-		fmt.Sprintf("Shipment for order: %s", string(input.OrderID)),
+		fmt.Sprintf("Shipment for order: %s", input.OrderID),
 		"Your order has been processed and shipping has been arranged with the courier. We'll be in touch once its dispatched.",
 	)
 
@@ -28,13 +52,13 @@ func (a *Activities) ShipmentCreatedNotification(ctx context.Context, input Ship
 
 // ShipmentDispatchedNotificationInput is the input for a ShipmentDispatched notification.
 type ShipmentDispatchedNotificationInput struct {
-	OrderID ordersapi.OrderID
+	OrderID string
 }
 
 // ShipmentDispatchedNotification sends a ShipmentDispatched notification to a user.
 func (a *Activities) ShipmentDispatchedNotification(ctx context.Context, input ShipmentDispatchedNotificationInput) error {
 	err := a.sendMail(from, to,
-		fmt.Sprintf("Shipment dispatched for order: %s", string(input.OrderID)),
+		fmt.Sprintf("Shipment dispatched for order: %s", input.OrderID),
 		"Your order has been dispatched.",
 	)
 
@@ -43,13 +67,13 @@ func (a *Activities) ShipmentDispatchedNotification(ctx context.Context, input S
 
 // ShipmentDeliveredNotificationInput is the input for a ShipmentDelivered notification.
 type ShipmentDeliveredNotificationInput struct {
-	OrderID ordersapi.OrderID
+	OrderID string
 }
 
 // ShipmentDeliveredNotification sends a ShipmentDelivered notification to a user.
 func (a *Activities) ShipmentDeliveredNotification(ctx context.Context, input ShipmentDeliveredNotificationInput) error {
 	err := a.sendMail(from, to,
-		fmt.Sprintf("Shipment delivered for order: %s", string(input.OrderID)),
+		fmt.Sprintf("Shipment delivered for order: %s", input.OrderID),
 		"Your order has been delivered.",
 	)
 
