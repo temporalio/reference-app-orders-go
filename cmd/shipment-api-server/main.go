@@ -16,7 +16,7 @@ import (
 var port int
 
 var rootCmd = &cobra.Command{
-	Use:   "shipment-api",
+	Use:   "shipment-api-server",
 	Short: "API Server for Shipments",
 	Run: func(cmd *cobra.Command, args []string) {
 		c, err := client.Dial(client.Options{})
