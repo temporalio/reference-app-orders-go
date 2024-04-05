@@ -8,6 +8,29 @@ import (
 	"go.temporal.io/sdk/testsuite"
 )
 
+func TestFulfillOrderZeroItems(t *testing.T) {
+	testSuite := testsuite.WorkflowTestSuite{}
+
+	var a *order.Activities
+
+	env := testSuite.NewTestActivityEnvironment()
+	env.RegisterActivity(a.FulfillOrder)
+
+	input := order.FulfillOrderInput{
+		Items: []order.Item{},
+	}
+
+	future, err := env.ExecuteActivity(a.FulfillOrder, input)
+	require.NoError(t, err)
+
+	var result order.FulfillOrderResult
+	require.NoError(t, future.Get(&result))
+
+	expected := order.FulfillOrderResult{}
+
+	require.Equal(t, expected, result)
+}
+
 func TestFulfillOrderOneItem(t *testing.T) {
 	testSuite := testsuite.WorkflowTestSuite{}
 
