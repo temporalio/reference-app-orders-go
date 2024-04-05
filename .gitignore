@@ -19,3 +19,13 @@
 
 # Go workspace file
 go.work
+
+# Example input file used for manually running the Order Workflow
+example-input.json
+
+# Irrelevant file created by macOS Finder 
+.DS_Store
+
+# Directories created by the web application
+node_modules
+.svelte-kit
