@@ -27,15 +27,15 @@ const ShipmentUpdateSignalName = "ShipmentUpdate"
 type ShipmentStatus int
 
 const (
-	// ShipmentStatusRegistered represents a shipment which has been registered but not dispatched.
-	ShipmentStatusRegistered ShipmentStatus = iota
-	// ShipmentStatusDispatched represents a shipment which has been dispatched but not delivered.
+	// Represents a shipment acknowledged by a courier, but not yet picked up
+	ShipmentStatusBooked ShipmentStatus = iota
+	// Represents a shipment picked up by a courier, but not yet delivered to the customer
 	ShipmentStatusDispatched
-	// ShipmentStatusDelivered represents a shipment which has been delivered.
+	// Represents a shipment that has been delivered to the customer
 	ShipmentStatusDelivered
 )
 
-// ShipmentUpdateSignal is used by couriers to update a shipment's status.
+// ShipmentUpdateSignal is used by a courier to update a shipment's status.
 type ShipmentUpdateSignal struct {
 	Status ShipmentStatus
 }
@@ -66,8 +66,8 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 	)
 
 	err := workflow.ExecuteActivity(ctx,
-		a.RegisterShipment,
-		RegisterShipmentInput{
+		a.BookShipment,
+		BookShipmentInput{
 			OrderID: input.OrderID,
 			Items:   input.Items,
 		},

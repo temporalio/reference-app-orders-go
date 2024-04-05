@@ -25,7 +25,7 @@ func TestShipmentWorkflow(t *testing.T) {
 		},
 	}
 
-	env.RegisterActivity(a.RegisterShipment)
+	env.RegisterActivity(a.BookShipment)
 
 	env.OnActivity(a.ShipmentCreatedNotification, mock.Anything, mock.Anything).Return(
 		func(ctx context.Context, input shipment.ShipmentCreatedNotificationInput) error {
