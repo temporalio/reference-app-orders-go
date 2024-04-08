@@ -9,8 +9,8 @@ sequenceDiagram
     
     Customer->>Order: place order
     Order->>Shipment: create shipment
-    Shipment->>Courier: register shipment
-    Courier->>Shipment: shipment registered
+    Shipment->>Courier: book shipment
+    Courier->>Shipment: shipment booked
     Shipment->>Customer: shipment created
     Courier->>Shipment: shipment dispatched
     Shipment->>Customer: shipment dispatched
