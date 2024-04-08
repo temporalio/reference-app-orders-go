@@ -2,14 +2,38 @@
 	import { goto } from '$app/navigation';
 	import OrderDetails from '$lib/components/order-details.svelte';
 	import { generateOrders, order, type Order } from '$lib/stores/order';
+	import { Client } from 'temporal-http-client';
 
-	const onItemClick = (order: Order) => {
+	const client = new Client({ baseUrl: 'http://localhost:8234' });
+
+	const onItemClick = async (order: Order) => {
 		if (order.id === $order?.id) {
 			$order = undefined;
 		} else {
 			$order = order;
+		};
+	}
+
+	const onSubmit = async () => {
+		if ($order) {
+
+			const response = await client.startWorkflowExecution({
+				path: {
+					namespace: 'default',
+					workflowId: 'order-' + $order.id,
+				},
+				body: {
+					input: JSON.stringify(order),
+					taskQueue: { name: 'order' },
+				}
+			});
+
+			debugger
+
+			// await client.post('/order', $order);
+			// goto('/order/status');
 		}
-	};
+	}
 
 	const orders = generateOrders(20);
 </script>
@@ -39,7 +63,7 @@
 			class="submit-button"
 			disabled={!$order}
 			class:disabled={!$order}
-			on:click={() => goto('/order/status')}>Submit</button
+			on:click={onSubmit}>Submit</button
 		>
 	</div>
 </section>
