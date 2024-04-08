@@ -26,6 +26,10 @@ type FulfillOrderResult struct {
 }
 
 func (a *Activities) FulfillOrder(ctx context.Context, input FulfillOrderInput) (FulfillOrderResult, error) {
+	if len(input.Items) < 1 {
+		return FulfillOrderResult{}, nil
+	}
+
 	var fulfillments []Fulfillment
 
 	// Hard coded. Open discussion where this stub boundary should live.
@@ -45,7 +49,7 @@ func (a *Activities) FulfillOrder(ctx context.Context, input FulfillOrderInput) 
 			fulfillments,
 			Fulfillment{
 				Location: "Warehouse B",
-				Items:    input.Items[1 : len(input.Items)-1],
+				Items:    input.Items[1:len(input.Items)],
 			},
 		)
 	}
