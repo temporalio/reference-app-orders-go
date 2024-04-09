@@ -3,6 +3,10 @@
 	import OrderDetails from '$lib/components/order-details.svelte';
 	import OrderStatus from '$lib/components/order-status.svelte';
 	import { order, type Order } from '$lib/stores/order';
+
+	export let data;
+
+	console.log("Data", data);
 </script>
 
 <svelte:head>

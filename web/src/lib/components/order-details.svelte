@@ -6,10 +6,10 @@
 
 <div class="details">
 	{#if order}
-		{#each order.items as item}
+		{#each order.Items as item}
 			<div class="title">
 				<div class="quantity">{item.quantity}</div>
-				<h3 class="name">{item.name}</h3>
+				<h3 class="name">{item.sku}</h3>
 			</div>
 			<div class="description">{item.description}</div>
 		{/each}

@@ -2,12 +2,10 @@
 	import { goto } from '$app/navigation';
 	import OrderDetails from '$lib/components/order-details.svelte';
 	import { generateOrders, order, type Order } from '$lib/stores/order';
-	import { Client } from 'temporal-http-client';
 
-	const client = new Client({ baseUrl: 'http://localhost:8234' });
 
 	const onItemClick = async (order: Order) => {
-		if (order.id === $order?.id) {
+		if (order.OrderId === $order?.OrderId) {
 			$order = undefined;
 		} else {
 			$order = order;
@@ -16,22 +14,8 @@
 
 	const onSubmit = async () => {
 		if ($order) {
-
-			const response = await client.startWorkflowExecution({
-				path: {
-					namespace: 'default',
-					workflowId: 'order-' + $order.id,
-				},
-				body: {
-					input: JSON.stringify(order),
-					taskQueue: { name: 'order' },
-				}
-			});
-
-			debugger
-
-			// await client.post('/order', $order);
-			// goto('/order/status');
+			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order  }) })
+			goto(`/order/${$order.OrderId}/status`);
 		}
 	}
 
@@ -49,7 +33,7 @@
 			{#each orders as _order, index}
 				<button
 					class="item"
-					class:active={_order.id === $order?.id}
+					class:active={_order.OrderId === $order?.OrderId}
 					on:click={() => onItemClick(_order)}
 				>
 					<div class="name">Package {index + 1}</div>
