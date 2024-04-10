@@ -1,13 +1,7 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-
 	export let data;
 
 	$: ({ shipments } = data);
-
-	$: {
-		console.log('Orders: ', shipments);
-	}
 </script>
 
 <svelte:head>
