@@ -9,7 +9,7 @@ import (
 
 // verifies that the client options has the default address and Namespace
 func TestCreateClientOptionsFromEnvDefaults(t *testing.T) {
-	os.Unsetenv("TEMPORAL_ADDRESS") 
+	os.Unsetenv("TEMPORAL_ADDRESS")
 	os.Unsetenv("TEMPORAL_NAMESPACE")
 	got, err := CreateClientOptionsFromEnv()
 
@@ -21,12 +21,32 @@ func TestCreateClientOptionsFromEnvDefaults(t *testing.T) {
 // verifies that the client options pulls the address from the env var
 func TestCreateClientOptionsFromEnvAddressOnly(t *testing.T) {
 	address := "darkstar.example.com:7233"
-	t.Setenv("TEMPORAL_ADDRESS", address) 
+	t.Setenv("TEMPORAL_ADDRESS", address)
 	os.Unsetenv("TEMPORAL_NAMESPACE")
 	got, err := CreateClientOptionsFromEnv()
 
 	require.Nil(t, err)
 	require.Equal(t, "darkstar.example.com:7233", got.HostPort)
+}
+
+// verifies that CreateClientOptionsFromEnv fails when the cert is
+// provide but the key is not
+func TestCreateClientOptionsFromEnvCertButNoKeyFails(t *testing.T) {
+	certPath := "/tmp/example.pem"
+	t.Setenv("TEMPORAL_TLS_CERT", certPath)
+	os.Unsetenv("TEMPORAL_TLS_KEY")
+	_, err := CreateClientOptionsFromEnv()
+
+	require.NotNil(t, err)
+}
+
+func TestCreateClientOptionsFromEnvWithKeyAndCert(t *testing.T) {
+	keyPath := "/tmp/example.key"
+	t.Setenv("TEMPORAL_TLS_KEY", keyPath)
+	os.Unsetenv("TEMPORAL_TLS_CERT")
+	_, err := CreateClientOptionsFromEnv()
+
+	require.NotNil(t, err)
 }
 
 // verifies that isSet returns true if the env var is set

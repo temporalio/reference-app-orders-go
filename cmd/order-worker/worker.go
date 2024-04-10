@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+	tclient "github.com/temporalio/orders-reference-app-go/internal/temporal"
 	"github.com/temporalio/orders-reference-app-go/order"
 	"github.com/temporalio/orders-reference-app-go/shipment"
 	"go.temporal.io/sdk/client"
@@ -14,7 +15,12 @@ var rootCmd = &cobra.Command{
 	Use:   "order-worker",
 	Short: "Worker for Order system",
 	Run: func(cmd *cobra.Command, args []string) {
-		c, err := client.Dial(client.Options{})
+		clientOptions, err := tclient.CreateClientOptionsFromEnv()
+		if err != nil {
+			log.Fatalf("failed to create client options: %v", err)
+		}
+
+		c, err := client.Dial(clientOptions)
 		if err != nil {
 			log.Fatalf("client error: %v", err)
 		}

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
+	tclient "github.com/temporalio/orders-reference-app-go/internal/temporal"
 	"github.com/temporalio/orders-reference-app-go/shipment"
 
 	"go.temporal.io/sdk/client"
@@ -19,9 +20,14 @@ var rootCmd = &cobra.Command{
 	Use:   "shipment-api-server",
 	Short: "API Server for Shipments",
 	Run: func(cmd *cobra.Command, args []string) {
-		c, err := client.Dial(client.Options{})
+		clientOptions, err := tclient.CreateClientOptionsFromEnv()
 		if err != nil {
-			log.Fatalf("error: %v", err)
+			log.Fatalf("failed to create client options: %v", err)
+		}
+
+		c, err := client.Dial(clientOptions)
+		if err != nil {
+			log.Fatalf("client error: %v", err)
 		}
 		defer c.Close()
 
