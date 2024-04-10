@@ -3,21 +3,26 @@
 	import OrderDetails from '$lib/components/order-details.svelte';
 	import { generateOrders, order, type Order } from '$lib/stores/order';
 
-
 	const onItemClick = async (order: Order) => {
 		if (order.OrderId === $order?.OrderId) {
 			$order = undefined;
 		} else {
 			$order = order;
-		};
-	}
+		}
+	};
 
 	const onSubmit = async () => {
-		if ($order) {
-			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order  }) })
-			goto(`/order/${$order.OrderId}/status`);
+		function timeout(ms: number) {
+			return new Promise((resolve) => setTimeout(resolve, ms));
 		}
-	}
+
+		if ($order) {
+			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order }) });
+			// Need this for now for workflow to start pending child workflows before fetching it
+			await timeout(100);
+			goto(`/orders/${$order.OrderId}/status`);
+		}
+	};
 
 	const orders = generateOrders(20);
 </script>
@@ -43,11 +48,8 @@
 		<OrderDetails order={$order} />
 	</div>
 	<div class="container submit">
-		<button
-			class="submit-button"
-			disabled={!$order}
-			class:disabled={!$order}
-			on:click={onSubmit}>Submit</button
+		<button class="submit-button" disabled={!$order} class:disabled={!$order} on:click={onSubmit}
+			>Submit</button
 		>
 	</div>
 </section>
@@ -84,6 +86,7 @@
 		border: none;
 		border-bottom: 2px solid #ccc;
 		background-color: white;
+		color: black;
 	}
 
 	.active {

@@ -12,6 +12,10 @@ export interface Order {
 	Items: OrderItem[];
 }
 
+export interface Shipment {
+	name: string;
+}
+
 export const order = writable<Order | undefined>();
 
 export const generateOrders = (quantity: number): Order[] => {

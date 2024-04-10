@@ -8,8 +8,6 @@
 	<h3>Status</h3>
 	<div class="status-bar">
 		<div class="bar green">Order entered</div>
-		<div class="bar" />
-		<div class="bar" />
 	</div>
 </div>
 
@@ -18,7 +16,6 @@
 		display: flex;
 		gap: 1rem;
 		align-items: center;
-		background-color: white;
 		padding: 0 1rem;
 	}
 

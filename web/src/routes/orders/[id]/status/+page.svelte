@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import OrderDetails from '$lib/components/order-details.svelte';
 	import OrderStatus from '$lib/components/order-status.svelte';
-	import { order, type Order } from '$lib/stores/order';
+	import ShipmentDetails from '$lib/components/shipment-details.svelte';
 
-	export let data;
-
-	console.log("Data", data);
+	$: ({ order, shipments } = $page.data);
 </script>
 
 <svelte:head>
@@ -16,12 +15,13 @@
 
 <section>
 	<div class="container">
-		<OrderDetails order={$order} />
+		<OrderDetails {order} />
+		<ShipmentDetails {shipments} />
 	</div>
-	<OrderStatus order={$order} />
+	<OrderStatus {order} />
 	<div class="container submit">
 		<button on:click={() => goto('/order/select')}>Back</button>
-		<button disabled={!$order} class:disabled={!$order}>Submit</button>
+		<button disabled class="disabled">Approve</button>
 	</div>
 </section>
 
@@ -40,19 +40,5 @@
 
 	.submit {
 		justify-content: end;
-	}
-
-	button {
-		padding: 1rem 2rem;
-		background-color: black;
-		color: white;
-		border: none;
-		cursor: pointer;
-	}
-
-	.disabled {
-		background-color: #ccc;
-		color: #666;
-		cursor: not-allowed;
 	}
 </style>
