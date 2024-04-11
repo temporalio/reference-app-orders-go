@@ -93,5 +93,5 @@ func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []Fulfil
 
 // ShipmentWorkflowID creates a shipment workflow ID from an order ID.
 func ShipmentWorkflowID(orderID string, fulfillmentID int) string {
-	return fmt.Sprintf("shipment:%s:%d", orderID, fulfillmentID)
+	return fmt.Sprintf("shipment:%d-order:%s", fulfillmentID, orderID)
 }
