@@ -3,16 +3,55 @@ package shipment
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 
 	"github.com/gorilla/mux"
+	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 )
 
 type handlers struct {
 	temporal client.Client
+}
+
+func Server(port int) error {
+	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
+	if err != nil {
+		return fmt.Errorf("failed to create client options: %v", err)
+	}
+
+	c, err := client.Dial(clientOptions)
+	if err != nil {
+		return fmt.Errorf("client error: %v", err)
+	}
+	defer c.Close()
+
+	srv := &http.Server{
+		Addr:    fmt.Sprintf("0.0.0.0:%d", port),
+		Handler: Router(c),
+	}
+
+	fmt.Printf("Listening on http://0.0.0.0:%d\n", port)
+
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.ListenAndServe() }()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+
+	select {
+	case <-sigCh:
+		srv.Close()
+	case err = <-errCh:
+		return err
+	}
+
+	return nil
 }
 
 // Router implements the http.Handler interface for the Shipment API

@@ -5,18 +5,14 @@ import (
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 )
 
-var port int
-
 var rootCmd = &cobra.Command{
-	Use:   "shipment-api-server",
-	Short: "API Server for Shipments",
+	Use:   "shipment-worker",
+	Short: "Worker for Shipment system",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return shipment.Server(port)
+		return shipment.Worker()
 	},
 }
 
 func main() {
-	rootCmd.Flags().IntVar(&port, "port", 8081, "Port to listen on")
-
 	cobra.CheckErr(rootCmd.Execute())
 }
