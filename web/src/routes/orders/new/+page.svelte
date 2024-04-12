@@ -3,11 +3,24 @@
 	import OrderDetails from '$lib/components/order-details.svelte';
 	import { generateOrders, order, type Order } from '$lib/stores/order';
 
-	const onItemClick = (order: Order) => {
-		if (order.id === $order?.id) {
+	const onItemClick = async (order: Order) => {
+		if (order.OrderId === $order?.OrderId) {
 			$order = undefined;
 		} else {
 			$order = order;
+		}
+	};
+
+	const onSubmit = async () => {
+		function timeout(ms: number) {
+			return new Promise((resolve) => setTimeout(resolve, ms));
+		}
+
+		if ($order) {
+			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order }) });
+			// Need this for now for workflow to start pending child workflows before fetching it
+			await timeout(100);
+			goto(`/orders/${$order.OrderId}/status`);
 		}
 	};
 
@@ -25,7 +38,7 @@
 			{#each orders as _order, index}
 				<button
 					class="item"
-					class:active={_order.id === $order?.id}
+					class:active={_order.OrderId === $order?.OrderId}
 					on:click={() => onItemClick(_order)}
 				>
 					<div class="name">Package {index + 1}</div>
@@ -35,11 +48,8 @@
 		<OrderDetails order={$order} />
 	</div>
 	<div class="container submit">
-		<button
-			class="submit-button"
-			disabled={!$order}
-			class:disabled={!$order}
-			on:click={() => goto('/order/status')}>Submit</button
+		<button class="submit-button" disabled={!$order} class:disabled={!$order} on:click={onSubmit}
+			>Submit</button
 		>
 	</div>
 </section>
@@ -76,6 +86,7 @@
 		border: none;
 		border-bottom: 2px solid #ccc;
 		background-color: white;
+		color: black;
 	}
 
 	.active {
