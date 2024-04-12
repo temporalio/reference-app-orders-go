@@ -17,53 +17,24 @@ import (
 //	TEMPORAL_TLS_CERT: Path to the x509 certificate
 //	TEMPORAL_TLS_KEY: Path to the private certificate key
 //
-// If none of these environment variables are set, this will return a
-// ClientOptions instance configured to connect to port 7233 on the
-// local machine, without TLS, and using Namespace 'default'
+// If these environment variables are not set, the client.Options
+// instance returned will be based on the SDK's default configuration.
 func CreateClientOptionsFromEnv() (client.Options, error) {
-	var clientOpts client.Options = client.Options{}
-
-	if isSet("TEMPORAL_TLS_CERT") != isSet("TEMPORAL_TLS_KEY") {
-		msg := "client cert and key are both required when using TLS"
-		return clientOpts, fmt.Errorf(msg)
+	clientOpts := client.Options{
+		HostPort:  os.Getenv("TEMPORAL_ADDRESS"),
+		Namespace: os.Getenv("TEMPORAL_NAMESPACE"),
 	}
 
-	clientOpts.HostPort = getEnvWithFallback("TEMPORAL_ADDRESS", "localhost:7233")
-	clientOpts.Namespace = getEnvWithFallback("TEMPORAL_NAMESPACE", "default")
-
-	// Other TLS-related parameters are ignored unless the cert and
-	// key paths are specified.
-	if isSet("TEMPORAL_TLS_CERT") && isSet("TEMPORAL_TLS_KEY") {
-		clientCertPath := os.Getenv("TEMPORAL_TLS_CERT")
-		clientKeyPath := os.Getenv("TEMPORAL_TLS_KEY")
-
-		clientCert, err := tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
+	if certPath := os.Getenv("TEMPORAL_TLS_CERT"); certPath != "" {
+		cert, err := tls.LoadX509KeyPair(certPath, os.Getenv("TEMPORAL_TLS_KEY"))
 		if err != nil {
-			msg := "failed to load client cert and key: %w"
-			return client.Options{}, fmt.Errorf(msg, err)
+			return clientOpts, fmt.Errorf("failed loading key pair: %w", err)
 		}
 
-		var tlsConfig = tls.Config{}
-		tlsConfig.Certificates = []tls.Certificate{clientCert}
-
-		clientOpts.ConnectionOptions = client.ConnectionOptions{
-			TLS: &tlsConfig,
+		clientOpts.ConnectionOptions.TLS = &tls.Config{
+			Certificates: []tls.Certificate{cert},
 		}
 	}
 
 	return clientOpts, nil
-}
-
-func isSet(name string) bool {
-	_, isSet := os.LookupEnv(name)
-	return isSet
-}
-
-func getEnvWithFallback(name, defaultValue string) string {
-	value, isSet := os.LookupEnv(name)
-	if !isSet {
-		value = defaultValue
-	}
-
-	return value
 }
