@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/temporalio/orders-reference-app-go/shipment"
+	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 )
