@@ -12,8 +12,9 @@ type Item struct {
 // OrderInput is the input for an Order workflow.
 // All fields are required.
 type OrderInput struct {
-	ID    string
-	Items []Item
+	ID         string
+	CustomerID string
+	Items      []Item
 }
 
 // OrderResult is the result of an Order workflow.

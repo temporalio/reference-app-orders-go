@@ -4,16 +4,29 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/temporalio/orders-reference-app-go/billing"
 	"github.com/temporalio/orders-reference-app-go/shipment"
-	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 )
 
 type orderImpl struct {
-	ID string
+	ID         string
+	CustomerID string
 }
 
 func Order(ctx workflow.Context, input OrderInput) (OrderResult, error) {
+	if input.ID == "" {
+		return OrderResult{}, fmt.Errorf("ID is required")
+	}
+
+	if input.CustomerID == "" {
+		return OrderResult{}, fmt.Errorf("CustomerID is required")
+	}
+
+	if len(input.Items) == 0 {
+		return OrderResult{}, fmt.Errorf("Order must contain items")
+	}
+
 	return new(orderImpl).run(ctx, input)
 }
 
@@ -27,7 +40,15 @@ func (o *orderImpl) run(ctx workflow.Context, order OrderInput) (OrderResult, er
 		return result, err
 	}
 
-	o.processShipments(ctx, fulfillments)
+	err = o.processBilling(ctx, fulfillments)
+	if err != nil {
+		return result, err
+	}
+
+	err = o.processShipments(ctx, fulfillments)
+	if err != nil {
+		return result, err
+	}
 
 	return result, nil
 }
@@ -54,8 +75,52 @@ func (o *orderImpl) fulfill(ctx workflow.Context, items []Item) ([]Fulfillment, 
 	return result.Fulfillments, nil
 }
 
-func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []Fulfillment) {
+func (o *orderImpl) processBilling(ctx workflow.Context, fulfillments []Fulfillment) error {
+	for i, f := range fulfillments {
+		var items []billing.Item
+		for _, i := range f.Items {
+			items = append(items, billing.Item{SKU: i.SKU, Quantity: i.Quantity})
+		}
+
+		var invoice billing.GenerateInvoiceResult
+
+		cwf := workflow.ExecuteChildWorkflow(ctx,
+			billing.GenerateInvoice,
+			billing.GenerateInvoiceInput{
+				CustomerID:     o.CustomerID,
+				OrderReference: ShipmentWorkflowID(o.ID, i),
+				Items:          items,
+			},
+		)
+		err := cwf.Get(ctx, &invoice)
+		if err != nil {
+			// TODO: Explore invoicing failure handling.
+			return err
+		}
+
+		var charge billing.ChargeCustomerResult
+
+		cwf = workflow.ExecuteChildWorkflow(ctx,
+			billing.ChargeCustomer,
+			billing.ChargeCustomerInput{
+				CustomerID: o.CustomerID,
+				Reference:  invoice.InvoiceReference,
+				Charge:     invoice.SubTotal + invoice.Tax + invoice.Shipping,
+			},
+		)
+		err = cwf.Get(ctx, &charge)
+		if err != nil {
+			// TODO: Explore payment failure handling.
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []Fulfillment) error {
 	s := workflow.NewSelector(ctx)
+	var err error
 
 	for i, f := range fulfillments {
 		ctx = workflow.WithChildOptions(ctx,
@@ -77,18 +142,20 @@ func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []Fulfil
 			},
 		)
 		s.AddFuture(shipment, func(f workflow.Future) {
-			err := f.Get(ctx, nil)
-			if err != nil {
-				// TODO: Explore shipping failure cases/handling.
-				log.With(workflow.GetLogger(ctx), "order", o.ID).Error("Shipment Error", "error", err)
-			}
+			err = f.Get(ctx, nil)
 		})
 	}
 
 	// Handle each shipment success/failure as they happen.
 	for range fulfillments {
 		s.Select(ctx)
+		if err != nil {
+			// TODO: Explore shipping failure cases/handling.
+			return err
+		}
 	}
+
+	return nil
 }
 
 // ShipmentWorkflowID creates a shipment workflow ID from an order ID.

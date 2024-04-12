@@ -4,10 +4,15 @@
 sequenceDiagram
     participant Customer
     participant Order
+    participant Inventory
+    participant Billing
     participant Shipment
     participant Courier
     
     Customer->>Order: place order
+    Order->>Inventory: fulfill order
+    Order->>Billing: create invoice
+    Order->>Billing: charge customer
     Order->>Shipment: create shipment
     Shipment->>Courier: book shipment
     Courier->>Shipment: shipment booked

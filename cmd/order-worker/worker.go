@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+	"github.com/temporalio/orders-reference-app-go/billing"
 	"github.com/temporalio/orders-reference-app-go/order"
 	"github.com/temporalio/orders-reference-app-go/shipment"
 	"go.temporal.io/sdk/client"
@@ -26,6 +27,8 @@ var rootCmd = &cobra.Command{
 		w.RegisterActivity(&order.Activities{})
 		w.RegisterWorkflow(shipment.Shipment)
 		w.RegisterActivity(&shipment.Activities{SMTPStub: true})
+		w.RegisterWorkflow(billing.GenerateInvoice)
+		w.RegisterWorkflow(billing.ChargeCustomer)
 
 		err = w.Run(worker.InterruptCh())
 		if err != nil {
