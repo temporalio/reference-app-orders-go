@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
 
 	"github.com/gorilla/mux"
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
@@ -19,7 +17,7 @@ type handlers struct {
 	temporal client.Client
 }
 
-func Server(port int) error {
+func RunServer(ctx context.Context, port int) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {
 		return fmt.Errorf("failed to create client options: %v", err)
@@ -41,11 +39,8 @@ func Server(port int) error {
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt)
-
 	select {
-	case <-sigCh:
+	case <-ctx.Done():
 		srv.Close()
 	case err = <-errCh:
 		return err

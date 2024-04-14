@@ -8,7 +8,7 @@ import (
 	"go.temporal.io/sdk/worker"
 )
 
-func Worker() error {
+func RunWorker() error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {
 		log.Fatalf("failed to create client options: %v", err)
@@ -20,7 +20,7 @@ func Worker() error {
 	}
 	defer c.Close()
 
-	w := worker.New(c, "order", worker.Options{})
+	w := worker.New(c, TASK_QUEUE, worker.Options{})
 
 	w.RegisterWorkflow(Shipment)
 	w.RegisterActivity(&Activities{})

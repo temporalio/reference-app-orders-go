@@ -9,7 +9,7 @@ var rootCmd = &cobra.Command{
 	Use:   "order-worker",
 	Short: "Worker for Order system",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return order.Worker()
+		return order.RunWorker()
 	},
 }
 
