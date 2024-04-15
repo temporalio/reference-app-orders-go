@@ -7,6 +7,8 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
+const TASK_QUEUE = "billing"
+
 // GenerateInvoice workflow creates an invoice for a fulfillment.
 func GenerateInvoice(ctx workflow.Context, input GenerateInvoiceInput) (GenerateInvoiceResult, error) {
 	var result GenerateInvoiceResult

@@ -36,6 +36,16 @@ p {
 	font-weight: 400;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+	margin: 0;
+}
+
 p {
 	line-height: 1.5;
 }
@@ -104,4 +114,19 @@ button:focus:not(:focus-visible) {
 	position: absolute;
 	width: 1px;
 	white-space: nowrap;
+}
+
+button {
+	padding: 1rem 2rem;
+	background-color: black;
+	color: white;
+	border: none;
+	cursor: pointer;
+	border-radius: 0.25rem;
+}
+
+button.disabled {
+	background-color: #ccc;
+	color: #666;
+	cursor: not-allowed;
 }

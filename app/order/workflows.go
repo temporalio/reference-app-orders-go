@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/temporalio/orders-reference-app-go/billing"
-	"github.com/temporalio/orders-reference-app-go/shipment"
+	"github.com/temporalio/orders-reference-app-go/app/billing"
+	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/workflow"
 )
+
+const TASK_QUEUE = "orders"
 
 type orderImpl struct {
 	ID         string
@@ -34,6 +36,7 @@ func (o *orderImpl) run(ctx workflow.Context, order OrderInput) (OrderResult, er
 	var result OrderResult
 
 	o.ID = order.ID
+	o.CustomerID = order.CustomerID
 
 	fulfillments, err := o.fulfill(ctx, order.Items)
 	if err != nil {
@@ -125,6 +128,7 @@ func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []Fulfil
 	for i, f := range fulfillments {
 		ctx = workflow.WithChildOptions(ctx,
 			workflow.ChildWorkflowOptions{
+				TaskQueue:  shipment.TASK_QUEUE,
 				WorkflowID: ShipmentWorkflowID(o.ID, i),
 			},
 		)
