@@ -9,7 +9,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			{
 				method: 'POST',
 				body: JSON.stringify({
-					taskQueue: { name: 'order' },
+					taskQueue: { name: 'orders' },
 					workflowType: { name: 'Order' },
 					input: [order]
 				})
