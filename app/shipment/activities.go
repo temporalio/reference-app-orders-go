@@ -7,9 +7,9 @@ import (
 )
 
 type Activities struct {
-	SMTPStub bool
-	SMTPHost string
-	SMTPPort int
+	SMTPEnabled bool
+	SMTPHost    string
+	SMTPPort    int
 }
 
 var a Activities
@@ -81,7 +81,7 @@ func (a *Activities) ShipmentDeliveredNotification(ctx context.Context, input Sh
 }
 
 func (a *Activities) sendMail(from string, to string, subject string, body string) error {
-	if a.SMTPStub {
+	if !a.SMTPEnabled {
 		return nil
 	}
 
