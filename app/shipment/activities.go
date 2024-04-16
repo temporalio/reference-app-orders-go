@@ -7,9 +7,9 @@ import (
 )
 
 type Activities struct {
-	SMTPStub bool
-	SMTPHost string
-	SMTPPort int
+	SMTPEnabled bool
+	SMTPHost    string
+	SMTPPort    int
 }
 
 var a Activities
@@ -44,7 +44,7 @@ type ShipmentCreatedNotificationInput struct {
 func (a *Activities) ShipmentCreatedNotification(ctx context.Context, input ShipmentCreatedNotificationInput) error {
 	err := a.sendMail(from, to,
 		fmt.Sprintf("Shipment for order: %s", input.OrderID),
-		"Your order has been processed and shipping has been arranged with the courier. We'll be in touch once its dispatched.",
+		"Your order has been processed and shipping has been arranged with the courier. We'll be in touch once it's dispatched.",
 	)
 
 	return err
@@ -81,7 +81,7 @@ func (a *Activities) ShipmentDeliveredNotification(ctx context.Context, input Sh
 }
 
 func (a *Activities) sendMail(from string, to string, subject string, body string) error {
-	if a.SMTPStub {
+	if !a.SMTPEnabled {
 		return nil
 	}
 
