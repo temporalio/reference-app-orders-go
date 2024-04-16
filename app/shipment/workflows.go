@@ -8,6 +8,9 @@ import (
 
 const TASK_QUEUE = "shipments"
 
+// Name of the Custom Search Attribute (int) indicating the shipment status
+const STATUS_CSA_NAME = "ShipmentStatus"
+
 // Item represents an item being ordered.
 // All fields are required.
 type Item struct {
@@ -88,6 +91,16 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 		return result, err
 	}
 
+	// Set the initial status in the custom search attribute
+	attributes := map[string]interface{}{
+		STATUS_CSA_NAME: s.status,
+	}
+	err = workflow.UpsertSearchAttributes(ctx, attributes)
+	if err != nil {
+		logger := workflow.GetLogger(ctx)
+		logger.Error("error upserting shipment status attribute", "Error", err)
+	}
+
 	s.waitForStatus(ctx, ShipmentStatusDispatched)
 
 	err = workflow.ExecuteActivity(ctx,
@@ -122,6 +135,15 @@ func (s *shipmentImpl) statusUpdater(ctx workflow.Context) {
 	for {
 		ch.Receive(ctx, &signal)
 		s.status = signal.Status
+
+		attributes := map[string]interface{}{
+			STATUS_CSA_NAME: s.status,
+		}
+		err := workflow.UpsertSearchAttributes(ctx, attributes)
+		if err != nil {
+			logger := workflow.GetLogger(ctx)
+			logger.Error("error upserting shipment status attribute", "Error", err)
+		}
 	}
 }
 
