@@ -44,8 +44,9 @@ func (o *orderImpl) run(ctx workflow.Context, order OrderInput) (OrderResult, er
 	}
 
 	s := workflow.NewSelector(ctx)
-	for i, f := range fulfillments {
-		s.AddFuture(o.processFulfillment(ctx, f, i),
+	for i, fulfillment := range fulfillments {
+		s.AddFuture(
+			o.processFulfillment(ctx, fulfillment, i),
 			func(f workflow.Future) {
 				if err := f.Get(ctx, nil); err != nil {
 					// TODO: Figure out business logic for error handling
@@ -55,7 +56,7 @@ func (o *orderImpl) run(ctx workflow.Context, order OrderInput) (OrderResult, er
 		)
 	}
 
-	for s.HasPending() {
+	for range fulfillments {
 		s.Select(ctx)
 	}
 
@@ -88,6 +89,12 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 	f, s := workflow.NewFuture(ctx)
 
 	workflow.Go(ctx, func(ctx workflow.Context) {
+		ctx = workflow.WithChildOptions(ctx,
+			workflow.ChildWorkflowOptions{
+				TaskQueue: billing.TASK_QUEUE,
+			},
+		)
+
 		var billingItems []billing.Item
 		for _, i := range fulfillment.Items {
 			billingItems = append(billingItems, billing.Item{SKU: i.SKU, Quantity: i.Quantity})
@@ -148,6 +155,9 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 			s.SetError(err)
 			return
 		}
+
+		// TODO: Anything useful to set here?
+		s.SetValue(nil)
 	})
 
 	return f
