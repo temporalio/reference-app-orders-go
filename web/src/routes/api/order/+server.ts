@@ -5,11 +5,11 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	try {
 		const response = await fetch(
-			`http://localhost:8234/api/v1/namespaces/default/workflows/${order.OrderId}`,
+			`http://localhost:8234/api/v1/namespaces/default/workflows/${order.Id}`,
 			{
 				method: 'POST',
 				body: JSON.stringify({
-					taskQueue: { name: 'order' },
+					taskQueue: { name: 'orders' },
 					workflowType: { name: 'Order' },
 					input: [order]
 				})

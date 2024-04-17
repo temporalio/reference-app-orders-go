@@ -8,7 +8,8 @@ export interface OrderItem extends Item {
 	quantity: number;
 }
 export interface Order {
-	OrderId: string;
+	Id: string;
+	CustomerId: string;
 	Items: OrderItem[];
 }
 
@@ -25,7 +26,8 @@ export const generateOrders = (quantity: number): Order[] => {
 		const n = Math.floor(Math.random() * 5) + 1;
 		const selected = shuffledItems.slice(0, n);
 		orders.push({
-			OrderId: `Order-A${i + 1}-${Date.now()}`,
+			Id: `Order-A${i + 1}-${Date.now()}`,
+			CustomerId: '1234',
 			Items: selected.map((item) => ({ ...item, quantity: Math.floor(Math.random() * 3) + 1 }))
 		});
 	}
