@@ -8,7 +8,7 @@ import (
 	"go.temporal.io/sdk/worker"
 )
 
-func RunWorker() error {
+func RunWorker(intCh <-chan interface{}) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {
 		log.Fatalf("failed to create client options: %v", err)

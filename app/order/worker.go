@@ -8,7 +8,7 @@ import (
 	"go.temporal.io/sdk/worker"
 )
 
-func RunWorker() error {
+func RunWorker(intCh <-chan interface{}) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {
 		log.Fatalf("failed to create client options: %v", err)
@@ -25,5 +25,5 @@ func RunWorker() error {
 	w.RegisterWorkflow(Order)
 	w.RegisterActivity(&Activities{})
 
-	return w.Run(worker.InterruptCh())
+	return w.Run(intCh)
 }

@@ -3,13 +3,14 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"github.com/temporalio/orders-reference-app-go/app/order"
+	"go.temporal.io/sdk/worker"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "order-worker",
 	Short: "Worker for Order system",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return order.RunWorker()
+		return order.RunWorker(worker.InterruptCh())
 	},
 }
 
