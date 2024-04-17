@@ -39,9 +39,9 @@ func TestOrderWorkflow(t *testing.T) {
 		orderInput,
 	)
 
-	env.AssertWorkflowNumberOfCalls(t, "Shipment", 2)
-
 	var result order.OrderResult
 	err := env.GetWorkflowResult(&result)
 	assert.NoError(t, err)
+
+	env.AssertWorkflowNumberOfCalls(t, "Shipment", 2)
 }

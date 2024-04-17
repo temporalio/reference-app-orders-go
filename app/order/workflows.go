@@ -43,14 +43,20 @@ func (o *orderImpl) run(ctx workflow.Context, order OrderInput) (OrderResult, er
 		return result, err
 	}
 
-	err = o.processBilling(ctx, fulfillments)
-	if err != nil {
-		return result, err
+	s := workflow.NewSelector(ctx)
+	for i, f := range fulfillments {
+		s.AddFuture(o.processFulfillment(ctx, f, i),
+			func(f workflow.Future) {
+				if err := f.Get(ctx, nil); err != nil {
+					// TODO: Figure out business logic for error handling
+					workflow.GetLogger(ctx).Error("fulfillment error", "error", err)
+				}
+			},
+		)
 	}
 
-	err = o.processShipments(ctx, fulfillments)
-	if err != nil {
-		return result, err
+	for s.HasPending() {
+		s.Select(ctx)
 	}
 
 	return result, nil
@@ -78,11 +84,13 @@ func (o *orderImpl) fulfill(ctx workflow.Context, items []Item) ([]Fulfillment, 
 	return result.Fulfillments, nil
 }
 
-func (o *orderImpl) processBilling(ctx workflow.Context, fulfillments []Fulfillment) error {
-	for i, f := range fulfillments {
-		var items []billing.Item
-		for _, i := range f.Items {
-			items = append(items, billing.Item{SKU: i.SKU, Quantity: i.Quantity})
+func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfillment, fulfillmentID int) workflow.Future {
+	f, s := workflow.NewFuture(ctx)
+
+	workflow.Go(ctx, func(ctx workflow.Context) {
+		var billingItems []billing.Item
+		for _, i := range fulfillment.Items {
+			billingItems = append(billingItems, billing.Item{SKU: i.SKU, Quantity: i.Quantity})
 		}
 
 		var invoice billing.GenerateInvoiceResult
@@ -91,14 +99,14 @@ func (o *orderImpl) processBilling(ctx workflow.Context, fulfillments []Fulfillm
 			billing.GenerateInvoice,
 			billing.GenerateInvoiceInput{
 				CustomerID:     o.CustomerID,
-				OrderReference: ShipmentWorkflowID(o.ID, i),
-				Items:          items,
+				OrderReference: ShipmentWorkflowID(o.ID, fulfillmentID),
+				Items:          billingItems,
 			},
 		)
 		err := cwf.Get(ctx, &invoice)
 		if err != nil {
-			// TODO: Explore invoicing failure handling.
-			return err
+			s.SetError(err)
+			return
 		}
 
 		var charge billing.ChargeCustomerResult
@@ -111,55 +119,38 @@ func (o *orderImpl) processBilling(ctx workflow.Context, fulfillments []Fulfillm
 				Charge:     invoice.SubTotal + invoice.Tax + invoice.Shipping,
 			},
 		)
-		err = cwf.Get(ctx, &charge)
-		if err != nil {
-			// TODO: Explore payment failure handling.
-			return err
+		if err := cwf.Get(ctx, &charge); err != nil {
+			s.SetError(err)
+			return
 		}
-	}
 
-	return nil
-}
-
-func (o *orderImpl) processShipments(ctx workflow.Context, fulfillments []Fulfillment) error {
-	s := workflow.NewSelector(ctx)
-	var err error
-
-	for i, f := range fulfillments {
 		ctx = workflow.WithChildOptions(ctx,
 			workflow.ChildWorkflowOptions{
 				TaskQueue:  shipment.TASK_QUEUE,
-				WorkflowID: ShipmentWorkflowID(o.ID, i),
+				WorkflowID: ShipmentWorkflowID(o.ID, fulfillmentID),
 			},
 		)
 
-		var items []shipment.Item
-		for _, i := range f.Items {
-			items = append(items, shipment.Item{SKU: i.SKU, Quantity: i.Quantity})
+		var shippingItems []shipment.Item
+		for _, i := range fulfillment.Items {
+			shippingItems = append(shippingItems, shipment.Item{SKU: i.SKU, Quantity: i.Quantity})
 		}
 
 		shipment := workflow.ExecuteChildWorkflow(ctx,
 			shipment.Shipment,
 			shipment.ShipmentInput{
 				OrderID: o.ID,
-				Items:   items,
+				Items:   shippingItems,
 			},
 		)
-		s.AddFuture(shipment, func(f workflow.Future) {
-			err = f.Get(ctx, nil)
-		})
-	}
 
-	// Handle each shipment success/failure as they happen.
-	for range fulfillments {
-		s.Select(ctx)
-		if err != nil {
-			// TODO: Explore shipping failure cases/handling.
-			return err
+		if err := shipment.Get(ctx, nil); err != nil {
+			s.SetError(err)
+			return
 		}
-	}
+	})
 
-	return nil
+	return f
 }
 
 // ShipmentWorkflowID creates a shipment workflow ID from an order ID.
