@@ -1,7 +1,5 @@
 package order
 
-// The Orders API is exposed as the JSON equivalents will be used to start Orders via the local API.
-
 // Item represents an item being ordered.
 // All fields are required.
 type Item struct {

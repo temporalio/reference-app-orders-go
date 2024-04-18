@@ -1,7 +1,5 @@
 package billing
 
-// The Billing API is exposed as the JSON equivalents will be used by the Order system.
-
 // Item represents an item being ordered.
 // All fields are required.
 type Item struct {
