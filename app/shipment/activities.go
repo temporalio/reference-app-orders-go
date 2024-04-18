@@ -35,13 +35,13 @@ func (a *Activities) BookShipment(ctx context.Context, input BookShipmentInput) 
 const from = "orders@reference-app.example"
 const to = "customer@reference-app.example"
 
-// ShipmentCreatedNotificationInput is the input for a ShipmentCreated notification.
-type ShipmentCreatedNotificationInput struct {
+// ShipmentBookedNotificationInput is the input for a ShipmentCreated notification.
+type ShipmentBookedNotificationInput struct {
 	OrderID string
 }
 
-// ShipmentCreatedNotification sends a ShipmentCreated notification to a user.
-func (a *Activities) ShipmentCreatedNotification(ctx context.Context, input ShipmentCreatedNotificationInput) error {
+// ShipmentBookedNotification sends a ShipmentCreated notification to a user.
+func (a *Activities) ShipmentBookedNotification(ctx context.Context, input ShipmentBookedNotificationInput) error {
 	err := a.sendMail(from, to,
 		fmt.Sprintf("Shipment for order: %s", input.OrderID),
 		"Your order has been processed and shipping has been arranged with the courier. We'll be in touch once it's dispatched.",

@@ -52,11 +52,11 @@ type shipmentImpl struct {
 }
 
 // Shipment implements the Shipment workflow.
-func Shipment(ctx workflow.Context, input ShipmentInput) (ShipmentResult, error) {
+func Shipment(ctx workflow.Context, input *ShipmentInput) (*ShipmentResult, error) {
 	return new(shipmentImpl).run(ctx, input)
 }
 
-func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentResult, error) {
+func (s *shipmentImpl) run(ctx workflow.Context, input *ShipmentInput) (*ShipmentResult, error) {
 	workflow.Go(ctx, s.statusUpdater)
 
 	var result ShipmentResult
@@ -75,17 +75,17 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 		},
 	).Get(ctx, nil)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	err = workflow.ExecuteActivity(ctx,
-		a.ShipmentCreatedNotification,
-		ShipmentCreatedNotificationInput{
+		a.ShipmentBookedNotification,
+		ShipmentBookedNotificationInput{
 			OrderID: input.OrderID,
 		},
 	).Get(ctx, nil)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	s.waitForStatus(ctx, ShipmentStatusDispatched)
@@ -97,7 +97,7 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 		},
 	).Get(ctx, nil)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	s.waitForStatus(ctx, ShipmentStatusDelivered)
@@ -109,10 +109,10 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 		},
 	).Get(ctx, nil)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 func (s *shipmentImpl) statusUpdater(ctx workflow.Context) {

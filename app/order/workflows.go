@@ -16,23 +16,23 @@ type orderImpl struct {
 	CustomerID string
 }
 
-func Order(ctx workflow.Context, input OrderInput) (OrderResult, error) {
+func Order(ctx workflow.Context, input *OrderInput) (*OrderResult, error) {
 	if input.ID == "" {
-		return OrderResult{}, fmt.Errorf("ID is required")
+		return nil, fmt.Errorf("ID is required")
 	}
 
 	if input.CustomerID == "" {
-		return OrderResult{}, fmt.Errorf("CustomerID is required")
+		return nil, fmt.Errorf("CustomerID is required")
 	}
 
 	if len(input.Items) == 0 {
-		return OrderResult{}, fmt.Errorf("Order must contain items")
+		return nil, fmt.Errorf("Order must contain items")
 	}
 
 	return new(orderImpl).run(ctx, input)
 }
 
-func (o *orderImpl) run(ctx workflow.Context, order OrderInput) (OrderResult, error) {
+func (o *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, error) {
 	var result OrderResult
 
 	o.ID = order.ID
@@ -40,7 +40,7 @@ func (o *orderImpl) run(ctx workflow.Context, order OrderInput) (OrderResult, er
 
 	fulfillments, err := o.fulfill(ctx, order.Items)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	s := workflow.NewSelector(ctx)
@@ -60,7 +60,7 @@ func (o *orderImpl) run(ctx workflow.Context, order OrderInput) (OrderResult, er
 		s.Select(ctx)
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 func (o *orderImpl) fulfill(ctx workflow.Context, items []Item) ([]Fulfillment, error) {

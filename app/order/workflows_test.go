@@ -36,7 +36,7 @@ func TestOrderWorkflow(t *testing.T) {
 
 	env.ExecuteWorkflow(
 		order.Order,
-		orderInput,
+		&orderInput,
 	)
 
 	var result order.OrderResult

@@ -25,9 +25,9 @@ type FulfillOrderResult struct {
 	Fulfillments []Fulfillment
 }
 
-func (a *Activities) FulfillOrder(ctx context.Context, input FulfillOrderInput) (FulfillOrderResult, error) {
+func (a *Activities) FulfillOrder(ctx context.Context, input *FulfillOrderInput) (*FulfillOrderResult, error) {
 	if len(input.Items) < 1 {
-		return FulfillOrderResult{}, nil
+		return nil, nil
 	}
 
 	var fulfillments []Fulfillment
@@ -54,7 +54,7 @@ func (a *Activities) FulfillOrder(ctx context.Context, input FulfillOrderInput) 
 		)
 	}
 
-	return FulfillOrderResult{
+	return &FulfillOrderResult{
 		Fulfillments: fulfillments,
 	}, nil
 }
