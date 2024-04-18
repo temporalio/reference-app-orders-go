@@ -20,10 +20,10 @@ func RunWorker(intCh <-chan interface{}) error {
 	}
 	defer c.Close()
 
-	w := worker.New(c, TASK_QUEUE, worker.Options{})
+	w := worker.New(c, TaskQueue, worker.Options{})
 
-	w.RegisterWorkflow(GenerateInvoice)
-	w.RegisterWorkflow(ChargeCustomer)
+	w.RegisterActivity(GenerateInvoice)
+	w.RegisterActivity(ChargeCustomer)
 
 	return w.Run(intCh)
 }

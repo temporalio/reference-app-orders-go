@@ -9,7 +9,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-const TASK_QUEUE = "orders"
+const TaskQueue = "orders"
 
 type orderImpl struct {
 	ID         string
@@ -89,9 +89,10 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 	f, s := workflow.NewFuture(ctx)
 
 	workflow.Go(ctx, func(ctx workflow.Context) {
-		ctx = workflow.WithChildOptions(ctx,
-			workflow.ChildWorkflowOptions{
-				TaskQueue: billing.TASK_QUEUE,
+		ctx = workflow.WithActivityOptions(ctx,
+			workflow.ActivityOptions{
+				TaskQueue:           billing.TaskQueue,
+				StartToCloseTimeout: 30 * time.Second,
 			},
 		)
 
@@ -102,7 +103,7 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 
 		var invoice billing.GenerateInvoiceResult
 
-		cwf := workflow.ExecuteChildWorkflow(ctx,
+		cwf := workflow.ExecuteActivity(ctx,
 			billing.GenerateInvoice,
 			billing.GenerateInvoiceInput{
 				CustomerID:     o.CustomerID,
@@ -118,7 +119,7 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 
 		var charge billing.ChargeCustomerResult
 
-		cwf = workflow.ExecuteChildWorkflow(ctx,
+		cwf = workflow.ExecuteActivity(ctx,
 			billing.ChargeCustomer,
 			billing.ChargeCustomerInput{
 				CustomerID: o.CustomerID,
@@ -133,7 +134,7 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 
 		ctx = workflow.WithChildOptions(ctx,
 			workflow.ChildWorkflowOptions{
-				TaskQueue:  shipment.TASK_QUEUE,
+				TaskQueue:  shipment.TaskQueue,
 				WorkflowID: ShipmentWorkflowID(o.ID, fulfillmentID),
 			},
 		)

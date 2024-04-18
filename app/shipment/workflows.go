@@ -6,7 +6,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-const TASK_QUEUE = "shipments"
+const TaskQueue = "shipments"
 
 // Item represents an item being ordered.
 // All fields are required.
