@@ -26,7 +26,7 @@ func Order(ctx workflow.Context, input *OrderInput) (*OrderResult, error) {
 	}
 
 	if len(input.Items) == 0 {
-		return nil, fmt.Errorf("Order must contain items")
+		return nil, fmt.Errorf("order must contain items")
 	}
 
 	return new(orderImpl).run(ctx, input)
