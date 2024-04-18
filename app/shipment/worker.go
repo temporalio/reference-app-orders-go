@@ -1,7 +1,7 @@
 package shipment
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
 	"go.temporal.io/sdk/client"
@@ -11,12 +11,12 @@ import (
 func RunWorker(intCh <-chan interface{}) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {
-		log.Fatalf("failed to create client options: %v", err)
+		return fmt.Errorf("failed to create client options: %w", err)
 	}
 
 	c, err := client.Dial(clientOptions)
 	if err != nil {
-		log.Fatalf("client error: %v", err)
+		return fmt.Errorf("client error: %w", err)
 	}
 	defer c.Close()
 
