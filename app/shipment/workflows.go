@@ -3,6 +3,7 @@ package shipment
 import (
 	"time"
 
+	"go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -54,8 +55,11 @@ type shipmentImpl struct {
 	status ShipmentStatus
 }
 
+var logger log.Logger
+
 // Shipment implements the Shipment workflow.
 func Shipment(ctx workflow.Context, input ShipmentInput) (ShipmentResult, error) {
+	logger = workflow.GetLogger(ctx)
 	return new(shipmentImpl).run(ctx, input)
 }
 
@@ -92,14 +96,7 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 	}
 
 	// Set the initial status in the custom search attribute
-	attributes := map[string]interface{}{
-		STATUS_CSA_NAME: s.status,
-	}
-	err = workflow.UpsertSearchAttributes(ctx, attributes)
-	if err != nil {
-		logger := workflow.GetLogger(ctx)
-		logger.Error("error upserting shipment status attribute", "Error", err)
-	}
+	s.upsertStatusAttrbute(ctx, s.status)
 
 	s.waitForStatus(ctx, ShipmentStatusDispatched)
 
@@ -136,14 +133,8 @@ func (s *shipmentImpl) statusUpdater(ctx workflow.Context) {
 		ch.Receive(ctx, &signal)
 		s.status = signal.Status
 
-		attributes := map[string]interface{}{
-			STATUS_CSA_NAME: s.status,
-		}
-		err := workflow.UpsertSearchAttributes(ctx, attributes)
-		if err != nil {
-			logger := workflow.GetLogger(ctx)
-			logger.Error("error upserting shipment status attribute", "Error", err)
-		}
+		// update the status in the custom search attribute
+		s.upsertStatusAttrbute(ctx, s.status)
 	}
 }
 
@@ -151,4 +142,15 @@ func (s *shipmentImpl) waitForStatus(ctx workflow.Context, status ShipmentStatus
 	workflow.Await(ctx, func() bool {
 		return s.status == status
 	})
+}
+
+func (s *shipmentImpl) upsertStatusAttrbute(ctx workflow.Context, status ShipmentStatus) {
+	attributes := map[string]interface{}{
+		STATUS_CSA_NAME: s.status,
+	}
+
+	err := workflow.UpsertSearchAttributes(ctx, attributes)
+	if err != nil {
+		logger.Error("error upserting shipment status attribute", "Error", err)
+	}
 }
