@@ -55,7 +55,7 @@ func TestShipmentWorkflow(t *testing.T) {
 
 	env.ExecuteWorkflow(
 		shipment.Shipment,
-		shipmentInput,
+		&shipmentInput,
 	)
 
 	var result shipment.ShipmentResult

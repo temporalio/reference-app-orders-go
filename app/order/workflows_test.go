@@ -19,8 +19,8 @@ func TestOrderWorkflow(t *testing.T) {
 
 	env.RegisterActivity(billing.GenerateInvoice)
 	env.RegisterActivity(billing.ChargeCustomer)
-	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input shipment.ShipmentInput) (shipment.ShipmentResult, error) {
-		return shipment.ShipmentResult{}, nil
+	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
+		return nil, nil
 	})
 
 	env.RegisterActivity(a.FulfillOrder)

@@ -20,7 +20,7 @@ func TestFulfillOrderZeroItems(t *testing.T) {
 		Items: []order.Item{},
 	}
 
-	future, err := env.ExecuteActivity(a.FulfillOrder, input)
+	future, err := env.ExecuteActivity(a.FulfillOrder, &input)
 	require.NoError(t, err)
 
 	var result order.FulfillOrderResult
@@ -45,7 +45,7 @@ func TestFulfillOrderOneItem(t *testing.T) {
 		},
 	}
 
-	future, err := env.ExecuteActivity(a.FulfillOrder, input)
+	future, err := env.ExecuteActivity(a.FulfillOrder, &input)
 	require.NoError(t, err)
 
 	var result order.FulfillOrderResult
@@ -80,7 +80,7 @@ func TestFulfillOrderTwoItems(t *testing.T) {
 		},
 	}
 
-	future, err := env.ExecuteActivity(a.FulfillOrder, input)
+	future, err := env.ExecuteActivity(a.FulfillOrder, &input)
 	require.NoError(t, err)
 
 	var result order.FulfillOrderResult
