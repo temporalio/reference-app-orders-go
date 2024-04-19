@@ -16,7 +16,7 @@ sequenceDiagram
     Order->>Shipment: create shipment
     Shipment->>Courier: book shipment
     Courier->>Shipment: shipment booked
-    Shipment->>Customer: shipment created
+    Shipment->>Customer: shipment booked
     Courier->>Shipment: shipment dispatched
     Shipment->>Customer: shipment dispatched
     Courier->>Shipment: shipment delivered

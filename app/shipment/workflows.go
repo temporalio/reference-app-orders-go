@@ -6,17 +6,13 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-const TaskQueue = "shipments"
-
 // Item represents an item being ordered.
-// All fields are required.
 type Item struct {
 	SKU      string
 	Quantity int32
 }
 
 // ShipmentInput is the input for a Shipment workflow.
-// All fields are required.
 type ShipmentInput struct {
 	OrderID string
 	Items   []Item
@@ -29,11 +25,11 @@ const ShipmentUpdateSignalName = "ShipmentUpdate"
 type ShipmentStatus int
 
 const (
-	// Represents a shipment acknowledged by a courier, but not yet picked up
+	// ShipmentStatusBooked represents a shipment acknowledged by a courier, but not yet picked up
 	ShipmentStatusBooked ShipmentStatus = iota
-	// Represents a shipment picked up by a courier, but not yet delivered to the customer
+	// ShipmentStatusDispatched represents a shipment picked up by a courier, but not yet delivered to the customer
 	ShipmentStatusDispatched
-	// Represents a shipment that has been delivered to the customer
+	// ShipmentStatusDelivered represents a shipment that has been delivered to the customer
 	ShipmentStatusDelivered
 )
 

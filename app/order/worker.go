@@ -8,6 +8,7 @@ import (
 	"go.temporal.io/sdk/worker"
 )
 
+// RunWorker runs a Workflow and Activity worker for the Order system.
 func RunWorker(intCh <-chan interface{}) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {

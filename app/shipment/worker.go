@@ -8,6 +8,7 @@ import (
 	"go.temporal.io/sdk/worker"
 )
 
+// RunWorker runs a Workflow and Activity worker for the Shipment system.
 func RunWorker(intCh <-chan interface{}) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {
@@ -25,5 +26,5 @@ func RunWorker(intCh <-chan interface{}) error {
 	w.RegisterWorkflow(Shipment)
 	w.RegisterActivity(&Activities{})
 
-	return w.Run(worker.InterruptCh())
+	return w.Run(intCh)
 }

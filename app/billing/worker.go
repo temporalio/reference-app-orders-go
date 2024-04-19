@@ -8,6 +8,7 @@ import (
 	"go.temporal.io/sdk/worker"
 )
 
+// RunWorker runs a Workflow and Activity worker for the Billing system.
 func RunWorker(intCh <-chan interface{}) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {
@@ -22,6 +23,7 @@ func RunWorker(intCh <-chan interface{}) error {
 
 	w := worker.New(c, TaskQueue, worker.Options{})
 
+	w.RegisterWorkflow(Charge)
 	w.RegisterActivity(GenerateInvoice)
 	w.RegisterActivity(ChargeCustomer)
 

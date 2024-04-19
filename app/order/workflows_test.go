@@ -24,6 +24,16 @@ func TestOrderWorkflow(t *testing.T) {
 	})
 
 	env.RegisterActivity(a.FulfillOrder)
+	env.OnActivity(a.Charge, mock.Anything).Return(func(input *billing.ChargeInput) (*order.ChargeResult, error) {
+		return &order.ChargeResult{
+			InvoiceReference: input.Reference,
+			SubTotal:         1,
+			Tax:              0,
+			Shipping:         1,
+			Success:          true,
+			AuthCode:         "1234",
+		}, nil
+	})
 
 	orderInput := order.OrderInput{
 		ID:         "1234",
@@ -43,5 +53,6 @@ func TestOrderWorkflow(t *testing.T) {
 	err := env.GetWorkflowResult(&result)
 	assert.NoError(t, err)
 
+	env.AssertActivityNumberOfCalls(t, "Charge", 2)
 	env.AssertWorkflowNumberOfCalls(t, "Shipment", 2)
 }

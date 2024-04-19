@@ -8,7 +8,7 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
-// ClientOptionsFromEnv creates a client.Options instance, configures
+// CreateClientOptionsFromEnv creates a client.Options instance, configures
 // it based on environment variables, and returns that instance. It
 // supports the following environment variables:
 //

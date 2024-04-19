@@ -1,11 +1,12 @@
 package shipment
 
 import (
-	"context"
 	"fmt"
 	"net/smtp"
 )
 
+// Activities implements the shipment package's Activities.
+// Any state shared by the worker among the activities is stored here.
 type Activities struct {
 	SMTPEnabled bool
 	SMTPHost    string
@@ -28,8 +29,8 @@ type BookShipmentResult struct {
 }
 
 // BookShipment engages a courier who can deliver the shipment to the customer
-func (a *Activities) BookShipment(ctx context.Context, input BookShipmentInput) (BookShipmentResult, error) {
-	return BookShipmentResult{}, nil
+func (a *Activities) BookShipment(_ *BookShipmentInput) (*BookShipmentResult, error) {
+	return &BookShipmentResult{}, nil
 }
 
 const from = "orders@reference-app.example"
@@ -41,7 +42,7 @@ type ShipmentBookedNotificationInput struct {
 }
 
 // ShipmentBookedNotification sends a ShipmentCreated notification to a user.
-func (a *Activities) ShipmentBookedNotification(ctx context.Context, input ShipmentBookedNotificationInput) error {
+func (a *Activities) ShipmentBookedNotification(input *ShipmentBookedNotificationInput) error {
 	err := a.sendMail(from, to,
 		fmt.Sprintf("Shipment for order: %s", input.OrderID),
 		"Your order has been processed and shipping has been arranged with the courier. We'll be in touch once it's dispatched.",
@@ -56,7 +57,7 @@ type ShipmentDispatchedNotificationInput struct {
 }
 
 // ShipmentDispatchedNotification sends a ShipmentDispatched notification to a user.
-func (a *Activities) ShipmentDispatchedNotification(ctx context.Context, input ShipmentDispatchedNotificationInput) error {
+func (a *Activities) ShipmentDispatchedNotification(input *ShipmentDispatchedNotificationInput) error {
 	err := a.sendMail(from, to,
 		fmt.Sprintf("Shipment dispatched for order: %s", input.OrderID),
 		"Your order has been dispatched.",
@@ -71,7 +72,7 @@ type ShipmentDeliveredNotificationInput struct {
 }
 
 // ShipmentDeliveredNotification sends a ShipmentDelivered notification to a user.
-func (a *Activities) ShipmentDeliveredNotification(ctx context.Context, input ShipmentDeliveredNotificationInput) error {
+func (a *Activities) ShipmentDeliveredNotification(input *ShipmentDeliveredNotificationInput) error {
 	err := a.sendMail(from, to,
 		fmt.Sprintf("Shipment delivered for order: %s", input.OrderID),
 		"Your order has been delivered.",

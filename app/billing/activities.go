@@ -4,25 +4,25 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+
+	"go.temporal.io/sdk/activity"
 )
 
-const TaskQueue = "billing"
-
 // GenerateInvoice activity creates an invoice for a fulfillment.
-func GenerateInvoice(ctx context.Context, input *GenerateInvoiceInput) (*GenerateInvoiceResult, error) {
+func GenerateInvoice(input *GenerateInvoiceInput) (*GenerateInvoiceResult, error) {
 	var result GenerateInvoiceResult
 
 	if input.CustomerID == "" {
 		return nil, fmt.Errorf("CustomerID is required")
 	}
-	if input.OrderReference == "" {
+	if input.Reference == "" {
 		return nil, fmt.Errorf("OrderReference is required")
 	}
 	if len(input.Items) == 0 {
 		return nil, fmt.Errorf("invoice must have items")
 	}
 
-	result.InvoiceReference = input.OrderReference
+	result.InvoiceReference = input.Reference
 
 	for _, item := range input.Items {
 		cost, tax := calculateCosts(item)
@@ -54,6 +54,11 @@ func calculateShippingCost(item Item) int32 {
 // ChargeCustomer activity charges a customer for a fulfillment.
 func ChargeCustomer(ctx context.Context, input *ChargeCustomerInput) (*ChargeCustomerResult, error) {
 	var result ChargeCustomerResult
+
+	activity.GetLogger(ctx).Info(
+		"Charging Customer: %s Amount: %.2d Reference: %s",
+		input.CustomerID, input.Charge, input.Reference,
+	)
 
 	// Return success for now
 	result.Success = true

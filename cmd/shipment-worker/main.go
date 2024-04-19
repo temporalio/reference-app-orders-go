@@ -9,7 +9,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "shipment-worker",
 	Short: "Worker for Shipment system",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return shipment.RunWorker(worker.InterruptCh())
 	},
 }
