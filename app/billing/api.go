@@ -23,40 +23,40 @@ type Item struct {
 
 // ChargeInput is the input for the Charge workflow.
 type ChargeInput struct {
-	CustomerID string `json:"customer_id"`
-	Reference  string `json:"order_reference"`
+	CustomerID string `json:"customerId"`
+	Reference  string `json:"orderReference"`
 	Items      []Item `json:"items"`
 }
 
 // ChargeResult is the result for the Charge workflow.
 type ChargeResult struct {
-	InvoiceReference string `json:"invoice_reference"`
-	SubTotal         int32  `json:"sub_total"`
+	InvoiceReference string `json:"invoiceReference"`
+	SubTotal         int32  `json:"subTotal"`
 	Shipping         int32  `json:"shipping"`
 	Tax              int32  `json:"tax"`
 
 	Success  bool   `json:"success"`
-	AuthCode string `json:"auth_code"`
+	AuthCode string `json:"authCode"`
 }
 
 // GenerateInvoiceInput is the input for the GenerateInvoice activity.
 type GenerateInvoiceInput struct {
-	CustomerID string `json:"customer_id"`
-	Reference  string `json:"order_reference"`
+	CustomerID string `json:"customerId"`
+	Reference  string `json:"orderReference"`
 	Items      []Item `json:"items"`
 }
 
 // GenerateInvoiceResult is the result for the GenerateInvoice activity.
 type GenerateInvoiceResult struct {
-	InvoiceReference string `json:"invoice_reference"`
-	SubTotal         int32  `json:"sub_total"`
+	InvoiceReference string `json:"invoiceReference"`
+	SubTotal         int32  `json:"subTotal"`
 	Shipping         int32  `json:"shipping"`
 	Tax              int32  `json:"tax"`
 }
 
 // ChargeCustomerInput is the input for the ChargeCustomer activity.
 type ChargeCustomerInput struct {
-	CustomerID string `json:"customer_id"`
+	CustomerID string `json:"customerId"`
 	Reference  string `json:"reference"`
 	Charge     int32  `json:"charge"`
 }
@@ -64,7 +64,7 @@ type ChargeCustomerInput struct {
 // ChargeCustomerResult is the result for the GenerateInvoice activity.
 type ChargeCustomerResult struct {
 	Success  bool   `json:"success"`
-	AuthCode string `json:"auth_code"`
+	AuthCode string `json:"authCode"`
 }
 
 type handlers struct {
