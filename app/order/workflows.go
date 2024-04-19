@@ -96,7 +96,7 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 		},
 	)
 
-	cwf := workflow.ExecuteActivity(ctx,
+	f := workflow.ExecuteActivity(ctx,
 		a.Charge,
 		&ChargeInput{
 			CustomerID: o.CustomerID,
@@ -104,7 +104,7 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 			Items:      billingItems,
 		},
 	)
-	err := cwf.Get(ctx, &charge)
+	err := f.Get(ctx, &charge)
 	if err != nil {
 		// TODO: Payment specific errors for business logic
 		return err
