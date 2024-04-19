@@ -2,15 +2,15 @@ package main
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/temporalio/orders-reference-app-go/app/order"
+	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"go.temporal.io/sdk/worker"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "order-worker",
-	Short: "Worker for Order system",
+	Use:   "billing-worker",
+	Short: "Worker for Billing system",
 	RunE: func(*cobra.Command, []string) error {
-		return order.RunWorker(worker.InterruptCh())
+		return billing.RunWorker(worker.InterruptCh())
 	},
 }
 

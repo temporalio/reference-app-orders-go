@@ -25,8 +25,8 @@ func TestShipmentWorkflow(t *testing.T) {
 
 	env.RegisterActivity(a.BookShipment)
 
-	env.OnActivity(a.ShipmentCreatedNotification, mock.Anything, mock.Anything).Return(
-		func(ctx context.Context, input shipment.ShipmentCreatedNotificationInput) error {
+	env.OnActivity(a.ShipmentBookedNotification, mock.Anything, mock.Anything).Return(
+		func(_ context.Context, input *shipment.ShipmentBookedNotificationInput) error {
 			env.SignalWorkflow(
 				shipment.ShipmentUpdateSignalName,
 				shipment.ShipmentUpdateSignal{
@@ -39,7 +39,7 @@ func TestShipmentWorkflow(t *testing.T) {
 	)
 
 	env.OnActivity(a.ShipmentDispatchedNotification, mock.Anything, mock.Anything).Return(
-		func(ctx context.Context, input shipment.ShipmentDispatchedNotificationInput) error {
+		func(_ context.Context, input *shipment.ShipmentDispatchedNotificationInput) error {
 			env.SignalWorkflow(
 				shipment.ShipmentUpdateSignalName,
 				shipment.ShipmentUpdateSignal{
@@ -55,7 +55,7 @@ func TestShipmentWorkflow(t *testing.T) {
 
 	env.ExecuteWorkflow(
 		shipment.Shipment,
-		shipmentInput,
+		&shipmentInput,
 	)
 
 	var result shipment.ShipmentResult

@@ -6,17 +6,13 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-const TASK_QUEUE = "shipments"
-
 // Item represents an item being ordered.
-// All fields are required.
 type Item struct {
 	SKU      string
 	Quantity int32
 }
 
 // ShipmentInput is the input for a Shipment workflow.
-// All fields are required.
 type ShipmentInput struct {
 	OrderID string
 	Items   []Item
@@ -29,11 +25,11 @@ const ShipmentUpdateSignalName = "ShipmentUpdate"
 type ShipmentStatus int
 
 const (
-	// Represents a shipment acknowledged by a courier, but not yet picked up
+	// ShipmentStatusBooked represents a shipment acknowledged by a courier, but not yet picked up
 	ShipmentStatusBooked ShipmentStatus = iota
-	// Represents a shipment picked up by a courier, but not yet delivered to the customer
+	// ShipmentStatusDispatched represents a shipment picked up by a courier, but not yet delivered to the customer
 	ShipmentStatusDispatched
-	// Represents a shipment that has been delivered to the customer
+	// ShipmentStatusDelivered represents a shipment that has been delivered to the customer
 	ShipmentStatusDelivered
 )
 
@@ -52,11 +48,11 @@ type shipmentImpl struct {
 }
 
 // Shipment implements the Shipment workflow.
-func Shipment(ctx workflow.Context, input ShipmentInput) (ShipmentResult, error) {
+func Shipment(ctx workflow.Context, input *ShipmentInput) (*ShipmentResult, error) {
 	return new(shipmentImpl).run(ctx, input)
 }
 
-func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentResult, error) {
+func (s *shipmentImpl) run(ctx workflow.Context, input *ShipmentInput) (*ShipmentResult, error) {
 	workflow.Go(ctx, s.statusUpdater)
 
 	var result ShipmentResult
@@ -75,17 +71,17 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 		},
 	).Get(ctx, nil)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	err = workflow.ExecuteActivity(ctx,
-		a.ShipmentCreatedNotification,
-		ShipmentCreatedNotificationInput{
+		a.ShipmentBookedNotification,
+		ShipmentBookedNotificationInput{
 			OrderID: input.OrderID,
 		},
 	).Get(ctx, nil)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	s.waitForStatus(ctx, ShipmentStatusDispatched)
@@ -97,7 +93,7 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 		},
 	).Get(ctx, nil)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	s.waitForStatus(ctx, ShipmentStatusDelivered)
@@ -109,10 +105,10 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 		},
 	).Get(ctx, nil)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 func (s *shipmentImpl) statusUpdater(ctx workflow.Context) {

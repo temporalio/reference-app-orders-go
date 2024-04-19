@@ -7,20 +7,20 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
-	"github.com/temporalio/orders-reference-app-go/app/shipment"
+	"github.com/temporalio/orders-reference-app-go/app/billing"
 )
 
 var port int
 
 var rootCmd = &cobra.Command{
-	Use:   "shipment-api-server",
-	Short: "API Server for Shipments",
+	Use:   "billing-api-server",
+	Short: "API Server for Billing",
 	Run: func(*cobra.Command, []string) {
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
 
 		errCh := make(chan error, 1)
-		go func() { errCh <- shipment.RunServer(ctx, port) }()
+		go func() { errCh <- billing.RunServer(ctx, port) }()
 
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt)
@@ -35,7 +35,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-	rootCmd.Flags().IntVar(&port, "port", 8081, "Port to listen on")
+	rootCmd.Flags().IntVar(&port, "port", 8082, "Port to listen on")
 
 	cobra.CheckErr(rootCmd.Execute())
 }
