@@ -2,6 +2,7 @@ package order
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -38,7 +39,7 @@ type FulfillOrderResult struct {
 // FulfillOrder creates fulfillments to satisfy an order.
 // In a real system this would involve an inventory database of some kind.
 // For our purposes we just split orders arbitrarily.
-func (a *Activities) FulfillOrder(input *FulfillOrderInput) (*FulfillOrderResult, error) {
+func (a *Activities) FulfillOrder(_ context.Context, input *FulfillOrderInput) (*FulfillOrderResult, error) {
 	if len(input.Items) < 1 {
 		return &FulfillOrderResult{}, nil
 	}
@@ -79,13 +80,13 @@ type ChargeInput = billing.ChargeInput
 type ChargeResult = billing.ChargeResult
 
 // Charge charges a customer for a fulfillment via the Billing API
-func (a *Activities) Charge(input *ChargeInput) (*ChargeResult, error) {
+func (a *Activities) Charge(ctx context.Context, input *ChargeInput) (*ChargeResult, error) {
 	jsonInput, err := json.Marshal(input)
 	if err != nil {
 		return nil, fmt.Errorf("unable to encode input: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:8082/charge", bytes.NewReader(jsonInput))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://localhost:8082/charge", bytes.NewReader(jsonInput))
 	if err != nil {
 		return nil, fmt.Errorf("unable to build request: %w", err)
 	}

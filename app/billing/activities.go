@@ -9,7 +9,7 @@ import (
 )
 
 // GenerateInvoice activity creates an invoice for a fulfillment.
-func GenerateInvoice(input *GenerateInvoiceInput) (*GenerateInvoiceResult, error) {
+func GenerateInvoice(_ context.Context, input *GenerateInvoiceInput) (*GenerateInvoiceResult, error) {
 	var result GenerateInvoiceResult
 
 	if input.CustomerID == "" {

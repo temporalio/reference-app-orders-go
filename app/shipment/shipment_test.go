@@ -1,6 +1,7 @@
 package shipment_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +26,7 @@ func TestShipmentWorkflow(t *testing.T) {
 	env.RegisterActivity(a.BookShipment)
 
 	env.OnActivity(a.ShipmentBookedNotification, mock.Anything, mock.Anything).Return(
-		func(input *shipment.ShipmentBookedNotificationInput) error {
+		func(_ context.Context, input *shipment.ShipmentBookedNotificationInput) error {
 			env.SignalWorkflow(
 				shipment.ShipmentUpdateSignalName,
 				shipment.ShipmentUpdateSignal{
@@ -38,7 +39,7 @@ func TestShipmentWorkflow(t *testing.T) {
 	)
 
 	env.OnActivity(a.ShipmentDispatchedNotification, mock.Anything, mock.Anything).Return(
-		func(input *shipment.ShipmentDispatchedNotificationInput) error {
+		func(_ context.Context, input *shipment.ShipmentDispatchedNotificationInput) error {
 			env.SignalWorkflow(
 				shipment.ShipmentUpdateSignalName,
 				shipment.ShipmentUpdateSignal{
