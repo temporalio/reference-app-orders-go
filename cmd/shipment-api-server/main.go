@@ -15,7 +15,7 @@ var port int
 var rootCmd = &cobra.Command{
 	Use:   "shipment-api-server",
 	Short: "API Server for Shipments",
-	Run: func(_ *cobra.Command, _ []string) {
+	Run: func(*cobra.Command, []string) {
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
 

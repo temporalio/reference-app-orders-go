@@ -9,7 +9,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "order-worker",
 	Short: "Worker for Order system",
-	RunE: func(_ *cobra.Command, _ []string) error {
+	RunE: func(*cobra.Command, []string) error {
 		return order.RunWorker(worker.InterruptCh())
 	},
 }
