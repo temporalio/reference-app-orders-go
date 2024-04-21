@@ -127,7 +127,7 @@ func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 	wf, err := h.temporal.ExecuteWorkflow(context.Background(),
 		client.StartWorkflowOptions{
 			TaskQueue: TaskQueue,
-			ID:        input.Reference,
+			ID:        fmt.Sprintf("Charge:%s", input.Reference),
 		},
 		Charge,
 		&input,

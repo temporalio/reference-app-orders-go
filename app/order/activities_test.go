@@ -17,7 +17,7 @@ func TestFulfillOrderZeroItems(t *testing.T) {
 	env.RegisterActivity(a.FulfillOrder)
 
 	input := order.FulfillOrderInput{
-		Items: []order.Item{},
+		Items: []*order.Item{},
 	}
 
 	future, err := env.ExecuteActivity(a.FulfillOrder, &input)
@@ -40,7 +40,7 @@ func TestFulfillOrderOneItem(t *testing.T) {
 	env.RegisterActivity(a.FulfillOrder)
 
 	input := order.FulfillOrderInput{
-		Items: []order.Item{
+		Items: []*order.Item{
 			{SKU: "Hiking Boots", Quantity: 2},
 		},
 	}
@@ -52,10 +52,10 @@ func TestFulfillOrderOneItem(t *testing.T) {
 	require.NoError(t, future.Get(&result))
 
 	expected := order.FulfillOrderResult{
-		Fulfillments: []order.Fulfillment{
+		Fulfillments: []*order.Fulfillment{
 			{
 				Location: "Warehouse A",
-				Items: []order.Item{
+				Items: []*order.Item{
 					{SKU: "Hiking Boots", Quantity: 2},
 				},
 			},
@@ -74,7 +74,7 @@ func TestFulfillOrderTwoItems(t *testing.T) {
 	env.RegisterActivity(a.FulfillOrder)
 
 	input := order.FulfillOrderInput{
-		Items: []order.Item{
+		Items: []*order.Item{
 			{SKU: "Hiking Boots", Quantity: 2},
 			{SKU: "Tennis Shoes", Quantity: 1},
 		},
@@ -87,16 +87,16 @@ func TestFulfillOrderTwoItems(t *testing.T) {
 	require.NoError(t, future.Get(&result))
 
 	expected := order.FulfillOrderResult{
-		Fulfillments: []order.Fulfillment{
+		Fulfillments: []*order.Fulfillment{
 			{
 				Location: "Warehouse A",
-				Items: []order.Item{
+				Items: []*order.Item{
 					{SKU: "Hiking Boots", Quantity: 2},
 				},
 			},
 			{
 				Location: "Warehouse B",
-				Items: []order.Item{
+				Items: []*order.Item{
 					{SKU: "Tennis Shoes", Quantity: 1},
 				},
 			},

@@ -35,7 +35,7 @@ const (
 
 // ShipmentUpdateSignal is used by a courier to update a shipment's status.
 type ShipmentUpdateSignal struct {
-	Status ShipmentStatus
+	Status ShipmentStatus `json:"status"`
 }
 
 // ShipmentResult is the result of a Shipment workflow.

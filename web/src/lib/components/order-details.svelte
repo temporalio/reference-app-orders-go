@@ -7,7 +7,7 @@
 <div class="details">
 	<h1 class="title">Order</h1>
 	{#if order}
-		{#each order.Items as item}
+		{#each order.items as item}
 			<div class="item">
 				<div class="item-header">
 					<div class="quantity">{item.quantity}</div>

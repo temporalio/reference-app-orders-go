@@ -4,7 +4,7 @@
 	import { generateOrders, order, type Order } from '$lib/stores/order';
 
 	const onItemClick = async (order: Order) => {
-		if (order.Id === $order?.Id) {
+		if (order.id === $order?.id) {
 			$order = undefined;
 		} else {
 			$order = order;
@@ -19,8 +19,9 @@
 		if ($order) {
 			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order }) });
 			// Need this for now for workflow to start pending child workflows before fetching it
+			// TODO(Rob): Add a status field to say an order is pending, or similar, so we know to refresh
 			await timeout(100);
-			goto(`/orders/${$order.Id}/status`);
+			goto(`/orders/${$order.id}/status`);
 		}
 	};
 
@@ -38,7 +39,7 @@
 			{#each orders as _order, index}
 				<button
 					class="item"
-					class:active={_order.Id === $order?.Id}
+					class:active={_order.id === $order?.id}
 					on:click={() => onItemClick(_order)}
 				>
 					<div class="name">Package {index + 1}</div>

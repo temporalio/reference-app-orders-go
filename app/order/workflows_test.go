@@ -38,7 +38,7 @@ func TestOrderWorkflow(t *testing.T) {
 	orderInput := order.OrderInput{
 		ID:         "1234",
 		CustomerID: "1234",
-		Items: []order.Item{
+		Items: []*order.Item{
 			{SKU: "test1", Quantity: 1},
 			{SKU: "test2", Quantity: 3},
 		},

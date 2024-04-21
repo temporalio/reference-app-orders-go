@@ -18,7 +18,7 @@
 	<h1 class="title">Shipments</h1>
 	{#each shipments as shipment}
 		<div class="shipment">
-			<h3 class="name">{shipment.name}</h3>
+			<h3 class="name">{shipment.id}</h3>
 			<button on:click={() => dispatchShipment(shipment)}>Dispatch</button>
 			<button on:click={() => deliverShipment(shipment)}>Deliver</button>
 		</div>
