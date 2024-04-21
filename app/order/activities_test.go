@@ -40,6 +40,7 @@ func TestFulfillOrderOneItem(t *testing.T) {
 	env.RegisterActivity(a.FulfillOrder)
 
 	input := order.FulfillOrderInput{
+		OrderID: "test",
 		Items: []*order.Item{
 			{SKU: "Hiking Boots", Quantity: 2},
 		},
@@ -54,6 +55,7 @@ func TestFulfillOrderOneItem(t *testing.T) {
 	expected := order.FulfillOrderResult{
 		Fulfillments: []*order.Fulfillment{
 			{
+				ID:       "test:1",
 				Location: "Warehouse A",
 				Items: []*order.Item{
 					{SKU: "Hiking Boots", Quantity: 2},
@@ -74,6 +76,7 @@ func TestFulfillOrderTwoItems(t *testing.T) {
 	env.RegisterActivity(a.FulfillOrder)
 
 	input := order.FulfillOrderInput{
+		OrderID: "test",
 		Items: []*order.Item{
 			{SKU: "Hiking Boots", Quantity: 2},
 			{SKU: "Tennis Shoes", Quantity: 1},
@@ -89,12 +92,14 @@ func TestFulfillOrderTwoItems(t *testing.T) {
 	expected := order.FulfillOrderResult{
 		Fulfillments: []*order.Fulfillment{
 			{
+				ID:       "test:1",
 				Location: "Warehouse A",
 				Items: []*order.Item{
 					{SKU: "Hiking Boots", Quantity: 2},
 				},
 			},
 			{
+				ID:       "test:2",
 				Location: "Warehouse B",
 				Items: []*order.Item{
 					{SKU: "Tennis Shoes", Quantity: 1},

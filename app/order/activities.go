@@ -41,22 +41,26 @@ func (a *Activities) FulfillOrder(_ context.Context, input *FulfillOrderInput) (
 
 	// Hard coded. Open discussion where this stub boundary should live.
 
+	id := 1
+
 	// First item from one warehouse
 	fulfillments = append(
 		fulfillments,
 		&Fulfillment{
-			ID:       fmt.Sprintf("%s:%d", input.OrderID, 0),
+			ID:       fmt.Sprintf("%s:%d", input.OrderID, id),
 			Items:    input.Items[0:1],
 			Location: "Warehouse A",
 		},
 	)
+
+	id++
 
 	if len(input.Items) > 1 {
 		// Second fulfillment with all other items
 		fulfillments = append(
 			fulfillments,
 			&Fulfillment{
-				ID:       fmt.Sprintf("%s:%d", input.OrderID, 1),
+				ID:       fmt.Sprintf("%s:%d", input.OrderID, id),
 				Items:    input.Items[1:len(input.Items)],
 				Location: "Warehouse B",
 			},
