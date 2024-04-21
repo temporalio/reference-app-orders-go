@@ -10,9 +10,9 @@ import (
 )
 
 type orderImpl struct {
-	ID         string
-	CustomerID string
-	Status     *OrderStatus
+	id         string
+	customerID string
+	status     *OrderStatus
 }
 
 // Order Workflow process an order from a customer.
@@ -39,13 +39,13 @@ func Order(ctx workflow.Context, input *OrderInput) (*OrderResult, error) {
 }
 
 func (o *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
-	o.ID = input.ID
-	o.CustomerID = input.CustomerID
+	o.id = input.ID
+	o.customerID = input.CustomerID
 
-	o.Status = &OrderStatus{ID: input.ID, CustomerID: input.CustomerID, Items: input.Items}
+	o.status = &OrderStatus{ID: input.ID, CustomerID: input.CustomerID, Items: input.Items}
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*OrderStatus, error) {
-		return o.Status, nil
+		return o.status, nil
 	})
 }
 
@@ -56,7 +56,7 @@ func (o *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, 
 	if err != nil {
 		return nil, err
 	}
-	o.Status.Fulfillments = fulfillments
+	o.status.Fulfillments = fulfillments
 
 	completed := 0
 	for _, f := range fulfillments {
@@ -86,7 +86,7 @@ func (o *orderImpl) fulfill(ctx workflow.Context, items []*Item) ([]*Fulfillment
 	err := workflow.ExecuteActivity(ctx,
 		a.FulfillOrder,
 		FulfillOrderInput{
-			OrderID: o.ID,
+			OrderID: o.id,
 			Items:   items,
 		},
 	).Get(ctx, &result)
@@ -114,7 +114,7 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment *Fulfil
 	f := workflow.ExecuteActivity(ctx,
 		a.Charge,
 		&ChargeInput{
-			CustomerID: o.CustomerID,
+			CustomerID: o.customerID,
 			Reference:  fulfillment.ID,
 			Items:      billingItems,
 		},
@@ -142,7 +142,7 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment *Fulfil
 	shipment := workflow.ExecuteChildWorkflow(ctx,
 		shipment.Shipment,
 		shipment.ShipmentInput{
-			OrderID: o.ID,
+			OrderID: o.id,
 			Items:   shippingItems,
 		},
 	)
