@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 
 	"github.com/spf13/cobra"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
@@ -15,35 +16,60 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "dev-server",
 	Short: "Workers and API Servers for Order/Shipment/Billing system",
-	RunE: func(*cobra.Command, []string) error {
+	Run: func(*cobra.Command, []string) {
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
 
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt)
 
-		doneCh := make(chan interface{})
-		errCh := make(chan error, 1)
+		doneCh := make(chan interface{}, 3)
+		errCh := make(chan error, 6)
 
-		go func() { errCh <- billing.RunWorker(doneCh) }()
-		go func() { errCh <- shipment.RunWorker(doneCh) }()
-		go func() { errCh <- order.RunWorker(doneCh) }()
+		var wg sync.WaitGroup
 
-		go func() { errCh <- billing.RunServer(ctx, 8082) }()
-		go func() { errCh <- order.RunServer(ctx, 8083) }()
-		go func() { errCh <- shipment.RunServer(ctx, 8081) }()
+		wg.Add(6)
+		go func() {
+			defer wg.Done()
+			errCh <- billing.RunWorker(doneCh)
+		}()
+		go func() {
+			defer wg.Done()
+			errCh <- shipment.RunWorker(doneCh)
+		}()
+		go func() {
+			defer wg.Done()
+			errCh <- order.RunWorker(doneCh)
+		}()
+
+		go func() {
+			defer wg.Done()
+			errCh <- billing.RunServer(ctx, 8082)
+		}()
+		go func() {
+			defer wg.Done()
+			errCh <- order.RunServer(ctx, 8083)
+		}()
+		go func() {
+			defer wg.Done()
+			errCh <- shipment.RunServer(ctx, 8081)
+		}()
 
 		select {
 		case <-sigCh:
 			doneCh <- true
-			cancel()
-		case err := <-errCh:
+			doneCh <- true
 			doneCh <- true
 			cancel()
-			log.Fatalf("Error: %v", err)
+		case err := <-errCh:
+			log.Printf("Error: %v\n", err)
+			doneCh <- true
+			doneCh <- true
+			doneCh <- true
+			cancel()
 		}
 
-		return nil
+		wg.Wait()
 	},
 }
 
