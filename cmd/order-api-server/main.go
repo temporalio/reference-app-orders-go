@@ -15,9 +15,10 @@ var port int
 var rootCmd = &cobra.Command{
 	Use:   "billing-api-server",
 	Short: "API Server for Billing",
-	Run: func(*cobra.Command, []string) {
+	RunE: func(*cobra.Command, []string) error {
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
 
 		errCh := make(chan error, 1)
 		go func() { errCh <- order.RunServer(ctx, port) }()
@@ -27,10 +28,13 @@ var rootCmd = &cobra.Command{
 
 		select {
 		case <-sigCh:
+			log.Printf("Interrupt signal received, shutting down...")
 			cancel()
 		case err := <-errCh:
-			log.Fatalf("Server error: %v", err)
+			return err
 		}
+
+		return nil
 	},
 }
 
