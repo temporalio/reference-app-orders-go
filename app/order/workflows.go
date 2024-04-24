@@ -163,7 +163,7 @@ func (o *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
 		var signal shipment.ShipmentStatusUpdatedSignal
 		_ = ch.Receive(ctx, &signal)
 		for _, f := range o.status.Fulfillments {
-			if f.Shipment.ID == signal.ShipmentID {
+			if f.Shipment != nil && f.Shipment.ID == signal.ShipmentID {
 				f.Shipment.Status = signal.Status
 				break
 			}
