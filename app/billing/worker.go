@@ -22,29 +22,11 @@ func RunWorker(ctx context.Context) error {
 	}
 	defer c.Close()
 
-	errCh := make(chan error, 1)
-
-	w := worker.New(c, TaskQueue, worker.Options{
-		OnFatalError: func(err error) {
-			errCh <- err
-		},
-	})
+	w := worker.New(c, TaskQueue, worker.Options{})
 
 	w.RegisterWorkflow(Charge)
 	w.RegisterActivity(GenerateInvoice)
 	w.RegisterActivity(ChargeCustomer)
 
-	err = w.Start()
-	if err != nil {
-		return err
-	}
-
-	select {
-	case err = <-errCh:
-		return err
-	case <-ctx.Done():
-		w.Stop()
-	}
-
-	return nil
+	return w.Run(temporalutil.WorkerInterruptFromContext(ctx))
 }
