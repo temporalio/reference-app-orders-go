@@ -25,9 +25,9 @@
 		</thead>
 		<tbody>
 			{#each orders as order}
-				<tr on:click={() => goto(`/orders/${order.execution.workflowId}/status`)}>
-					<td>{order.execution.workflowId}</td>
-					<td>{order.startTime}</td>
+				<tr on:click={() => goto(`/orders/${order.id}/status`)}>
+					<td>{order.id}</td>
+					<td>{order.startedAt}</td>
 				</tr>
 			{/each}
 		</tbody>

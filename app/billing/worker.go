@@ -1,6 +1,7 @@
 package billing
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
@@ -9,7 +10,7 @@ import (
 )
 
 // RunWorker runs a Workflow and Activity worker for the Billing system.
-func RunWorker(intCh <-chan interface{}) error {
+func RunWorker(ctx context.Context) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {
 		return fmt.Errorf("failed to create client options: %w", err)
@@ -27,5 +28,5 @@ func RunWorker(intCh <-chan interface{}) error {
 	w.RegisterActivity(GenerateInvoice)
 	w.RegisterActivity(ChargeCustomer)
 
-	return w.Run(intCh)
+	return w.Run(temporalutil.WorkerInterruptFromContext(ctx))
 }

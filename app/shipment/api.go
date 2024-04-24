@@ -66,7 +66,7 @@ func Router(c client.Client) *mux.Router {
 func (h *handlers) handleShipmentStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var signal ShipmentUpdateSignal
+	var signal ShipmentCarrierUpdateSignal
 
 	err := json.NewDecoder(r.Body).Decode(&signal)
 	if err != nil {
@@ -77,7 +77,7 @@ func (h *handlers) handleShipmentStatus(w http.ResponseWriter, r *http.Request) 
 
 	err = h.temporal.SignalWorkflow(context.Background(),
 		vars["id"], "",
-		ShipmentUpdateSignalName,
+		ShipmentCarrierUpdateSignalName,
 		signal,
 	)
 	if err != nil {

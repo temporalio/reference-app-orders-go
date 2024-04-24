@@ -10,55 +10,72 @@ import (
 )
 
 type orderImpl struct {
-	ID         string
-	CustomerID string
+	id         string
+	customerID string
+	status     *OrderStatus
 }
 
 // Order Workflow process an order from a customer.
 func Order(ctx workflow.Context, input *OrderInput) (*OrderResult, error) {
+	wf := new(orderImpl)
+
+	if err := wf.setup(ctx, input); err != nil {
+		return nil, err
+	}
+
+	return wf.run(ctx, input)
+}
+
+func (o *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 	if input.ID == "" {
-		return nil, fmt.Errorf("ID is required")
+		return fmt.Errorf("ID is required")
 	}
 
 	if input.CustomerID == "" {
-		return nil, fmt.Errorf("CustomerID is required")
+		return fmt.Errorf("CustomerID is required")
 	}
 
 	if len(input.Items) == 0 {
-		return nil, fmt.Errorf("order must contain items")
+		return fmt.Errorf("order must contain items")
 	}
 
-	return new(orderImpl).run(ctx, input)
+	o.id = input.ID
+	o.customerID = input.CustomerID
+	o.status = &OrderStatus{ID: input.ID, CustomerID: input.CustomerID, Items: input.Items}
+
+	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*OrderStatus, error) {
+		return o.status, nil
+	})
 }
 
 func (o *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, error) {
 	var result OrderResult
 
-	o.ID = order.ID
-	o.CustomerID = order.CustomerID
-
 	fulfillments, err := o.fulfill(ctx, order.Items)
 	if err != nil {
 		return nil, err
 	}
+	o.status.Fulfillments = fulfillments
 
 	completed := 0
-	for i, fulfillment := range fulfillments {
+	for _, f := range fulfillments {
 		workflow.Go(ctx, func(ctx workflow.Context) {
-			err := o.processFulfillment(ctx, fulfillment, i)
+			err := o.processFulfillment(ctx, f)
 			if err != nil {
-				workflow.GetLogger(ctx).Error("fulfillment error", "order", order.ID, "fulfillment", i, "error", err)
+				workflow.GetLogger(ctx).Error("fulfillment error", "order", order.ID, "fulfillment", f.ID, "error", err)
 			}
 			completed++
 		})
 	}
+
+	workflow.Go(ctx, o.handleShipmentStatusUpdates)
 
 	workflow.Await(ctx, func() bool { return completed == len(fulfillments) })
 
 	return &result, nil
 }
 
-func (o *orderImpl) fulfill(ctx workflow.Context, items []Item) ([]Fulfillment, error) {
+func (o *orderImpl) fulfill(ctx workflow.Context, items []*Item) ([]*Fulfillment, error) {
 	ctx = workflow.WithActivityOptions(ctx,
 		workflow.ActivityOptions{
 			StartToCloseTimeout: 30 * time.Second,
@@ -70,19 +87,18 @@ func (o *orderImpl) fulfill(ctx workflow.Context, items []Item) ([]Fulfillment, 
 	err := workflow.ExecuteActivity(ctx,
 		a.FulfillOrder,
 		FulfillOrderInput{
-			Items: items,
+			OrderID: o.id,
+			Items:   items,
 		},
 	).Get(ctx, &result)
 	if err != nil {
-		return []Fulfillment{}, err
+		return nil, err
 	}
 
 	return result.Fulfillments, nil
 }
 
-func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfillment, fulfillmentID int) error {
-	ref := ShipmentWorkflowID(o.ID, fulfillmentID)
-
+func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment *Fulfillment) error {
 	var billingItems []billing.Item
 	for _, i := range fulfillment.Items {
 		billingItems = append(billingItems, billing.Item{SKU: i.SKU, Quantity: i.Quantity})
@@ -99,8 +115,8 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 	f := workflow.ExecuteActivity(ctx,
 		a.Charge,
 		&ChargeInput{
-			CustomerID: o.CustomerID,
-			Reference:  ref,
+			CustomerID: o.customerID,
+			Reference:  fulfillment.ID,
 			Items:      billingItems,
 		},
 	)
@@ -110,10 +126,12 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 		return err
 	}
 
+	shipmentID := fmt.Sprintf("Shipment:%s", fulfillment.ID)
+
 	ctx = workflow.WithChildOptions(ctx,
 		workflow.ChildWorkflowOptions{
 			TaskQueue:  shipment.TaskQueue,
-			WorkflowID: ref,
+			WorkflowID: shipmentID,
 		},
 	)
 
@@ -125,10 +143,12 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 	shipment := workflow.ExecuteChildWorkflow(ctx,
 		shipment.Shipment,
 		shipment.ShipmentInput{
-			OrderID: o.ID,
+			OrderID: o.id,
 			Items:   shippingItems,
 		},
 	)
+	fulfillment.Shipment = &Shipment{ID: shipmentID}
+
 	if err := shipment.Get(ctx, nil); err != nil {
 		// TODO: On shipment failure, prompt user if they'd like to re-ship or cancel
 		return err
@@ -137,7 +157,16 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment Fulfill
 	return nil
 }
 
-// ShipmentWorkflowID creates a shipment workflow ID from an order ID.
-func ShipmentWorkflowID(orderID string, fulfillmentID int) string {
-	return fmt.Sprintf("shipment:%s:%d", orderID, fulfillmentID)
+func (o *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
+	ch := workflow.GetSignalChannel(ctx, shipment.ShipmentStatusUpdatedSignalName)
+	for {
+		var signal shipment.ShipmentStatusUpdatedSignal
+		_ = ch.Receive(ctx, &signal)
+		for _, f := range o.status.Fulfillments {
+			if f.Shipment.ID == signal.ShipmentID {
+				f.Shipment.Status = signal.Status
+				break
+			}
+		}
+	}
 }

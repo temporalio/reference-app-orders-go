@@ -18,24 +18,32 @@ type ShipmentInput struct {
 	Items   []Item
 }
 
-// ShipmentUpdateSignalName is the name for a signal to update a shipment's status.
-const ShipmentUpdateSignalName = "ShipmentUpdate"
+// ShipmentCarrierUpdateSignalName is the name for a signal to update a shipment's status from the carrier.
+const ShipmentCarrierUpdateSignalName = "ShipmentCarrierUpdate"
 
-// ShipmentStatus holds a shipment's status.
-type ShipmentStatus int
+// ShipmentStatusUpdatedSignalName is the name for a signal to notify of an update to a shipment's status.
+const ShipmentStatusUpdatedSignalName = "ShipmentStatusUpdated"
 
 const (
-	// ShipmentStatusBooked represents a shipment acknowledged by a courier, but not yet picked up
-	ShipmentStatusBooked ShipmentStatus = iota
-	// ShipmentStatusDispatched represents a shipment picked up by a courier, but not yet delivered to the customer
-	ShipmentStatusDispatched
+	// ShipmentStatusPending represents a shipment that has not yet been booked with a carrier
+	ShipmentStatusPending = "pending"
+	// ShipmentStatusBooked represents a shipment acknowledged by a carrier, but not yet picked up
+	ShipmentStatusBooked = "booked"
+	// ShipmentStatusDispatched represents a shipment picked up by a carrier, but not yet delivered to the customer
+	ShipmentStatusDispatched = "dispatched"
 	// ShipmentStatusDelivered represents a shipment that has been delivered to the customer
-	ShipmentStatusDelivered
+	ShipmentStatusDelivered = "delivered"
 )
 
-// ShipmentUpdateSignal is used by a courier to update a shipment's status.
-type ShipmentUpdateSignal struct {
-	Status ShipmentStatus
+// ShipmentCarrierUpdateSignal is used by a carrier to update a shipment's status.
+type ShipmentCarrierUpdateSignal struct {
+	Status string `json:"status"`
+}
+
+// ShipmentStatusUpdatedSignal is used to notify an order of an update to a shipment's status.
+type ShipmentStatusUpdatedSignal struct {
+	ShipmentID string `json:"shipmentID"`
+	Status     string `json:"status"`
 }
 
 // ShipmentResult is the result of a Shipment workflow.
@@ -44,16 +52,31 @@ type ShipmentResult struct {
 }
 
 type shipmentImpl struct {
-	status ShipmentStatus
+	id      string
+	orderID string
+	status  string
 }
 
 // Shipment implements the Shipment workflow.
 func Shipment(ctx workflow.Context, input *ShipmentInput) (*ShipmentResult, error) {
-	return new(shipmentImpl).run(ctx, input)
+	wf := new(shipmentImpl)
+
+	if err := wf.setup(ctx, input); err != nil {
+		return nil, err
+	}
+
+	return wf.run(ctx, input)
+}
+
+func (s *shipmentImpl) setup(ctx workflow.Context, input *ShipmentInput) error {
+	s.id = workflow.GetInfo(ctx).WorkflowExecution.ID
+	s.orderID = input.OrderID
+
+	return nil
 }
 
 func (s *shipmentImpl) run(ctx workflow.Context, input *ShipmentInput) (*ShipmentResult, error) {
-	workflow.Go(ctx, s.statusUpdater)
+	workflow.Go(ctx, s.handleCarrierUpdates)
 
 	var result ShipmentResult
 
@@ -74,54 +97,78 @@ func (s *shipmentImpl) run(ctx workflow.Context, input *ShipmentInput) (*Shipmen
 		return nil, err
 	}
 
-	err = workflow.ExecuteActivity(ctx,
-		a.ShipmentBookedNotification,
-		ShipmentBookedNotificationInput{
-			OrderID: input.OrderID,
-		},
-	).Get(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
+	s.updateStatus(ctx, ShipmentStatusBooked)
 
 	s.waitForStatus(ctx, ShipmentStatusDispatched)
-
-	err = workflow.ExecuteActivity(ctx,
-		a.ShipmentDispatchedNotification,
-		ShipmentDispatchedNotificationInput{
-			OrderID: input.OrderID,
-		},
-	).Get(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	s.waitForStatus(ctx, ShipmentStatusDelivered)
-
-	err = workflow.ExecuteActivity(ctx,
-		a.ShipmentDeliveredNotification,
-		ShipmentDeliveredNotificationInput{
-			OrderID: input.OrderID,
-		},
-	).Get(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return &result, nil
 }
 
-func (s *shipmentImpl) statusUpdater(ctx workflow.Context) {
-	var signal ShipmentUpdateSignal
+func (s *shipmentImpl) handleCarrierUpdates(ctx workflow.Context) {
+	var signal ShipmentCarrierUpdateSignal
 
-	ch := workflow.GetSignalChannel(ctx, ShipmentUpdateSignalName)
-	for {
+	ch := workflow.GetSignalChannel(ctx, ShipmentCarrierUpdateSignalName)
+	for s.status != ShipmentStatusDelivered {
 		ch.Receive(ctx, &signal)
-		s.status = signal.Status
+		s.updateStatus(ctx, signal.Status)
 	}
 }
 
-func (s *shipmentImpl) waitForStatus(ctx workflow.Context, status ShipmentStatus) {
+func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) {
+	s.status = status
+	if err := s.notifyOrderOfStatus(ctx); err != nil {
+		workflow.GetLogger(ctx).Error("failed to notify order of status", "error", err)
+	}
+	s.notifyCustomerOfStatus(ctx)
+}
+
+func (s *shipmentImpl) notifyOrderOfStatus(ctx workflow.Context) error {
+	return workflow.SignalExternalWorkflow(ctx,
+		s.orderID, "",
+		ShipmentStatusUpdatedSignalName,
+		ShipmentStatusUpdatedSignal{
+			ShipmentID: s.id,
+			Status:     s.status,
+		},
+	).Get(ctx, nil)
+}
+
+func (s *shipmentImpl) notifyCustomerOfStatus(ctx workflow.Context) error {
+	ctx = workflow.WithActivityOptions(ctx,
+		workflow.ActivityOptions{
+			StartToCloseTimeout: 5 * time.Second,
+		},
+	)
+
+	switch s.status {
+	case ShipmentStatusBooked:
+		return workflow.ExecuteActivity(ctx,
+			a.ShipmentBookedNotification,
+			ShipmentBookedNotificationInput{
+				OrderID: s.orderID,
+			},
+		).Get(ctx, nil)
+	case ShipmentStatusDispatched:
+		return workflow.ExecuteActivity(ctx,
+			a.ShipmentDispatchedNotification,
+			ShipmentDispatchedNotificationInput{
+				OrderID: s.orderID,
+			},
+		).Get(ctx, nil)
+	case ShipmentStatusDelivered:
+		return workflow.ExecuteActivity(ctx,
+			a.ShipmentDeliveredNotification,
+			ShipmentDeliveredNotificationInput{
+				OrderID: s.orderID,
+			},
+		).Get(ctx, nil)
+	}
+
+	return nil
+}
+
+func (s *shipmentImpl) waitForStatus(ctx workflow.Context, status string) {
 	workflow.Await(ctx, func() bool {
 		return s.status == status
 	})

@@ -56,8 +56,10 @@ func ChargeCustomer(ctx context.Context, input *ChargeCustomerInput) (*ChargeCus
 	var result ChargeCustomerResult
 
 	activity.GetLogger(ctx).Info(
-		"Charging Customer: %s Amount: %.2d Reference: %s",
-		input.CustomerID, input.Charge, input.Reference,
+		"Charge",
+		"Customer", input.CustomerID,
+		"Amount", input.Charge,
+		"Reference", input.Reference,
 	)
 
 	// Return success for now
