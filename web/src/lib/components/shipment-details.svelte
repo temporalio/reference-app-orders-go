@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { type Shipment } from '$lib/stores/order';
+	import { type Order, type Shipment } from '$lib/stores/order';
 
-	export let shipments: Shipment[] = [];
+	export let order: Order;
+
+	$: shipments = order?.fulfillments?.map(fulfillment => fulfillment.shipment) || [];
 
 	const dispatchShipment = async (shipment: Shipment) => {
 		const signal = { name: 'ShipmentUpdate', status: "dispatched" };
@@ -18,9 +20,14 @@
 	<h1 class="title">Shipments</h1>
 	{#each shipments as shipment}
 		<div class="shipment">
-			<h3 class="name">{shipment.id}</h3>
-			<button on:click={() => dispatchShipment(shipment)}>Dispatch</button>
-			<button on:click={() => deliverShipment(shipment)}>Deliver</button>
+			{#if shipment}
+				<h3 class="name">{shipment.id}</h3>
+				<p class="status">Status: {shipment.status}</p>
+				<button on:click={() => dispatchShipment(shipment)}>Dispatch</button>
+				<button on:click={() => deliverShipment(shipment)}>Deliver</button>
+			{:else}
+			<h3 class="name">Shipment not created</h3>
+			{/if}
 		</div>
 	{:else}
 		<div class="shipment">
@@ -36,10 +43,7 @@
 	}
 
 	.shipment {
-		display: flex;
 		width: 100%;
-		justify-content: space-between;
-		align-items: center;
 	}
 
 	.name {
@@ -51,7 +55,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2rem;
-		width: 66%;
 		background-color: white;
 		padding: 2rem;
 		align-items: start;

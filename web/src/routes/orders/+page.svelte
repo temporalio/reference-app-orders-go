@@ -25,7 +25,7 @@
 		</thead>
 		<tbody>
 			{#each orders as order}
-				<tr on:click={() => goto(`/orders/${order.id}/status`)}>
+				<tr on:click={() => goto(`/orders/${order.id}`)}>
 					<td>{order.id}</td>
 					<td>{order.startedAt}</td>
 				</tr>

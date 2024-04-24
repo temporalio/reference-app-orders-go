@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import OrderDetails from '$lib/components/order-details.svelte';
+	import FulfillmentDetails from '$lib/components/fulfillment-details.svelte';
 	import OrderStatus from '$lib/components/order-status.svelte';
 	import ShipmentDetails from '$lib/components/shipment-details.svelte';
 
-	$: ({ order, shipments } = $page.data);
+	$: ({ order } = $page.data);
 </script>
 
 <svelte:head>
@@ -15,8 +15,8 @@
 
 <section>
 	<div class="container">
-		<OrderDetails {order} />
-		<ShipmentDetails {shipments} />
+		<FulfillmentDetails {order} />
+		<ShipmentDetails {order} />
 	</div>
 	<OrderStatus {order} />
 	<div class="container submit">
