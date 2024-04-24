@@ -42,7 +42,8 @@ type OrderStatus struct {
 
 // Shipment holds the status of a Shipment.
 type Shipment struct {
-	ID string `json:"id"`
+	ID     string `json:"id"`
+	Status string `json:"status"`
 }
 
 // Fulfillment holds a set of items that will be delivered in one shipment (due to location and stock level).

@@ -4,12 +4,12 @@
 	export let shipments: Shipment[] = [];
 
 	const dispatchShipment = async (shipment: Shipment) => {
-		const signal = { name: 'ShipmentUpdate', status: 1 };
+		const signal = { name: 'ShipmentUpdate', status: "dispatched" };
 		await fetch('/api/shipment', { method: 'POST', body: JSON.stringify({ shipment, signal }) });
 	};
 
 	const deliverShipment = async (shipment: Shipment) => {
-		const signal = { name: 'ShipmentUpdate', status: 2 };
+		const signal = { name: 'ShipmentUpdate', status: "delivered" };
 		await fetch('/api/shipment', { method: 'POST', body: JSON.stringify({ shipment, signal }) });
 	};
 </script>

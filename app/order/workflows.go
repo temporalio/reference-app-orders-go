@@ -17,18 +17,6 @@ type orderImpl struct {
 
 // Order Workflow process an order from a customer.
 func Order(ctx workflow.Context, input *OrderInput) (*OrderResult, error) {
-	if input.ID == "" {
-		return nil, fmt.Errorf("ID is required")
-	}
-
-	if input.CustomerID == "" {
-		return nil, fmt.Errorf("CustomerID is required")
-	}
-
-	if len(input.Items) == 0 {
-		return nil, fmt.Errorf("order must contain items")
-	}
-
 	wf := new(orderImpl)
 
 	if err := wf.setup(ctx, input); err != nil {
@@ -39,9 +27,20 @@ func Order(ctx workflow.Context, input *OrderInput) (*OrderResult, error) {
 }
 
 func (o *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
+	if input.ID == "" {
+		return fmt.Errorf("ID is required")
+	}
+
+	if input.CustomerID == "" {
+		return fmt.Errorf("CustomerID is required")
+	}
+
+	if len(input.Items) == 0 {
+		return fmt.Errorf("order must contain items")
+	}
+
 	o.id = input.ID
 	o.customerID = input.CustomerID
-
 	o.status = &OrderStatus{ID: input.ID, CustomerID: input.CustomerID, Items: input.Items}
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*OrderStatus, error) {
@@ -68,6 +67,8 @@ func (o *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, 
 			completed++
 		})
 	}
+
+	workflow.Go(ctx, o.handleShipmentStatusUpdates)
 
 	workflow.Await(ctx, func() bool { return completed == len(fulfillments) })
 
@@ -154,4 +155,18 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment *Fulfil
 	}
 
 	return nil
+}
+
+func (o *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
+	ch := workflow.GetSignalChannel(ctx, shipment.ShipmentStatusUpdatedSignalName)
+	for {
+		var signal shipment.ShipmentStatusUpdatedSignal
+		_ = ch.Receive(ctx, &signal)
+		for _, f := range o.status.Fulfillments {
+			if f.Shipment.ID == signal.ShipmentID {
+				f.Shipment.Status = signal.Status
+				break
+			}
+		}
+	}
 }

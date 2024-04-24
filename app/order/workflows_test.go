@@ -10,6 +10,7 @@ import (
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/testsuite"
+	"go.temporal.io/sdk/workflow"
 )
 
 func TestOrderWorkflow(t *testing.T) {
@@ -19,7 +20,7 @@ func TestOrderWorkflow(t *testing.T) {
 
 	env.RegisterActivity(billing.GenerateInvoice)
 	env.RegisterActivity(billing.ChargeCustomer)
-	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
+	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
 		return nil, nil
 	})
 
