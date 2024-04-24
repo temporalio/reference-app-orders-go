@@ -1,8 +1,8 @@
 export const load = async () => {
 	const response = await fetch(
-		`http://localhost:8234/api/v1/namespaces/default/workflows?query=WorkflowType="Order"`
+		`http://localhost:8083/orders`
 	);
-	const workflows = await response.json();
+	const orders = await response.json();
 
-	return { orders: workflows.executions };
+	return { orders };
 };

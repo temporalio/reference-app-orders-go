@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
+	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 )
 
@@ -38,6 +40,12 @@ type OrderStatus struct {
 	CustomerID   string         `json:"customerId"`
 	Items        []*Item        `json:"items"`
 	Fulfillments []*Fulfillment `json:"fulfillments"`
+}
+
+// OrderListEntry is an entry in the Order list.
+type OrderListEntry struct {
+	ID        string    `json:"id"`
+	StartedAt time.Time `json:"startedAt"`
 }
 
 // Shipment holds the status of a Shipment.
@@ -104,10 +112,45 @@ func Router(c client.Client) *mux.Router {
 	r := mux.NewRouter()
 	h := handlers{temporal: c}
 
+	r.HandleFunc("/orders", h.handleOrdersList)
 	r.HandleFunc("/order", h.handleCreateOrder).Methods("POST")
 	r.HandleFunc("/order/{id}", h.handleOrderStatus)
 
 	return r
+}
+
+func (h *handlers) handleOrdersList(w http.ResponseWriter, r *http.Request) {
+	orders := []OrderListEntry{}
+	var nextPageToken []byte
+
+	for {
+		resp, err := h.temporal.ListWorkflow(r.Context(), &workflowservice.ListWorkflowExecutionsRequest{
+			PageSize:      10,
+			NextPageToken: nextPageToken,
+			Query:         "WorkflowType='Order' AND ExecutionStatus='Running'",
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		for _, e := range resp.Executions {
+			orders = append(orders, OrderListEntry{ID: e.GetExecution().GetWorkflowId(), StartedAt: e.GetStartTime().AsTime()})
+		}
+
+		if len(resp.NextPageToken) == 0 {
+			break
+		}
+
+		nextPageToken = resp.NextPageToken
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	err := json.NewEncoder(w).Encode(orders)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +177,6 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 }
 
