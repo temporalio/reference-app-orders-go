@@ -2,8 +2,6 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import FulfillmentDetails from '$lib/components/fulfillment-details.svelte';
-	import OrderStatus from '$lib/components/order-status.svelte';
-	import ShipmentDetails from '$lib/components/shipment-details.svelte';
 
 	$: ({ order } = $page.data);
 </script>
@@ -15,13 +13,11 @@
 
 <section>
 	<div class="container">
+		<h1>{order.id}</h1>
 		<FulfillmentDetails {order} />
-		<ShipmentDetails {order} />
-	</div>
-	<OrderStatus {order} />
-	<div class="container submit">
-		<button on:click={() => goto('/order/select')}>Back</button>
-		<button disabled class="disabled">Approve</button>
+		<div class="submit">
+			<button on:click={() => goto('/orders')}>Back to Orders</button>
+		</div>
 	</div>
 </section>
 
@@ -33,12 +29,17 @@
 	}
 	.container {
 		display: flex;
-		flex-direction: row;
+		flex-direction: column;
+		align-items: start;
 		gap: 2rem;
 		width: 100%;
+		background-color: white;
+		padding: 2rem;
 	}
 
 	.submit {
+		width: 100%;
+		display: flex;
 		justify-content: end;
 	}
 </style>

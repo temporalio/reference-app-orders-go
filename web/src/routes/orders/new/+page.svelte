@@ -36,7 +36,7 @@
 					class:active={_order.id === $order?.id}
 					on:click={() => onItemClick(_order)}
 				>
-					<div class="name">Package {index + 1}</div>
+					<div class="name">Order {index + 1}</div>
 				</button>
 			{/each}
 		</div>

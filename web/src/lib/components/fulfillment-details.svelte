@@ -1,16 +1,18 @@
 <script lang="ts">
 	import { type Order } from '$lib/stores/order';
+	import ShipmentStatus from './shipment-status.svelte';
 
-	export let order: Order | undefined;
+	export let order: Order;
 
 	$: fulfillments = order?.fulfillments || [];
 </script>
 
 <div class="details">
-	<h1 class="title">Order</h1>
-	{#if order}
 	{#each fulfillments as fulfillment}
-		<div class="location">{fulfillment.Location}</div>
+		<div class="fulfillment">
+			<p class="location">{fulfillment.Location}</p>
+			<ShipmentStatus shipment={fulfillment.shipment} />
+		</div>
 		{#each fulfillment.items as item}
 			<div class="item">
 				<div class="item-header">
@@ -19,18 +21,16 @@
 				</div>
 			</div>
 		{/each}
-		{/each}
-	{:else}
-		<h3>Pick order to view details</h3>
-	{/if}
+	{/each}
 </div>
 
 <style>
-	.title {
-		font-size: 1.5rem;
-		text-decoration: underline;
+	.fulfillment {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
 	}
-
 	.item {
 		display: flex;
 		flex-direction: column;
@@ -43,37 +43,19 @@
 		align-items: center;
 	}
 
-	.quantity {
-		font-size: 0.85rem;
-		border-radius: 9999px;
-		background-color: #788f9c;
-		width: 2rem;
-		height: 2rem;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		color: white;
+	.location {
+		font-size: 24px;
+		font-weight: 700;
 	}
-
 	.name {
-		font-weight: bold;
-		font-size: 1rem;
+		font-weight: 500;
 	}
 
 	.details {
 		display: flex;
 		flex-direction: column;
-		gap: 2rem;
-		width: 66%;
-		background-color: white;
-		padding: 2rem;
+		gap: 1rem;
+		width: 100%;
 		align-items: start;
-	}
-
-	.description {
-		font-size: 1rem;
-	}
-	.details .name {
-		font-size: 1.5rem;
 	}
 </style>

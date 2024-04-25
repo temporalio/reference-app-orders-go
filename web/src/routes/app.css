@@ -51,7 +51,7 @@ p {
 }
 
 a {
-	color: var(--color-theme-1);
+	color: var(--color-theme-2);
 	text-decoration: none;
 }
 
@@ -117,7 +117,7 @@ button:focus:not(:focus-visible) {
 }
 
 button {
-	padding: 1rem 2rem;
+	padding: 0.75rem 1.5rem;
 	background-color: black;
 	color: white;
 	border: none;
@@ -129,4 +129,16 @@ button.disabled {
 	background-color: #ccc;
 	color: #666;
 	cursor: not-allowed;
+}
+
+.quantity {
+	font-size: 0.85rem;
+	border-radius: 9999px;
+	background-color: #788f9c;
+	width: 2rem;
+	height: 2rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: white;
 }

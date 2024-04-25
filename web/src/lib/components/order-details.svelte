@@ -24,7 +24,6 @@
 <style>
 	.title {
 		font-size: 1.5rem;
-		text-decoration: underline;
 	}
 
 	.item {
@@ -37,18 +36,6 @@
 		display: flex;
 		gap: 1rem;
 		align-items: center;
-	}
-
-	.quantity {
-		font-size: 0.85rem;
-		border-radius: 9999px;
-		background-color: #788f9c;
-		width: 2rem;
-		height: 2rem;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		color: white;
 	}
 
 	.name {
