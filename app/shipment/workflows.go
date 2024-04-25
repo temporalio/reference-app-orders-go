@@ -78,7 +78,7 @@ func (s *shipmentImpl) setup(ctx workflow.Context, input *ShipmentInput) error {
 	s.orderID = input.OrderID
 
 	s.status = ShipmentStatusPending
-	err = workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(ShipmentStatusPending))
+	err := workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(ShipmentStatusPending))
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
 		workflow.GetLogger(ctx).Error("failed to notify order of status", "error", err)
 	}
 
-	err = workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(status))
+	err := workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(status))
 	if err != nil {
 		return err
 	}
