@@ -18,7 +18,7 @@ func TestShipmentUpdate(t *testing.T) {
 	c.On("SignalWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	r := shipment.Router(c)
-	req, err := http.NewRequest("POST", "/shipments/test/status", strings.NewReader(`{"status":1}`))
+	req, err := http.NewRequest("POST", "/shipments/test/status", strings.NewReader(`{"status":"dispatched"}`))
 	assert.NoError(t, err)
 
 	rr := httptest.NewRecorder()
@@ -32,8 +32,8 @@ func TestShipmentUpdate(t *testing.T) {
 		"SignalWorkflow",
 		mock.Anything,
 		"test", "",
-		"ShipmentUpdate",
-		shipment.ShipmentUpdateSignal{
+		"ShipmentCarrierUpdate",
+		shipment.ShipmentCarrierUpdateSignal{
 			Status: shipment.ShipmentStatusDispatched,
 		},
 	)

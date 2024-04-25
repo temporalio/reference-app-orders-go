@@ -17,10 +17,10 @@ func TestFulfillOrderZeroItems(t *testing.T) {
 	env.RegisterActivity(a.FulfillOrder)
 
 	input := order.FulfillOrderInput{
-		Items: []order.Item{},
+		Items: []*order.Item{},
 	}
 
-	future, err := env.ExecuteActivity(a.FulfillOrder, input)
+	future, err := env.ExecuteActivity(a.FulfillOrder, &input)
 	require.NoError(t, err)
 
 	var result order.FulfillOrderResult
@@ -40,22 +40,24 @@ func TestFulfillOrderOneItem(t *testing.T) {
 	env.RegisterActivity(a.FulfillOrder)
 
 	input := order.FulfillOrderInput{
-		Items: []order.Item{
+		OrderID: "test",
+		Items: []*order.Item{
 			{SKU: "Hiking Boots", Quantity: 2},
 		},
 	}
 
-	future, err := env.ExecuteActivity(a.FulfillOrder, input)
+	future, err := env.ExecuteActivity(a.FulfillOrder, &input)
 	require.NoError(t, err)
 
 	var result order.FulfillOrderResult
 	require.NoError(t, future.Get(&result))
 
 	expected := order.FulfillOrderResult{
-		Fulfillments: []order.Fulfillment{
+		Fulfillments: []*order.Fulfillment{
 			{
+				ID:       "test:1",
 				Location: "Warehouse A",
-				Items: []order.Item{
+				Items: []*order.Item{
 					{SKU: "Hiking Boots", Quantity: 2},
 				},
 			},
@@ -74,29 +76,32 @@ func TestFulfillOrderTwoItems(t *testing.T) {
 	env.RegisterActivity(a.FulfillOrder)
 
 	input := order.FulfillOrderInput{
-		Items: []order.Item{
+		OrderID: "test",
+		Items: []*order.Item{
 			{SKU: "Hiking Boots", Quantity: 2},
 			{SKU: "Tennis Shoes", Quantity: 1},
 		},
 	}
 
-	future, err := env.ExecuteActivity(a.FulfillOrder, input)
+	future, err := env.ExecuteActivity(a.FulfillOrder, &input)
 	require.NoError(t, err)
 
 	var result order.FulfillOrderResult
 	require.NoError(t, future.Get(&result))
 
 	expected := order.FulfillOrderResult{
-		Fulfillments: []order.Fulfillment{
+		Fulfillments: []*order.Fulfillment{
 			{
+				ID:       "test:1",
 				Location: "Warehouse A",
-				Items: []order.Item{
+				Items: []*order.Item{
 					{SKU: "Hiking Boots", Quantity: 2},
 				},
 			},
 			{
+				ID:       "test:2",
 				Location: "Warehouse B",
-				Items: []order.Item{
+				Items: []*order.Item{
 					{SKU: "Tennis Shoes", Quantity: 1},
 				},
 			},

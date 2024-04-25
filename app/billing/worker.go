@@ -1,4 +1,4 @@
-package shipment
+package billing
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"go.temporal.io/sdk/worker"
 )
 
-// RunWorker runs a Workflow and Activity worker for the Shipment system.
+// RunWorker runs a Workflow and Activity worker for the Billing system.
 func RunWorker(ctx context.Context) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {
@@ -24,8 +24,9 @@ func RunWorker(ctx context.Context) error {
 
 	w := worker.New(c, TaskQueue, worker.Options{})
 
-	w.RegisterWorkflow(Shipment)
-	w.RegisterActivity(&Activities{})
+	w.RegisterWorkflow(Charge)
+	w.RegisterActivity(GenerateInvoice)
+	w.RegisterActivity(ChargeCustomer)
 
 	return w.Run(temporalutil.WorkerInterruptFromContext(ctx))
 }

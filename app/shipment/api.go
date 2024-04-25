@@ -13,10 +13,14 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
+// TaskQueue is the default task queue for the Shipment system.
+const TaskQueue = "shipments"
+
 type handlers struct {
 	temporal client.Client
 }
 
+// RunServer runs a Shipment API HTTP server on the given port.
 func RunServer(ctx context.Context, port int) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
 	if err != nil {
@@ -62,7 +66,7 @@ func Router(c client.Client) *mux.Router {
 func (h *handlers) handleShipmentStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	var signal ShipmentUpdateSignal
+	var signal ShipmentCarrierUpdateSignal
 
 	err := json.NewDecoder(r.Body).Decode(&signal)
 	if err != nil {
@@ -73,7 +77,7 @@ func (h *handlers) handleShipmentStatus(w http.ResponseWriter, r *http.Request) 
 
 	err = h.temporal.SignalWorkflow(context.Background(),
 		vars["id"], "",
-		ShipmentUpdateSignalName,
+		ShipmentCarrierUpdateSignalName,
 		signal,
 	)
 	if err != nil {

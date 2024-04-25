@@ -7,12 +7,12 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
-	"github.com/temporalio/orders-reference-app-go/app/order"
+	"github.com/temporalio/orders-reference-app-go/app/billing"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "order-worker",
-	Short: "Worker for Order system",
+	Use:   "billing-worker",
+	Short: "Worker for Billing system",
 	RunE: func(*cobra.Command, []string) error {
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
@@ -27,7 +27,7 @@ var rootCmd = &cobra.Command{
 			cancel()
 		}()
 
-		return order.RunWorker(ctx)
+		return billing.RunWorker(ctx)
 	},
 }
 

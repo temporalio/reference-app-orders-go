@@ -10,27 +10,36 @@ import (
 	"github.com/temporalio/orders-reference-app-go/app/order"
 )
 
+var port int
+
 var rootCmd = &cobra.Command{
-	Use:   "order-worker",
-	Short: "Worker for Order system",
+	Use:   "billing-api-server",
+	Short: "API Server for Billing",
 	RunE: func(*cobra.Command, []string) error {
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
+		errCh := make(chan error, 1)
+		go func() { errCh <- order.RunServer(ctx, port) }()
+
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt)
 
-		go func() {
-			<-sigCh
+		select {
+		case <-sigCh:
 			log.Printf("Interrupt signal received, shutting down...")
 			cancel()
-		}()
+		case err := <-errCh:
+			return err
+		}
 
-		return order.RunWorker(ctx)
+		return nil
 	},
 }
 
 func main() {
+	rootCmd.Flags().IntVar(&port, "port", 8083, "Port to listen on")
+
 	cobra.CheckErr(rootCmd.Execute())
 }

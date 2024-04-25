@@ -8,12 +8,19 @@ export interface OrderItem extends Item {
 	quantity: number;
 }
 export interface Order {
-	OrderId: string;
-	Items: OrderItem[];
+	id: string;
+	customerId: string;
+	items: OrderItem[];
+	fulfillments?: string[];
+}
+
+export interface Fulfillment {
+	id: string;
+	shipment?: Shipment;
 }
 
 export interface Shipment {
-	name: string;
+	id: string;
 }
 
 export const order = writable<Order | undefined>();
@@ -25,8 +32,9 @@ export const generateOrders = (quantity: number): Order[] => {
 		const n = Math.floor(Math.random() * 5) + 1;
 		const selected = shuffledItems.slice(0, n);
 		orders.push({
-			OrderId: `Order-A${i + 1}-${Date.now()}`,
-			Items: selected.map((item) => ({ ...item, quantity: Math.floor(Math.random() * 3) + 1 }))
+			id: `Order-A${i + 1}-${Date.now()}`,
+			customerId: '1234',
+			items: selected.map((item) => ({ ...item, quantity: Math.floor(Math.random() * 3) + 1 }))
 		});
 	}
 	return orders;
