@@ -6,6 +6,10 @@
 
 <div class="app">
 	<header>
+		<nav>
+			<a href="/orders">Orders</a>
+			<a href="/shipments">Shipments</a>
+		</nav>
 		<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
 			<path d="M 30,30 L 70,30 L 70,70 L 30,70 Z" fill={statusColor} stroke={statusColor} />
 			<!-- Right arrow -->
@@ -98,6 +102,12 @@
 		padding: 1rem 2rem;
 		display: flex;
 		justify-content: end;
+	}
+
+	nav {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
 	}
 
 	main {

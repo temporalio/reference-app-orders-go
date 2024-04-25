@@ -13,7 +13,7 @@
 
 <section>
 	<nav>
-		<h1>Order History</h1>
+		<h1>Orders</h1>
 		<button on:click={() => goto('/orders/new')}>New Order</button>
 	</nav>
 	<table>
@@ -25,9 +25,19 @@
 		</thead>
 		<tbody>
 			{#each orders as order}
-				<tr on:click={() => goto(`/orders/${order.id}/status`)}>
-					<td>{order.id}</td>
-					<td>{order.startedAt}</td>
+				<tr>
+					<td><a href={`/orders/${order.id}`}>{order.id}</a></td>
+					<td
+						>{new Date(order.startedAt).toLocaleDateString('en-US', {
+							weekday: 'short',
+							year: 'numeric',
+							month: 'long',
+							day: 'numeric',
+							hour: 'numeric',
+							minute: 'numeric',
+							second: 'numeric'
+						})}</td
+					>
 				</tr>
 			{/each}
 		</tbody>

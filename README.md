@@ -8,3 +8,12 @@ Order processing reference application
 * `deployments/` Tools to deploy the application
 * `docs/` Documentation
 * `web/` Web interface and assets
+
+
+### To run all Worker and API services
+
+`go run ./cmd/dev-server`
+
+### To run web
+
+`cd web && pnpm i && pnpm dev`

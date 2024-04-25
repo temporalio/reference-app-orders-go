@@ -11,16 +11,19 @@ export interface Order {
 	id: string;
 	customerId: string;
 	items: OrderItem[];
-	fulfillments?: string[];
+	fulfillments?: Fulfillment[];
 }
 
 export interface Fulfillment {
 	id: string;
 	shipment?: Shipment;
+	items: OrderItem[];
+	Location: string;
 }
 
 export interface Shipment {
 	id: string;
+	status: string;
 }
 
 export const order = writable<Order | undefined>();

@@ -12,16 +12,10 @@
 	};
 
 	const onSubmit = async () => {
-		function timeout(ms: number) {
-			return new Promise((resolve) => setTimeout(resolve, ms));
-		}
-
 		if ($order) {
 			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order }) });
-			// Need this for now for workflow to start pending child workflows before fetching it
 			// TODO(Rob): Add a status field to say an order is pending, or similar, so we know to refresh
-			await timeout(100);
-			goto(`/orders/${$order.id}/status`);
+			goto(`/orders/${$order.id}`);
 		}
 	};
 
@@ -42,7 +36,7 @@
 					class:active={_order.id === $order?.id}
 					on:click={() => onItemClick(_order)}
 				>
-					<div class="name">Package {index + 1}</div>
+					<div class="name">Order {index + 1}</div>
 				</button>
 			{/each}
 		</div>
