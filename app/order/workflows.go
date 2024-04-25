@@ -59,6 +59,7 @@ func (o *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, 
 
 	completed := 0
 	for _, f := range fulfillments {
+		f := f
 		workflow.Go(ctx, func(ctx workflow.Context) {
 			err := o.processFulfillment(ctx, f)
 			if err != nil {
