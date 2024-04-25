@@ -1,6 +1,7 @@
 package shipment
 
 import (
+	"fmt"
 	"time"
 
 	"go.temporal.io/sdk/workflow"
@@ -76,10 +77,6 @@ func (s *shipmentImpl) setup(ctx workflow.Context, input *ShipmentInput) error {
 }
 
 func (s *shipmentImpl) run(ctx workflow.Context, input *ShipmentInput) (*ShipmentResult, error) {
-	workflow.Go(ctx, s.handleCarrierUpdates)
-
-	var result ShipmentResult
-
 	ctx = workflow.WithActivityOptions(ctx,
 		workflow.ActivityOptions{
 			StartToCloseTimeout: 5 * time.Second,
@@ -99,13 +96,12 @@ func (s *shipmentImpl) run(ctx workflow.Context, input *ShipmentInput) (*Shipmen
 
 	s.updateStatus(ctx, ShipmentStatusBooked)
 
-	s.waitForStatus(ctx, ShipmentStatusDispatched)
-	s.waitForStatus(ctx, ShipmentStatusDelivered)
+	err = s.handleCarrierUpdates(ctx)
 
-	return &result, nil
+	return &ShipmentResult{}, err
 }
 
-func (s *shipmentImpl) handleCarrierUpdates(ctx workflow.Context) {
+func (s *shipmentImpl) handleCarrierUpdates(ctx workflow.Context) error {
 	var signal ShipmentCarrierUpdateSignal
 
 	ch := workflow.GetSignalChannel(ctx, ShipmentCarrierUpdateSignalName)
@@ -113,14 +109,20 @@ func (s *shipmentImpl) handleCarrierUpdates(ctx workflow.Context) {
 		ch.Receive(ctx, &signal)
 		s.updateStatus(ctx, signal.Status)
 	}
+
+	return nil
 }
 
-func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) {
+func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
 	s.status = status
 	if err := s.notifyOrderOfStatus(ctx); err != nil {
+		return fmt.Errorf("failed to notify order of status: %w", err)
+	}
+	if err := s.notifyCustomerOfStatus(ctx); err != nil {
 		workflow.GetLogger(ctx).Error("failed to notify order of status", "error", err)
 	}
-	s.notifyCustomerOfStatus(ctx)
+
+	return nil
 }
 
 func (s *shipmentImpl) notifyOrderOfStatus(ctx workflow.Context) error {
