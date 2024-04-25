@@ -1,6 +1,7 @@
 package shipment
 
 import (
+	"fmt"
 	"time"
 
 	"go.temporal.io/sdk/temporal"
@@ -10,7 +11,7 @@ import (
 const TASK_QUEUE = "shipments"
 
 // Custom Search Attribute indicating current status of the shipment
-var shipmentStatusAttr = temporal.NewSearchAttributeKeyInt64("ShipmentStatus")
+var shipmentStatusAttr = temporal.NewSearchAttributeKeyKeyword("ShipmentStatus")
 
 // Item represents an item being ordered.
 // All fields are required.
@@ -40,6 +41,16 @@ const (
 	// Represents a shipment that has been delivered to the customer
 	ShipmentStatusDelivered
 )
+
+func (status ShipmentStatus) String() string {
+	names := [...]string{
+		"Booked",
+		"Dispatched",
+		"Delivered",
+	}
+
+	return names[status]
+}
 
 // ShipmentUpdateSignal is used by a courier to update a shipment's status.
 type ShipmentUpdateSignal struct {
@@ -93,13 +104,13 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 	}
 
 	// Set the initial status in the custom search attribute
-	err = workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(int64(s.status)))
+	err = workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(fmt.Sprint(s.status)))
 	if err != nil {
 		return result, err
 	}
 
 	s.waitForStatus(ctx, ShipmentStatusDispatched)
-	err = workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(int64(s.status)))
+	err = workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(fmt.Sprint(s.status)))
 	if err != nil {
 		return result, err
 	}
@@ -115,7 +126,7 @@ func (s *shipmentImpl) run(ctx workflow.Context, input ShipmentInput) (ShipmentR
 	}
 
 	s.waitForStatus(ctx, ShipmentStatusDelivered)
-	err = workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(int64(s.status)))
+	err = workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(fmt.Sprint(s.status)))
 	if err != nil {
 		return result, err
 	}
