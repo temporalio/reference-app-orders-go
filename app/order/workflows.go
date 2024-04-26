@@ -41,7 +41,7 @@ func (o *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 
 	o.id = input.ID
 	o.customerID = input.CustomerID
-	o.status = &OrderStatus{ID: input.ID, CustomerID: input.CustomerID, Items: input.Items}
+	o.status = &OrderStatus{ID: input.ID, CustomerID: input.CustomerID}
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*OrderStatus, error) {
 		return o.status, nil
@@ -54,6 +54,10 @@ func (o *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, 
 	fulfillments, err := o.fulfill(ctx, order.Items)
 	if err != nil {
 		return nil, err
+	}
+	for _, f := range fulfillments {
+		f.Shipment = &ShipmentStatus{}
+		f.Payment = &PaymentStatus{}
 	}
 	o.status.Fulfillments = fulfillments
 
@@ -113,6 +117,8 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment *Fulfil
 		},
 	)
 
+	fulfillment.Payment.Status = "pending"
+
 	f := workflow.ExecuteActivity(ctx,
 		a.Charge,
 		&ChargeInput{
@@ -123,9 +129,20 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment *Fulfil
 	)
 	err := f.Get(ctx, &charge)
 	if err != nil {
-		// TODO: Payment specific errors for business logic
-		return err
+		fulfillment.Payment.Status = "failed"
+		return nil
 	}
+
+	fulfillment.Payment.SubTotal = charge.SubTotal
+	fulfillment.Payment.Tax = charge.Tax
+	fulfillment.Payment.Shipping = charge.Shipping
+	fulfillment.Payment.Total = charge.Total
+	if !charge.Success {
+		fulfillment.Payment.Status = "failed"
+		return nil
+	}
+
+	fulfillment.Payment.Status = "succeeded"
 
 	shipmentID := fmt.Sprintf("Shipment:%s", fulfillment.ID)
 
@@ -148,7 +165,7 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment *Fulfil
 			Items:   shippingItems,
 		},
 	)
-	fulfillment.Shipment = &Shipment{ID: shipmentID}
+	fulfillment.Shipment = &ShipmentStatus{ID: shipmentID}
 
 	if err := shipment.Get(ctx, nil); err != nil {
 		// TODO: On shipment failure, prompt user if they'd like to re-ship or cancel
@@ -164,8 +181,9 @@ func (o *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
 		var signal shipment.ShipmentStatusUpdatedSignal
 		_ = ch.Receive(ctx, &signal)
 		for _, f := range o.status.Fulfillments {
-			if f.Shipment != nil && f.Shipment.ID == signal.ShipmentID {
+			if f.Shipment.ID == signal.ShipmentID {
 				f.Shipment.Status = signal.Status
+				f.Shipment.UpdatedAt = signal.UpdatedAt
 				break
 			}
 		}

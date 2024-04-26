@@ -34,6 +34,7 @@ type ChargeResult struct {
 	SubTotal         int32  `json:"subTotal"`
 	Shipping         int32  `json:"shipping"`
 	Tax              int32  `json:"tax"`
+	Total            int32  `json:"total"`
 
 	Success  bool   `json:"success"`
 	AuthCode string `json:"authCode"`
@@ -52,6 +53,7 @@ type GenerateInvoiceResult struct {
 	SubTotal         int32  `json:"subTotal"`
 	Shipping         int32  `json:"shipping"`
 	Tax              int32  `json:"tax"`
+	Total            int32  `json:"total"`
 }
 
 // ChargeCustomerInput is the input for the ChargeCustomer activity.
@@ -85,11 +87,11 @@ func RunServer(ctx context.Context, port int) error {
 	defer c.Close()
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%d", port),
+		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
 		Handler: Router(c),
 	}
 
-	fmt.Printf("Listening on http://0.0.0.0:%d\n", port)
+	fmt.Printf("Listening on http://127.0.0.1:%d\n", port)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()

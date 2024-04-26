@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
+	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 )
@@ -38,20 +39,30 @@ type OrderInput struct {
 type OrderStatus struct {
 	ID           string         `json:"id"`
 	CustomerID   string         `json:"customerId"`
-	Items        []*Item        `json:"items"`
 	Fulfillments []*Fulfillment `json:"fulfillments"`
 }
 
-// OrderListEntry is an entry in the Order list.
-type OrderListEntry struct {
+// ListOrderEntry is an entry in the Order list.
+type ListOrderEntry struct {
 	ID        string    `json:"id"`
 	StartedAt time.Time `json:"startedAt"`
 }
 
-// Shipment holds the status of a Shipment.
-type Shipment struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+// ShipmentStatus holds the status of a ShipmentStatus.
+type ShipmentStatus struct {
+	ID        string    `json:"id"`
+	Status    string    `json:"status"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// PaymentStatus holds the status of a PaymentStatus.
+type PaymentStatus struct {
+	// Status is the status of the payment.
+	Status   string `json:"status"`
+	SubTotal int32  `json:"subTotal"`
+	Tax      int32  `json:"tax"`
+	Shipping int32  `json:"shipping"`
+	Total    int32  `json:"total"`
 }
 
 // Fulfillment holds a set of items that will be delivered in one shipment (due to location and stock level).
@@ -60,8 +71,11 @@ type Fulfillment struct {
 	ID string `json:"id"`
 	// Items is the set of the items that will be part of this shipment.
 	Items []*Item `json:"items"`
+
+	// Payment stores details of the payment
+	Payment *PaymentStatus `json:"payment"`
 	// Shipment stores details of the shipment
-	Shipment *Shipment `json:"shipment"`
+	Shipment *ShipmentStatus `json:"shipment"`
 
 	// location is the address for courier pickup (the warehouse).
 	Location string
@@ -88,11 +102,11 @@ func RunServer(ctx context.Context, port int) error {
 	defer c.Close()
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%d", port),
+		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
 		Handler: Router(c),
 	}
 
-	fmt.Printf("Listening on http://0.0.0.0:%d\n", port)
+	fmt.Printf("Listening on http://127.0.0.1:%d\n", port)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
@@ -112,15 +126,15 @@ func Router(c client.Client) *mux.Router {
 	r := mux.NewRouter()
 	h := handlers{temporal: c}
 
-	r.HandleFunc("/orders", h.handleOrdersList)
-	r.HandleFunc("/order", h.handleCreateOrder).Methods("POST")
-	r.HandleFunc("/order/{id}", h.handleOrderStatus)
+	r.HandleFunc("/orders", h.handleCreateOrder).Methods("POST")
+	r.HandleFunc("/orders", h.handleListOrders).Methods("GET")
+	r.HandleFunc("/orders/{id}", h.handleGetOrder)
 
 	return r
 }
 
-func (h *handlers) handleOrdersList(w http.ResponseWriter, r *http.Request) {
-	orders := []OrderListEntry{}
+func (h *handlers) handleListOrders(w http.ResponseWriter, r *http.Request) {
+	orders := []ListOrderEntry{}
 	var nextPageToken []byte
 
 	for {
@@ -135,7 +149,7 @@ func (h *handlers) handleOrdersList(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, e := range resp.Executions {
-			orders = append(orders, OrderListEntry{ID: e.GetExecution().GetWorkflowId(), StartedAt: e.GetStartTime().AsTime()})
+			orders = append(orders, ListOrderEntry{ID: e.GetExecution().GetWorkflowId(), StartedAt: e.GetStartTime().AsTime()})
 		}
 
 		if len(resp.NextPageToken) == 0 {
@@ -180,7 +194,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *handlers) handleOrderStatus(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	var status OrderStatus
@@ -190,16 +204,25 @@ func (h *handlers) handleOrderStatus(w http.ResponseWriter, r *http.Request) {
 		StatusQuery,
 	)
 	if err != nil {
+		switch err.(type) {
+		case *serviceerror.NotFound:
+			http.Error(w, "Order not found", http.StatusNotFound)
+		default:
+			log.Println("Error: ", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if err := q.Get(&status); err != nil {
 		log.Println("Error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = q.Get(&status)
 
 	w.Header().Set("Content-Type", "application/json")
 
-	err = json.NewEncoder(w).Encode(status)
-	if err != nil {
+	if err := json.NewEncoder(w).Encode(status); err != nil {
 		log.Println("Error: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
