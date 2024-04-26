@@ -166,7 +166,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	_, err = h.temporal.ExecuteWorkflow(context.Background(),
 		client.StartWorkflowOptions{
 			TaskQueue: TaskQueue,
-			ID:        input.ID,
+			ID:        fmt.Sprintf("Order:%s", input.ID),
 		},
 		Order,
 		&input,
