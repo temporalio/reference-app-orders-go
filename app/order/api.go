@@ -48,14 +48,14 @@ type ListOrderEntry struct {
 	StartedAt time.Time `json:"startedAt"`
 }
 
-// ShipmentStatus holds the status of a ShipmentStatus.
+// ShipmentStatus holds the status of a Shipment.
 type ShipmentStatus struct {
 	ID        string    `json:"id"`
 	Status    string    `json:"status"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// PaymentStatus holds the status of a PaymentStatus.
+// PaymentStatus holds the status of a Payment.
 type PaymentStatus struct {
 	// Status is the status of the payment.
 	Status   string `json:"status"`
