@@ -29,6 +29,7 @@ func GenerateInvoice(_ context.Context, input *GenerateInvoiceInput) (*GenerateI
 		result.SubTotal += cost
 		result.Tax += tax
 		result.Shipping += calculateShippingCost(item)
+		result.Total += result.SubTotal + result.Tax + result.Shipping
 	}
 
 	return &result, nil
@@ -37,10 +38,10 @@ func GenerateInvoice(_ context.Context, input *GenerateInvoiceInput) (*GenerateI
 // calculateCosts calculates the cost and tax for an item.
 func calculateCosts(item Item) (cost int32, tax int32) {
 	// This is just a simulation, so make up a cost
-	// Normally this would looked up on the SKU
+	// Normally this would be looked up on the SKU
 	costPerUnit := rand.Int31n(10000)
-	// Return 0 tax for now
-	return costPerUnit * int32(item.Quantity), 0
+	// Return tax at 20%
+	return costPerUnit * int32(item.Quantity), costPerUnit * int32(item.Quantity) / 5
 }
 
 // calculateShippingCost calculates the shipping cost for an item.

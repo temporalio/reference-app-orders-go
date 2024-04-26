@@ -4,7 +4,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	const { order } = await request.json();
 
 	try {
-		const response = await fetch(`http://localhost:8083/order`, {
+		const response = await fetch(`http://localhost:8083/orders`, {
 			method: 'POST',
 			body: JSON.stringify(order)
 		});
