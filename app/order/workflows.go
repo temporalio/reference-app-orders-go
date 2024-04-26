@@ -161,8 +161,9 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment *Fulfil
 	shipment := workflow.ExecuteChildWorkflow(ctx,
 		shipment.Shipment,
 		shipment.ShipmentInput{
-			OrderID: o.id,
-			Items:   shippingItems,
+			OrderID:         o.id,
+			OrderWorkflowID: workflow.GetInfo(ctx).WorkflowExecution.ID,
+			Items:           shippingItems,
 		},
 	)
 	fulfillment.Shipment = &ShipmentStatus{ID: shipmentID}

@@ -15,8 +15,9 @@ type Item struct {
 
 // ShipmentInput is the input for a Shipment workflow.
 type ShipmentInput struct {
-	OrderID string
-	Items   []Item
+	OrderID         string
+	OrderWorkflowID string
+	Items           []Item
 }
 
 // ShipmentCarrierUpdateSignalName is the name for a signal to update a shipment's status from the carrier.
@@ -54,9 +55,10 @@ type ShipmentResult struct {
 }
 
 type shipmentImpl struct {
-	id      string
-	orderID string
-	status  *ShipmentStatus
+	id              string
+	orderID         string
+	orderWorkflowID string
+	status          *ShipmentStatus
 }
 
 // Shipment implements the Shipment workflow.
@@ -73,12 +75,12 @@ func Shipment(ctx workflow.Context, input *ShipmentInput) (*ShipmentResult, erro
 func (s *shipmentImpl) setup(ctx workflow.Context, input *ShipmentInput) error {
 	s.id = workflow.GetInfo(ctx).WorkflowExecution.ID
 	s.orderID = input.OrderID
+	s.orderWorkflowID = input.OrderWorkflowID
 	s.status = &ShipmentStatus{ID: s.id, Status: ShipmentStatusPending, Items: input.Items}
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*ShipmentStatus, error) {
 		return s.status, nil
 	})
-
 }
 
 func (s *shipmentImpl) run(ctx workflow.Context, input *ShipmentInput) (*ShipmentResult, error) {
@@ -132,7 +134,7 @@ func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
 
 func (s *shipmentImpl) notifyOrderOfStatus(ctx workflow.Context) error {
 	return workflow.SignalExternalWorkflow(ctx,
-		s.orderID, "",
+		s.orderWorkflowID, "",
 		ShipmentStatusUpdatedSignalName,
 		ShipmentStatusUpdatedSignal{
 			ShipmentID: s.id,
