@@ -36,7 +36,7 @@ func Charge(ctx workflow.Context, input *ChargeInput) (*ChargeResult, error) {
 		ChargeCustomerInput{
 			CustomerID: input.CustomerID,
 			Reference:  invoice.InvoiceReference,
-			Charge:     invoice.SubTotal + invoice.Tax + invoice.Shipping,
+			Charge:     invoice.Total,
 		},
 	)
 	if err := cwf.Get(ctx, &charge); err != nil {
@@ -48,6 +48,7 @@ func Charge(ctx workflow.Context, input *ChargeInput) (*ChargeResult, error) {
 		SubTotal:         invoice.SubTotal,
 		Tax:              invoice.Tax,
 		Shipping:         invoice.Shipping,
+		Total:            invoice.Total,
 
 		Success:  charge.Success,
 		AuthCode: charge.AuthCode,

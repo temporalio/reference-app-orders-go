@@ -7,8 +7,8 @@
 {#each items as item}
 	<div class="item">
 		<div class="item-header">
-			<div class="quantity">{item?.quantity ?? item?.Quantity}</div>
-			<h3 class="name">{item?.sku ?? item?.SKU}</h3>
+			<div class="quantity">{item.quantity}</div>
+			<h3 class="name">{item.sku}</h3>
 		</div>
 	</div>
 {/each}

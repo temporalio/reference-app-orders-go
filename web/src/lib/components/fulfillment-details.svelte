@@ -12,7 +12,7 @@
 <div class="details">
 	{#each fulfillments as fulfillment}
 		<div class="fulfillment">
-			<p class="location">{fulfillment.Location}</p>
+			<p class="location">{fulfillment.location}</p>
 			<ShipmentStatus shipment={fulfillment.shipment} />
 		</div>
 		<ItemDetails items={fulfillment.items} />

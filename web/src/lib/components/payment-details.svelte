@@ -2,8 +2,6 @@
 	import type { Payment } from '$lib/stores/order';
 
 	export let payment: Payment;
-
-	$: total = payment.total || payment.subTotal + payment.tax + payment.shipping;
 </script>
 
 <div>
@@ -25,7 +23,7 @@
 	</div>
 	<div class="row">
 		<p class="label">Total</p>
-		<p>{total.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+		<p>{payment.total.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
 	</div>
 </div>
 

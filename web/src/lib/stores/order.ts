@@ -20,7 +20,7 @@ export interface Fulfillment {
 	shipment?: Shipment;
 	items: OrderItem[];
 	payment?: Payment;
-	Location: string;
+	location: string;
 }
 
 export interface Shipment {
