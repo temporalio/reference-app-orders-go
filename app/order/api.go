@@ -139,11 +139,11 @@ func (h *handlers) handleListOrders(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		resp, err := h.temporal.ListWorkflow(r.Context(), &workflowservice.ListWorkflowExecutionsRequest{
-			PageSize:      10,
 			NextPageToken: nextPageToken,
 			Query:         "WorkflowType='Order' AND ExecutionStatus='Running'",
 		})
 		if err != nil {
+			log.Printf("Failed to list order workflows: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -163,6 +163,7 @@ func (h *handlers) handleListOrders(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewEncoder(w).Encode(orders)
 	if err != nil {
+		log.Printf("Failed to encode orders: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -172,7 +173,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to decode order input: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -186,7 +187,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		&input,
 	)
 	if err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to start order workflow: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -204,18 +205,17 @@ func (h *handlers) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 		StatusQuery,
 	)
 	if err != nil {
-		switch err.(type) {
-		case *serviceerror.NotFound:
+		if _, ok := err.(*serviceerror.NotFound); ok {
 			http.Error(w, "Order not found", http.StatusNotFound)
-		default:
-			log.Println("Error: ", err)
+		} else {
+			log.Printf("Failed to query order workflow: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
 
 	if err := q.Get(&status); err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to get order query result: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -223,7 +223,7 @@ func (h *handlers) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(status); err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to encode order status: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

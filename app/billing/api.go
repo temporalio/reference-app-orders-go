@@ -121,7 +121,7 @@ func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to decode charge input: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -135,7 +135,7 @@ func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 		&input,
 	)
 	if err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to start charge workflow: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -143,14 +143,14 @@ func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 	var result ChargeResult
 	err = wf.Get(r.Context(), &result)
 	if err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to get charge result: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(result)
 	if err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to encode charge result: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

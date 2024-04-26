@@ -40,9 +40,6 @@ type ListShipmentEntry struct {
 	Status string `json:"status"`
 }
 
-// saConverter is a converter for deserializing search attributes.
-var saConverter = converter.GetDefaultDataConverter()
-
 // RunServer runs a Shipment API HTTP server on the given port.
 func RunServer(ctx context.Context, port int) error {
 	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
@@ -91,7 +88,7 @@ func Router(c client.Client) *mux.Router {
 func getStatusFromSearchAttributes(sa *common.SearchAttributes) (string, error) {
 	if status, ok := sa.GetIndexedFields()["status"]; ok {
 		var s string
-		if err := saConverter.FromPayload(status, &s); err != nil {
+		if err := converter.GetDefaultDataConverter().FromPayload(status, &s); err != nil {
 			return "", err
 		}
 		return s, nil
@@ -105,11 +102,11 @@ func (h *handlers) handleListShipments(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		resp, err := h.temporal.ListWorkflow(r.Context(), &workflowservice.ListWorkflowExecutionsRequest{
-			PageSize:      10,
 			NextPageToken: nextPageToken,
 			Query:         "WorkflowType='Shipment' AND ExecutionStatus='Running'",
 		})
 		if err != nil {
+			log.Printf("Failed to list shipment workflows: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -117,7 +114,7 @@ func (h *handlers) handleListShipments(w http.ResponseWriter, r *http.Request) {
 		for _, e := range resp.Executions {
 			status, err := getStatusFromSearchAttributes(e.GetSearchAttributes())
 			if err != nil {
-				log.Default().Printf("unable to retrieve status search attribute for shipment: %v", err)
+				log.Printf("Failed to retrieve status for shipment: %v", err)
 				status = "unknown"
 			}
 
@@ -148,18 +145,17 @@ func (h *handlers) handleGetShipment(w http.ResponseWriter, r *http.Request) {
 		StatusQuery,
 	)
 	if err != nil {
-		switch err.(type) {
-		case *serviceerror.NotFound:
+		if _, ok := err.(*serviceerror.NotFound); ok {
 			http.Error(w, "Shipment not found", http.StatusNotFound)
-		default:
-			log.Println("Error: ", err)
+		} else {
+			log.Printf("Failed to query shipment workflow: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
 
 	if err := q.Get(&status); err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to get query result: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -167,7 +163,7 @@ func (h *handlers) handleGetShipment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err = json.NewEncoder(w).Encode(status); err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to encode shipment status: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -179,7 +175,7 @@ func (h *handlers) handleUpdateShipmentStatus(w http.ResponseWriter, r *http.Req
 
 	err := json.NewDecoder(r.Body).Decode(&signal)
 	if err != nil {
-		log.Println("Error: ", err)
+		log.Printf("Failed to decode shipment signal: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -190,11 +186,10 @@ func (h *handlers) handleUpdateShipmentStatus(w http.ResponseWriter, r *http.Req
 		signal,
 	)
 	if err != nil {
-		switch err.(type) {
-		case *serviceerror.NotFound:
+		if _, ok := err.(*serviceerror.NotFound); ok {
 			http.Error(w, "Shipment not found", http.StatusNotFound)
-		default:
-			log.Println("Error: ", err)
+		} else {
+			log.Printf("Failed to signal shipment workflow: %v", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 		return
