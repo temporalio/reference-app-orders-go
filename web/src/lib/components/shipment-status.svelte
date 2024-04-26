@@ -2,19 +2,22 @@
 	import { type Shipment } from '$lib/stores/order';
 
 	export let shipment: Shipment | undefined;
+	export let status = '';
 
-	const statuses = ['created', 'booked', 'dispatched', 'delivered'];
-	$: currentIndex = !shipment ? 0 : statuses.indexOf(shipment.status);
+	const activeStatuses = ['booked', 'dispatched', 'delivered'];
+	const noStatus = !shipment || !activeStatuses.includes(status || shipment?.status);
+	const statuses = noStatus ? ['pending'] : activeStatuses;
+	$: currentIndex = noStatus ? 0 : statuses.indexOf(status || shipment.status);
 </script>
 
 <ul>
-	{#each statuses as status, index}
+	{#each statuses as s, index}
 		<li
 			class:active={currentIndex === index}
 			class:completed={currentIndex > index}
 			class:incomplete={currentIndex < index}
 		>
-			{status.toUpperCase()}
+			{s.toUpperCase()}
 		</li>
 	{/each}
 </ul>
@@ -30,11 +33,12 @@
 	}
 
 	li {
-		padding: 1em 2em;
+		padding: 0.75em 1.5em;
 		position: relative;
 		background: transparent;
 		z-index: 1;
 		font-weight: 700;
+		font-size: 14px;
 	}
 
 	li::before {

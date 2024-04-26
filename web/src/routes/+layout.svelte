@@ -105,9 +105,7 @@
 	}
 
 	nav {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
+		margin-bottom: 0;
 	}
 
 	main {
