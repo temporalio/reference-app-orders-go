@@ -131,6 +131,7 @@ func (h *handlers) handleListShipments(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(orders); err != nil {
+		log.Printf("Failed to encode orders: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
