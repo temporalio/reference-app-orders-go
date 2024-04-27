@@ -8,13 +8,15 @@
 <div class="app">
 	<header>
 		<nav>
-			<h1>Tora</h1>
+			<svg width="900" height="150" viewBox="0 0 900 150">
+				<text x="120" y="100">Tora</text>
+			</svg>
 			<div class="links">
 				<a href="/orders" class:active={$page.url.pathname.includes('orders')}>Orders</a>
 				<a href="/shipments" class:active={$page.url.pathname.includes('shipments')}>Shipments</a>
 			</div>
 		</nav>
-		<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+		<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg" style="transform: scale(.5);">
 			<path d="M 30,30 L 70,30 L 70,70 L 30,70 Z" fill={statusColor} stroke={statusColor} />
 			<!-- Right arrow -->
 			<g>
@@ -114,6 +116,20 @@
 		justify-content: space-between;
 		text-transform: uppercase;
 		width: 100%;
+		height: 100px;
+	}
+
+	text {
+		font-family: "Kanit", sans-serif;
+		font-size: 5rem;
+		stroke-linejoin: round;
+		text-anchor: middle;
+		fill: var(--color-theme-2);
+		paint-order: stroke fill;
+		stroke: #000;
+		stroke-width: 16px;
+		letter-spacing: -20px;
+		font-weight: 600;
 	}
 
 	.links {
