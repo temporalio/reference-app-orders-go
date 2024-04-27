@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
@@ -28,10 +29,10 @@ type handlers struct {
 
 // ShipmentStatus holds the status of a Shipment.
 type ShipmentStatus struct {
-	ID        string `json:"id"`
-	Status    string `json:"status"`
-	UpdatedAt string `json:"updatedAt"`
-	Items     []Item `json:"items"`
+	ID        string    `json:"id"`
+	Status    string    `json:"status"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	Items     []Item    `json:"items"`
 }
 
 // ListShipmentEntry is an entry in the Shipment list.

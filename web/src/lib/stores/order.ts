@@ -5,6 +5,7 @@ export interface Item {
 	description: string;
 }
 export interface OrderItem extends Item {
+	sku: string;
 	quantity: number;
 }
 export interface Order {
@@ -18,11 +19,22 @@ export interface Fulfillment {
 	id: string;
 	shipment?: Shipment;
 	items: OrderItem[];
-	Location: string;
+	payment?: Payment;
+	location: string;
 }
 
 export interface Shipment {
 	id: string;
+	status: string;
+	items: OrderItem[];
+	updatedAt: string;
+}
+
+export interface Payment {
+	shipping: number;
+	tax: number;
+	subTotal: number;
+	total: number;
 	status: string;
 }
 
@@ -35,7 +47,7 @@ export const generateOrders = (quantity: number): Order[] => {
 		const n = Math.floor(Math.random() * 5) + 1;
 		const selected = shuffledItems.slice(0, n);
 		orders.push({
-			id: `Order-A${i + 1}-${Date.now()}`,
+			id: `A${i + 1}-${Date.now()}`,
 			customerId: '1234',
 			items: selected.map((item) => ({ ...item, quantity: Math.floor(Math.random() * 3) + 1 }))
 		});

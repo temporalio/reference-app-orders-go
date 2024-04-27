@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { type Order } from '$lib/stores/order';
+	import { items, type Order } from '$lib/stores/order';
+	import ItemDetails from './item-details.svelte';
+	import PaymentDetails from './payment-details.svelte';
 	import ShipmentStatus from './shipment-status.svelte';
 
 	export let order: Order;
@@ -10,17 +12,13 @@
 <div class="details">
 	{#each fulfillments as fulfillment}
 		<div class="fulfillment">
-			<p class="location">{fulfillment.Location}</p>
+			<p class="location">{fulfillment.location}</p>
 			<ShipmentStatus shipment={fulfillment.shipment} />
 		</div>
-		{#each fulfillment.items as item}
-			<div class="item">
-				<div class="item-header">
-					<div class="quantity">{item.quantity}</div>
-					<h3 class="name">{item.sku}</h3>
-				</div>
-			</div>
-		{/each}
+		<ItemDetails items={fulfillment.items} />
+		{#if fulfillment.payment}
+			<PaymentDetails payment={fulfillment.payment} />
+		{/if}
 	{/each}
 </div>
 
@@ -31,24 +29,9 @@
 		justify-content: space-between;
 		width: 100%;
 	}
-	.item {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.item-header {
-		display: flex;
-		gap: 1rem;
-		align-items: center;
-	}
-
 	.location {
 		font-size: 24px;
 		font-weight: 700;
-	}
-	.name {
-		font-weight: 500;
 	}
 
 	.details {

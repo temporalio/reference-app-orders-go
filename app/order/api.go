@@ -78,7 +78,7 @@ type Fulfillment struct {
 	Shipment *ShipmentStatus `json:"shipment"`
 
 	// location is the address for courier pickup (the warehouse).
-	Location string
+	Location string `json:"location"`
 }
 
 // OrderResult is the result of an Order workflow.

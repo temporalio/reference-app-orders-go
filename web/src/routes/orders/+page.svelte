@@ -20,14 +20,14 @@
 		<thead>
 			<tr>
 				<th>Order ID</th>
-				<th>Date</th>
+				<th style="text-align: right;">Order Date & Time</th>
 			</tr>
 		</thead>
 		<tbody>
 			{#each orders as order}
 				<tr>
 					<td><a href={`/orders/${order.id}`}>{order.id}</a></td>
-					<td
+					<td style="text-align: right; width: 33%;"
 						>{new Date(order.startedAt).toLocaleDateString('en-US', {
 							weekday: 'short',
 							year: 'numeric',
@@ -43,34 +43,3 @@
 		</tbody>
 	</table>
 </section>
-
-<style>
-	nav {
-		display: flex;
-		justify-content: space-between;
-		margin-bottom: 2rem;
-	}
-
-	table {
-		width: 100%;
-		border-collapse: collapse;
-	}
-
-	th,
-	td {
-		border: 1px solid black;
-		padding: 8px;
-		text-align: left;
-		background-color: black;
-		color: white;
-	}
-
-	tr {
-		cursor: pointer;
-	}
-
-	td {
-		background-color: #f2f2f2;
-		color: black;
-	}
-</style>

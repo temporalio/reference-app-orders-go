@@ -1,14 +1,18 @@
 <script>
+	import { page } from '$app/stores';
 	import './app.css';
 
-	let statusColor = '#788F9C';
+	let statusColor = '#366ee9';
 </script>
 
 <div class="app">
 	<header>
 		<nav>
-			<a href="/orders">Orders</a>
-			<a href="/shipments">Shipments</a>
+			<h1>Tora</h1>
+			<div class="links">
+				<a href="/orders" class:active={$page.url.pathname.includes('orders')}>Orders</a>
+				<a href="/shipments" class:active={$page.url.pathname.includes('shipments')}>Shipments</a>
+			</div>
 		</nav>
 		<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
 			<path d="M 30,30 L 70,30 L 70,70 L 30,70 Z" fill={statusColor} stroke={statusColor} />
@@ -105,9 +109,20 @@
 	}
 
 	nav {
+		margin-bottom: 0;
 		display: flex;
-		align-items: center;
+		justify-content: space-between;
+		text-transform: uppercase;
+		width: 100%;
+	}
+
+	.links {
+		display: flex;
 		gap: 1rem;
+	}
+
+	.active {
+		text-decoration: underline;
 	}
 
 	main {

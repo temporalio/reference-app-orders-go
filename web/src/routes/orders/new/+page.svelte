@@ -15,7 +15,7 @@
 		if ($order) {
 			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order }) });
 			// TODO(Rob): Add a status field to say an order is pending, or similar, so we know to refresh
-			goto(`/orders/${$order.id}`);
+			goto(`/orders/Order:${$order.id}`);
 		}
 	};
 
@@ -82,10 +82,11 @@
 		border-bottom: 2px solid #ccc;
 		background-color: white;
 		color: black;
+		text-transform: uppercase;
 	}
 
 	.active {
-		background-color: black;
+		background-color: var(--color-theme-1);
 		color: white;
 	}
 
@@ -101,21 +102,6 @@
 		width: 66%;
 		background-color: white;
 		padding: 2rem;
-	}
-
-	.description {
-		font-size: 1rem;
-	}
-	.details .name {
-		font-size: 1.5rem;
-	}
-
-	.submit-button {
-		padding: 1rem 2rem;
-		background-color: black;
-		color: white;
-		border: none;
-		cursor: pointer;
 	}
 
 	.disabled {

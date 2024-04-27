@@ -9,8 +9,8 @@ import (
 
 // Item represents an item being ordered.
 type Item struct {
-	SKU      string
-	Quantity int32
+	SKU      string `json:"sku"`
+	Quantity int32  `json:"quantity"`
 }
 
 // ShipmentInput is the input for a Shipment workflow.
@@ -122,6 +122,8 @@ func (s *shipmentImpl) handleCarrierUpdates(ctx workflow.Context) error {
 
 func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
 	s.status.Status = status
+	s.status.UpdatedAt = workflow.Now(ctx)
+
 	if err := s.notifyOrderOfStatus(ctx); err != nil {
 		return fmt.Errorf("failed to notify order of status: %w", err)
 	}
@@ -139,7 +141,7 @@ func (s *shipmentImpl) notifyOrderOfStatus(ctx workflow.Context) error {
 		ShipmentStatusUpdatedSignal{
 			ShipmentID: s.id,
 			Status:     s.status.Status,
-			UpdatedAt:  workflow.Now(ctx),
+			UpdatedAt:  s.status.UpdatedAt,
 		},
 	).Get(ctx, nil)
 }
