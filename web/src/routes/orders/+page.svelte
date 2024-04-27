@@ -20,14 +20,14 @@
 		<thead>
 			<tr>
 				<th>Order ID</th>
-				<th>Date</th>
+				<th style="text-align: right;">Order Date & Time</th>
 			</tr>
 		</thead>
 		<tbody>
 			{#each orders as order}
 				<tr>
 					<td><a href={`/orders/${order.id}`}>{order.id}</a></td>
-					<td
+					<td style="text-align: right; width: 33%;"
 						>{new Date(order.startedAt).toLocaleDateString('en-US', {
 							weekday: 'short',
 							year: 'numeric',

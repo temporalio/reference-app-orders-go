@@ -29,10 +29,14 @@
 	<h1>{shipment.id}</h1>
 	<ShipmentDetails {shipment} {status} />
 	<div class="action-btns">
-		<button disabled={status !== 'booked'} on:click={() => dispatchShipment(shipment)}
-			>Dispatch</button
-		><button disabled={status !== 'dispatched'} on:click={() => deliverShipment(shipment)}
-			>Deliver</button
+		<button
+			class="submit"
+			disabled={status !== 'booked'}
+			on:click={() => dispatchShipment(shipment)}>Dispatch</button
+		><button
+			class="submit"
+			disabled={status !== 'dispatched'}
+			on:click={() => deliverShipment(shipment)}>Deliver</button
 		>
 	</div>
 </div>

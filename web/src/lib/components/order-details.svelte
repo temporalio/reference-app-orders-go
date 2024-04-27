@@ -5,7 +5,6 @@
 </script>
 
 <div class="details">
-	<h1 class="title">Order</h1>
 	{#if order}
 		{#each order.items as item}
 			<div class="item">
@@ -22,10 +21,6 @@
 </div>
 
 <style>
-	.title {
-		font-size: 1.5rem;
-	}
-
 	.item {
 		display: flex;
 		flex-direction: column;
