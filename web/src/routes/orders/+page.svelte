@@ -20,7 +20,7 @@
 		<thead>
 			<tr>
 				<th>Order ID</th>
-				<th style="text-align: right;">Order Date & Time</th>
+				<th style="text-align: right;">Date & Time</th>
 			</tr>
 		</thead>
 		<tbody>

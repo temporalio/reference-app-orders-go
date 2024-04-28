@@ -4,6 +4,7 @@
 	export let items: OrderItem[];
 </script>
 
+<div class="container">
 {#each items as item}
 	<div class="item">
 		<div class="item-header">
@@ -12,8 +13,17 @@
 		</div>
 	</div>
 {/each}
+</div>
 
 <style>
+	.container {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		width: 100%;
+		align-items: start;
+	}
+	
 	.item {
 		display: flex;
 		flex-direction: column;
@@ -25,6 +35,6 @@
 		align-items: center;
 	}
 	.name {
-		font-weight: 500;
+		font-weight: 700;
 	}
 </style>

@@ -15,11 +15,10 @@
 <style>
 	.details {
 		display: flex;
-		width: 50%;
 		flex-direction: column;
 		gap: 2rem;
 		background-color: white;
-		padding: 2rem;
-		align-items: start;
+		align-items: center;
+		width: 100%;
 	}
 </style>

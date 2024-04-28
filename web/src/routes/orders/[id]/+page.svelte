@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import FulfillmentDetails from '$lib/components/fulfillment-details.svelte';
 
@@ -15,9 +14,6 @@
 	<div class="container">
 		<h1>{order.id}</h1>
 		<FulfillmentDetails {order} />
-		<div class="submit">
-			<button on:click={() => goto('/orders')}>Back to Orders</button>
-		</div>
 	</div>
 </section>
 
@@ -32,14 +28,8 @@
 		flex-direction: column;
 		align-items: start;
 		gap: 2rem;
-		width: 100%;
 		background-color: white;
 		padding: 2rem;
-	}
-
-	.submit {
-		width: 100%;
-		display: flex;
-		justify-content: end;
+		border-radius: .5rem;
 	}
 </style>
