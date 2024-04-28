@@ -11,26 +11,47 @@
 
 <div class="details">
 	{#each fulfillments as fulfillment}
+	<div class="container">
 		<div class="fulfillment">
 			<p class="location">{fulfillment.location}</p>
 			<ShipmentStatus shipment={fulfillment.shipment} />
 		</div>
 		<ItemDetails items={fulfillment.items} />
 		{#if fulfillment.payment}
-			<PaymentDetails payment={fulfillment.payment} />
+		<PaymentDetails payment={fulfillment.payment} />
 		{/if}
+		</div>
 	{/each}
 </div>
 
 <style>
+
+
+.fulfillment {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+}
+
+@media (max-width: 640px) {
 	.fulfillment {
+		flex-direction: column;
+	}
+}
+
+	.container {
 		display: flex;
-		align-items: center;
+		flex-direction: column;
+		align-items: start;
 		justify-content: space-between;
 		width: 100%;
+		border: 3px solid black;
+		padding: .5rem;
+		border-radius: .15rem;
 	}
 	.location {
-		font-size: 24px;
+		font-size: 1.5rem;
 		font-weight: 700;
 	}
 

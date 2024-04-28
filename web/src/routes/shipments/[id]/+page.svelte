@@ -47,9 +47,9 @@
 		flex-direction: column;
 		align-items: start;
 		gap: 2rem;
-		width: 100%;
 		background-color: white;
 		padding: 2rem;
+		border-radius: .5rem;
 	}
 	.action-btns {
 		display: flex;

@@ -38,7 +38,6 @@
 <style>
 	.container {
 		margin-top: 1rem;
-		font-size: 0.9rem;
 		padding: 0.55rem;
 		background-color: var(--color-bg-2);
 		border-radius: 0.15rem;
@@ -48,7 +47,7 @@
 	}
 
 	.label {
-		width: 200px;
+		width: 180px;
 		font-weight: 700;
 	}
 

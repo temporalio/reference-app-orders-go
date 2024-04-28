@@ -35,23 +35,20 @@
 
 	.name {
 		font-weight: bold;
-		font-size: 1rem;
 	}
 
 	.details {
 		display: flex;
 		flex-direction: column;
 		gap: 2rem;
-		width: 66%;
 		background-color: white;
 		padding: 2rem;
 		align-items: start;
+		width: 66vw;
 	}
-
-	.description {
-		font-size: 1rem;
-	}
-	.details .name {
-		font-size: 1.5rem;
+	@media (max-width: 640px) {
+		.details {
+			width: 100%;
+		}
 	}
 </style>

@@ -8,7 +8,7 @@
 <div class="app">
 	<header>
 		<nav>
-			<svg width="900" height="150" viewBox="0 0 900 150">
+			<svg width="400" height="150" viewBox="0 0 400 150">
 				<text x="120" y="100">Tora</text>
 			</svg>
 			<div class="links">
@@ -114,21 +114,26 @@
 		margin-bottom: 0;
 		display: flex;
 		justify-content: space-between;
-		text-transform: uppercase;
 		width: 100%;
 		height: 100px;
+		text-transform: uppercase;
+	}
+	
+	nav a {
+		letter-spacing: -1px;
+		font-weight: 600;
 	}
 
 	text {
 		font-family: "Kanit", sans-serif;
-		font-size: 5rem;
+		font-size: 4.75rem;
 		stroke-linejoin: round;
 		text-anchor: middle;
 		fill: var(--color-theme-2);
 		paint-order: stroke fill;
 		stroke: #000;
 		stroke-width: 16px;
-		letter-spacing: -20px;
+		letter-spacing: -14px;
 		font-weight: 600;
 	}
 

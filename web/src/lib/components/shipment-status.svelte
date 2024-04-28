@@ -38,7 +38,6 @@
 		background: transparent;
 		z-index: 1;
 		font-weight: 700;
-		font-size: 14px;
 	}
 
 	li::before {
@@ -82,14 +81,31 @@
 		padding-left: 4rem;
 	}
 
-	li p {
-		display: block;
-		z-index: 2;
-	}
-
 	li:last-child {
 		/* extend the last item rightward to fill the rest of the space */
 		margin-right: -2rem;
 		padding-right: 4rem;
 	}
+
+	@media (max-width: 640px) {
+		li {
+		font-size: .75rem;
+		padding: 0.5em 1em;
+	}
+
+
+	li:first-child {
+		/* extend the first item leftward to fill the rest of the space */
+		margin-left: -3rem;
+		padding-left: 2rem;
+	}
+
+	li:last-child {
+		/* extend the last item rightward to fill the rest of the space */
+		margin-right: -2rem;
+		padding-right: 3rem;
+	}
+}
+
+
 </style>
