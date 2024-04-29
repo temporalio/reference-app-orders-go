@@ -133,11 +133,8 @@ func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
 	}
 
 	err := workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(status))
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 func (s *shipmentImpl) notifyOrderOfStatus(ctx workflow.Context) error {
