@@ -1,10 +1,15 @@
 package billing
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
+	"net/http"
 
+	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
 	"go.temporal.io/sdk/activity"
 )
 
@@ -63,9 +68,51 @@ func ChargeCustomer(ctx context.Context, input *ChargeCustomerInput) (*ChargeCus
 		"Reference", input.Reference,
 	)
 
-	// Return success for now
-	result.Success = true
+	checkInput := fraudcheck.FraudCheckInput{
+		CustomerID: input.CustomerID,
+		Charge:     input.Charge,
+	}
+	jsonInput, err := json.Marshal(checkInput)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode input: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://localhost:8084/check", bytes.NewReader(jsonInput))
+	if err != nil {
+		return nil, fmt.Errorf("failed to build fraud check request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		body, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("fraud check request failed: %s: %s", http.StatusText(res.StatusCode), body)
+	}
+
+	var checkResult fraudcheck.FraudCheckResult
+
+	err = json.NewDecoder(res.Body).Decode(&checkResult)
+	if err != nil {
+		return nil, err
+	}
+
+	result.Success = checkResult.Approved
 	result.AuthCode = "1234"
+
+	activity.GetLogger(ctx).Info(
+		"Charge",
+		"Customer", input.CustomerID,
+		"Amount", input.Charge,
+		"Reference", input.Reference,
+		"Success", result.Success,
+	)
 
 	return &result, nil
 }
