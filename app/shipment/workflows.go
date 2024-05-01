@@ -21,7 +21,7 @@ type ShipmentInput struct {
 }
 
 // Custom Search Attribute indicating current status of the shipment
-var shipmentStatusAttr = temporal.NewSearchAttributeKeyKeyword("ShipmentStatus")
+var ShipmentStatusAttr = temporal.NewSearchAttributeKeyKeyword("ShipmentStatus")
 
 // ShipmentCarrierUpdateSignalName is the name for a signal to update a shipment's status from the carrier.
 const ShipmentCarrierUpdateSignalName = "ShipmentCarrierUpdate"
@@ -78,7 +78,7 @@ func (s *shipmentImpl) setup(ctx workflow.Context, input *ShipmentInput) error {
 	s.orderID = input.OrderID
 
 	s.status = ShipmentStatusPending
-	err := workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(ShipmentStatusPending))
+	err := workflow.UpsertTypedSearchAttributes(ctx, ShipmentStatusAttr.ValueSet(ShipmentStatusPending))
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
 		workflow.GetLogger(ctx).Error("failed to notify order of status", "error", err)
 	}
 
-	err := workflow.UpsertTypedSearchAttributes(ctx, shipmentStatusAttr.ValueSet(status))
+	err := workflow.UpsertTypedSearchAttributes(ctx, ShipmentStatusAttr.ValueSet(status))
 
 	return err
 }
