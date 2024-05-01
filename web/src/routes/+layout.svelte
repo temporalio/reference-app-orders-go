@@ -1,12 +1,22 @@
 <script>
+	import { page } from '$app/stores';
 	import './app.css';
 
-	let statusColor = '#788F9C';
+	let statusColor = '#366ee9';
 </script>
 
 <div class="app">
 	<header>
-		<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+		<nav>
+			<svg width="400" height="150" viewBox="0 0 400 150">
+				<text x="120" y="100">Tora</text>
+			</svg>
+			<div class="links">
+				<a href="/orders" class:active={$page.url.pathname.includes('orders')}>Orders</a>
+				<a href="/shipments" class:active={$page.url.pathname.includes('shipments')}>Shipments</a>
+			</div>
+		</nav>
+		<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg" style="transform: scale(.5);">
 			<path d="M 30,30 L 70,30 L 70,70 L 30,70 Z" fill={statusColor} stroke={statusColor} />
 			<!-- Right arrow -->
 			<g>
@@ -98,6 +108,42 @@
 		padding: 1rem 2rem;
 		display: flex;
 		justify-content: end;
+	}
+
+	nav {
+		margin-bottom: 0;
+		display: flex;
+		justify-content: space-between;
+		width: 100%;
+		height: 100px;
+		text-transform: uppercase;
+	}
+	
+	nav a {
+		letter-spacing: -1px;
+		font-weight: 600;
+	}
+
+	text {
+		font-family: "Kanit", sans-serif;
+		font-size: 4.75rem;
+		stroke-linejoin: round;
+		text-anchor: middle;
+		fill: var(--color-theme-2);
+		paint-order: stroke fill;
+		stroke: #000;
+		stroke-width: 16px;
+		letter-spacing: -14px;
+		font-weight: 600;
+	}
+
+	.links {
+		display: flex;
+		gap: 1rem;
+	}
+
+	.active {
+		text-decoration: underline;
 	}
 
 	main {

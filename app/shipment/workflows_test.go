@@ -16,7 +16,8 @@ func TestShipmentWorkflow(t *testing.T) {
 	a := &shipment.Activities{}
 
 	shipmentInput := shipment.ShipmentInput{
-		OrderID: "test",
+		OrderID:         "test",
+		OrderWorkflowID: "mywfid",
 		Items: []shipment.Item{
 			{SKU: "test1", Quantity: 1},
 			{SKU: "test2", Quantity: 3},

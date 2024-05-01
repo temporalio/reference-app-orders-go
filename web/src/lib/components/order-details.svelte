@@ -5,7 +5,6 @@
 </script>
 
 <div class="details">
-	<h1 class="title">Order</h1>
 	{#if order}
 		{#each order.items as item}
 			<div class="item">
@@ -22,11 +21,6 @@
 </div>
 
 <style>
-	.title {
-		font-size: 1.5rem;
-		text-decoration: underline;
-	}
-
 	.item {
 		display: flex;
 		flex-direction: column;
@@ -39,37 +33,22 @@
 		align-items: center;
 	}
 
-	.quantity {
-		font-size: 0.85rem;
-		border-radius: 9999px;
-		background-color: #788f9c;
-		width: 2rem;
-		height: 2rem;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		color: white;
-	}
-
 	.name {
 		font-weight: bold;
-		font-size: 1rem;
 	}
 
 	.details {
 		display: flex;
 		flex-direction: column;
 		gap: 2rem;
-		width: 66%;
 		background-color: white;
 		padding: 2rem;
 		align-items: start;
+		width: 66vw;
 	}
-
-	.description {
-		font-size: 1rem;
-	}
-	.details .name {
-		font-size: 1.5rem;
+	@media (max-width: 640px) {
+		.details {
+			width: 100%;
+		}
 	}
 </style>

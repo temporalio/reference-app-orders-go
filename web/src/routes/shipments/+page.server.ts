@@ -1,8 +1,8 @@
-export const load = async () => {
-	const response = await fetch(
-		`http://localhost:8234/api/v1/namespaces/default/workflows?query=WorkflowType="Shipment"`
-	);
-	const workflows = await response.json();
+import type { Shipment } from '$lib/stores/order';
 
-	return { shipments: workflows.executions };
+export const load = async () => {
+	const response = await fetch(`http://localhost:8081/shipments`);
+	const shipments: Shipment[] = await response.json();
+
+	return { shipments };
 };
