@@ -3,8 +3,8 @@ package temporalutil
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"go.temporal.io/api/enums/v1"
@@ -22,26 +22,26 @@ import (
 // function assumes that the application is using Temporal Cloud. In that
 // case, it reminds the user (via a message to STDERR) that they must
 // manually ensure the CSA exists.
-func EnsureSearchAttributeExists(ctx context.Context, client client.Client, attr temporal.SearchAttributeKey) error {
-	if isTemporalCloud() {
+func EnsureSearchAttributeExists(ctx context.Context, client client.Client, namespaceName string, temporalHostPort string, attr temporal.SearchAttributeKey) error {
+	if isTemporalCloud(temporalHostPort) {
 		log.Printf("Reminder: You must ensure that the '%s' Custom Search Attribute exists in your Temporal Cloud Namespace", attr.GetName())
 		return nil
+	}
+
+	if namespaceName == "" {
+		// Unlike ClientOptions creation, the AddSearchAttributes call
+		// below requires that the Namespace is explicitly specified
+		namespaceName = "default"
+		fmt.Printf("Namespace name unspecified; using value '%s'\n", namespaceName)
 	}
 
 	attribMap := map[string]enums.IndexedValueType{
 		attr.GetName(): attr.GetValueType(),
 	}
 
-	// leaving the Namespace empty in the AddSearchAttributes call
-	// results in an error, so we must set an explicit default
-	namespace := "default"
-	if value, ok := os.LookupEnv("TEMPORAL_NAMESPACE"); ok {
-		namespace = value
-	}
-
 	_, err := client.OperatorService().AddSearchAttributes(ctx,
 		&operatorservice.AddSearchAttributesRequest{
-			Namespace:        namespace,
+			Namespace:        namespaceName,
 			SearchAttributes: attribMap,
 		})
 	var deniedErr *serviceerror.PermissionDenied
@@ -64,7 +64,6 @@ func EnsureSearchAttributeExists(ctx context.Context, client client.Client, attr
 
 // returns true if the application appears to be configured for Temporal
 // Cloud, returns false otherwise
-func isTemporalCloud() bool {
-	temporalAddr := os.Getenv("TEMPORAL_ADDRESS")
-	return strings.Contains(temporalAddr, ".tmprl.cloud:")
+func isTemporalCloud(temporalHostPort string) bool {
+	return strings.Contains(temporalHostPort, ".tmprl.cloud:")
 }
