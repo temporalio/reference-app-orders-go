@@ -22,6 +22,11 @@ func RunWorker(ctx context.Context) error {
 	}
 	defer c.Close()
 
+	err = temporalutil.EnsureSearchAttributeExists(ctx, c, clientOptions.Namespace, clientOptions.HostPort, ShipmentStatusAttr)
+	if err != nil {
+		return fmt.Errorf("search attribute validation error: %v", err)
+	}
+
 	w := worker.New(c, TaskQueue, worker.Options{})
 
 	w.RegisterWorkflow(Shipment)
