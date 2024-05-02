@@ -48,7 +48,7 @@ func EnsureSearchAttributeExists(ctx context.Context, client client.Client, name
 	var alreadyErr *serviceerror.AlreadyExists
 
 	if errors.As(err, &alreadyErr) {
-		log.Printf("Search Attribute %s already exists", attr.GetName())
+		log.Printf("Required Search Attribute %s is present", attr.GetName())
 	} else if err != nil {
 		log.Fatalf("Failed to add Search Attribute %s: %v", attr, err)
 
