@@ -54,11 +54,6 @@ func RunServer(ctx context.Context, port int) error {
 	}
 	defer c.Close()
 
-	err = temporalutil.EnsureSearchAttributeExists(ctx, c, ShipmentStatusAttr)
-	if err != nil {
-		return fmt.Errorf("search attribute validation error: %v", err)
-	}
-
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
 		Handler: Router(c),
