@@ -44,17 +44,13 @@ func EnsureSearchAttributeExists(ctx context.Context, client client.Client, name
 			Namespace:        namespaceName,
 			SearchAttributes: attribMap,
 		})
-	var deniedErr *serviceerror.PermissionDenied
 	var alreadyErr *serviceerror.AlreadyExists
 
 	if errors.As(err, &alreadyErr) {
 		log.Printf("Required Search Attribute %s is present", attr.GetName())
 	} else if err != nil {
 		log.Fatalf("Failed to add Search Attribute %s: %v", attr, err)
-
-		if !errors.As(err, &deniedErr) {
-			return err
-		}
+		return err
 	} else {
 		log.Printf("Search Attribute %s added", attr.GetName())
 	}
