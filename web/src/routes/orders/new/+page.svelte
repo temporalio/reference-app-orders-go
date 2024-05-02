@@ -4,7 +4,7 @@
 	import { generateOrders, order, type Order } from '$lib/stores/order';
 
 	const onItemClick = async (order: Order) => {
-		if (order.OrderId === $order?.OrderId) {
+		if (order.id === $order?.id) {
 			$order = undefined;
 		} else {
 			$order = order;
@@ -12,15 +12,10 @@
 	};
 
 	const onSubmit = async () => {
-		function timeout(ms: number) {
-			return new Promise((resolve) => setTimeout(resolve, ms));
-		}
-
 		if ($order) {
 			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order }) });
-			// Need this for now for workflow to start pending child workflows before fetching it
-			await timeout(100);
-			goto(`/orders/${$order.OrderId}/status`);
+			// TODO(Rob): Add a status field to say an order is pending, or similar, so we know to refresh
+			goto(`/orders/Order:${$order.id}`);
 		}
 	};
 
@@ -38,17 +33,17 @@
 			{#each orders as _order, index}
 				<button
 					class="item"
-					class:active={_order.OrderId === $order?.OrderId}
+					class:active={_order.id === $order?.id}
 					on:click={() => onItemClick(_order)}
 				>
-					<div class="name">Package {index + 1}</div>
+					<div class="name">Order {index + 1}</div>
 				</button>
 			{/each}
 		</div>
 		<OrderDetails order={$order} />
 	</div>
 	<div class="container submit">
-		<button class="submit-button" disabled={!$order} class:disabled={!$order} on:click={onSubmit}
+		<button class="submit-button" disabled={!$order} on:click={onSubmit}
 			>Submit</button
 		>
 	</div>
@@ -60,7 +55,7 @@
 		flex-direction: row;
 		gap: 2rem;
 		width: 100%;
-	}
+	}	
 
 	.submit {
 		margin: 1rem 0;
@@ -69,13 +64,27 @@
 
 	.list {
 		background-color: white;
-		width: 33%;
-		height: 30rem;
+		width: 20vw;
+		height: 55vh;
 		overflow: auto;
+		border: 3px solid black;
+		border-radius: .25rem;
 	}
 
+	@media (max-width: 640px) {
+		.container {
+			flex-direction: column;
+		}
+
+		.list {
+			width: 100%;
+			height: 15rem;
+		}
+	}
+	
+
 	.item {
-		height: 2rem;
+		height: 2.25rem;
 		width: 100%;
 		display: flex;
 		flex-direction: row;
@@ -87,45 +96,15 @@
 		border-bottom: 2px solid #ccc;
 		background-color: white;
 		color: black;
+		text-transform: uppercase;
 	}
 
 	.active {
-		background-color: black;
+		background-color: var(--color-theme-2);
 		color: white;
 	}
 
 	.name {
 		font-weight: bold;
-		font-size: 1rem;
-	}
-
-	.details {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		width: 66%;
-		background-color: white;
-		padding: 2rem;
-	}
-
-	.description {
-		font-size: 1rem;
-	}
-	.details .name {
-		font-size: 1.5rem;
-	}
-
-	.submit-button {
-		padding: 1rem 2rem;
-		background-color: black;
-		color: white;
-		border: none;
-		cursor: pointer;
-	}
-
-	.disabled {
-		background-color: #ccc;
-		color: #666;
-		cursor: not-allowed;
 	}
 </style>

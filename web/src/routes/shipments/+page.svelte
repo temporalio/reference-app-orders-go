@@ -11,53 +11,23 @@
 
 <section>
 	<nav>
-		<h1>Shipment History</h1>
+		<h1>Shipments</h1>
 	</nav>
 	<table>
 		<thead>
 			<tr>
-				<th>Order ID</th>
-				<th>Date</th>
+				<th>Shipment ID</th>
+				<th>Status</th>
 			</tr>
 		</thead>
 		<tbody>
 			{#each shipments as shipment}
 				<tr>
-					<td>{shipment.execution.workflowId}</td>
-					<td>{shipment.startTime}</td>
+					<td style="width: 100%;"><a href={`/shipments/${shipment.id}`}>{shipment.id}</a></td>
+
+					<td><div class="status">{shipment.status.toUpperCase()}</div></td>
 				</tr>
 			{/each}
 		</tbody>
 	</table>
 </section>
-
-<style>
-	nav {
-		display: flex;
-		justify-content: space-between;
-		margin-bottom: 2rem;
-	}
-
-	table {
-		width: 100%;
-		border-collapse: collapse;
-	}
-
-	th,
-	td {
-		border: 1px solid black;
-		padding: 8px;
-		text-align: left;
-		background-color: black;
-		color: white;
-	}
-
-	tr {
-		cursor: pointer;
-	}
-
-	td {
-		background-color: #f2f2f2;
-		color: black;
-	}
-</style>

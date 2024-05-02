@@ -13,54 +13,33 @@
 
 <section>
 	<nav>
-		<h1>Order History</h1>
+		<h1>Orders</h1>
 		<button on:click={() => goto('/orders/new')}>New Order</button>
 	</nav>
 	<table>
 		<thead>
 			<tr>
 				<th>Order ID</th>
-				<th>Date</th>
+				<th style="text-align: right;">Date & Time</th>
 			</tr>
 		</thead>
 		<tbody>
 			{#each orders as order}
-				<tr on:click={() => goto(`/orders/${order.execution.workflowId}/status`)}>
-					<td>{order.execution.workflowId}</td>
-					<td>{order.startTime}</td>
+				<tr>
+					<td><a href={`/orders/${order.id}`}>{order.id}</a></td>
+					<td style="text-align: right; width: 33%;"
+						>{new Date(order.startedAt).toLocaleDateString('en-US', {
+							weekday: 'short',
+							year: 'numeric',
+							month: 'long',
+							day: 'numeric',
+							hour: 'numeric',
+							minute: 'numeric',
+							second: 'numeric'
+						})}</td
+					>
 				</tr>
 			{/each}
 		</tbody>
 	</table>
 </section>
-
-<style>
-	nav {
-		display: flex;
-		justify-content: space-between;
-		margin-bottom: 2rem;
-	}
-
-	table {
-		width: 100%;
-		border-collapse: collapse;
-	}
-
-	th,
-	td {
-		border: 1px solid black;
-		padding: 8px;
-		text-align: left;
-		background-color: black;
-		color: white;
-	}
-
-	tr {
-		cursor: pointer;
-	}
-
-	td {
-		background-color: #f2f2f2;
-		color: black;
-	}
-</style>
