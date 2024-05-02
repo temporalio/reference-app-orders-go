@@ -8,9 +8,9 @@
 <div class="app">
 	<header>
 		<nav>
-			<svg width="400" height="150" viewBox="0 0 400 150">
+			<a href="/"><svg width="400" height="150" viewBox="0 0 400 150">
 				<text x="120" y="100">Tora</text>
-			</svg>
+			</svg></a>
 			<div class="links">
 				<a href="/orders" class:active={$page.url.pathname.includes('orders')}>Orders</a>
 				<a href="/shipments" class:active={$page.url.pathname.includes('shipments')}>Shipments</a>
