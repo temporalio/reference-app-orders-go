@@ -21,7 +21,7 @@ type ShipmentInput struct {
 	Items           []Item
 }
 
-// Custom Search Attribute indicating current status of the shipment
+// ShipmentStatusAttr is a Custom Search Attribute that indicates current status of a shipment
 var ShipmentStatusAttr = temporal.NewSearchAttributeKeyKeyword("ShipmentStatus")
 
 // ShipmentCarrierUpdateSignalName is the name for a signal to update a shipment's status from the carrier.
