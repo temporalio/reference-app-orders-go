@@ -14,16 +14,12 @@ import (
 	"go.temporal.io/sdk/temporal"
 )
 
-// Checks for the existence of the specified Custom Search Attribute. If
-// missing, it will attempt to create it. The current implementation only
-// supports self-hosted deployments; doing this in Temporal Cloud involves
-// a significantly different approach, which we've skipped for now. If the
-// TEMPORAL_ADDRESS environment variable includes '.tmprl.cloud:', this
-// function assumes that the application is using Temporal Cloud. In that
-// case, it reminds the user (via a message to STDERR) that they must
-// manually ensure the CSA exists.
+// EnsureSearchAttributeExists checks for the existence of the specified
+// Custom Search Attribute. If missing, it will attempt to create it if
+// using a self-hosted deployment. If using Temporal Cloud, it will emit
+// a reminder stating that the user must create the attribute.
 func EnsureSearchAttributeExists(ctx context.Context, client client.Client, namespaceName string, temporalHostPort string, attr temporal.SearchAttributeKey) error {
-	if isTemporalCloud(temporalHostPort) {
+	if IsTemporalCloud(temporalHostPort) {
 		log.Printf("Reminder: You must ensure that the '%s' Custom Search Attribute exists in your Temporal Cloud Namespace", attr.GetName())
 		return nil
 	}
@@ -31,8 +27,7 @@ func EnsureSearchAttributeExists(ctx context.Context, client client.Client, name
 	if namespaceName == "" {
 		// Unlike ClientOptions creation, the AddSearchAttributes call
 		// below requires that the Namespace is explicitly specified
-		namespaceName = "default"
-		fmt.Printf("Namespace name unspecified; using value '%s'\n", namespaceName)
+		return fmt.Errorf("namespace name undefined in check for '%s' attribute", attr.GetName())
 	}
 
 	attribMap := map[string]enums.IndexedValueType{
@@ -58,8 +53,9 @@ func EnsureSearchAttributeExists(ctx context.Context, client client.Client, name
 	return nil
 }
 
-// returns true if the application appears to be configured for Temporal
-// Cloud, returns false otherwise
-func isTemporalCloud(temporalHostPort string) bool {
+// IsTemporalCloud returns true if the application appears to be
+// configured for Temporal Cloud based on the provided address,
+// or false otherwise
+func IsTemporalCloud(temporalHostPort string) bool {
 	return strings.Contains(temporalHostPort, ".tmprl.cloud:")
 }
