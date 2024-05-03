@@ -148,9 +148,7 @@ func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
 		return fmt.Errorf("failed to notify requestor of status: %w", err)
 	}
 
-	err := workflow.UpsertTypedSearchAttributes(ctx, ShipmentStatusAttr.ValueSet(status))
-
-	return err
+	return workflow.UpsertTypedSearchAttributes(ctx, ShipmentStatusAttr.ValueSet(status))
 }
 
 func (s *shipmentImpl) notifyRequestorOfStatus(ctx workflow.Context) error {

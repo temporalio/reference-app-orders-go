@@ -6,8 +6,12 @@ import (
 
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
+
+// OrderStatusAttr is a Custom Search Attribute that indicates current status of an order
+var OrderStatusAttr = temporal.NewSearchAttributeKeyKeyword("ShipmentStatus")
 
 type orderImpl struct {
 	id           string
@@ -42,6 +46,7 @@ func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 
 	wf.id = input.ID
 	wf.customerID = input.CustomerID
+	wf.updateStatus(ctx, OrderStatusPending)
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*OrderStatus, error) {
 		return &OrderStatus{
@@ -54,15 +59,13 @@ func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 }
 
 func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, error) {
-	wf.status = OrderStatusPending
-
 	err := wf.buildFulfillments(ctx, order.Items)
 	if err != nil {
 		return nil, err
 	}
 
 	if wf.customerActionRequired() {
-		wf.status = OrderStatusCustomerActionRequired
+		wf.updateStatus(ctx, OrderStatusCustomerActionRequired)
 
 		action, err := wf.waitForCustomer(ctx)
 		if err != nil {
@@ -71,8 +74,8 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 
 		switch action {
 		case CustomerActionCancel:
-			wf.status = OrderStatusCancelled
-			return &OrderResult{Status: wf.status}, nil
+			err := wf.updateStatus(ctx, OrderStatusCancelled)
+			return &OrderResult{Status: wf.status}, err
 		case CustomerActionAmend:
 			wf.removeUnavailableFulfillments()
 		default:
@@ -80,7 +83,9 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 		}
 	}
 
-	wf.status = OrderStatusProcessing
+	if err := wf.updateStatus(ctx, OrderStatusProcessing); err != nil {
+		return nil, err
+	}
 
 	workflow.Go(ctx, wf.handleShipmentStatusUpdates)
 
@@ -95,9 +100,16 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 
 	workflow.Await(ctx, func() bool { return completed == len(wf.fulfillments) })
 
-	wf.status = OrderStatusCompleted
+	if err := wf.updateStatus(ctx, OrderStatusCompleted); err != nil {
+		return nil, err
+	}
 
 	return &OrderResult{Status: wf.status}, nil
+}
+
+func (wf *orderImpl) updateStatus(ctx workflow.Context, status string) error {
+	wf.status = status
+	return workflow.UpsertTypedSearchAttributes(ctx, OrderStatusAttr.ValueSet(status))
 }
 
 func (wf *orderImpl) buildFulfillments(ctx workflow.Context, items []*Item) error {

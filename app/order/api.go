@@ -10,9 +10,11 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
+	"go.temporal.io/api/common/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/converter"
 )
 
 // TaskQueue is the default task queue for the Order system.
@@ -70,6 +72,7 @@ const (
 // ListOrderEntry is an entry in the Order list.
 type ListOrderEntry struct {
 	ID        string    `json:"id"`
+	Status    string    `json:"status"`
 	StartedAt time.Time `json:"startedAt"`
 }
 
@@ -232,7 +235,15 @@ func (h *handlers) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, e := range resp.Executions {
-			orders = append(orders, ListOrderEntry{ID: e.GetExecution().GetWorkflowId(), StartedAt: e.GetStartTime().AsTime()})
+			id := e.GetExecution().GetWorkflowId()
+			startedAt := e.GetStartTime().AsTime()
+			status, err := getStatusFromSearchAttributes(e.GetSearchAttributes())
+			if err != nil {
+				log.Printf("Failed to get order status: %v", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			orders = append(orders, ListOrderEntry{ID: id, StartedAt: startedAt, Status: status})
 		}
 
 		if len(resp.NextPageToken) == 0 {
@@ -309,4 +320,15 @@ func (h *handlers) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to encode order status: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func getStatusFromSearchAttributes(sa *common.SearchAttributes) (string, error) {
+	if status, ok := sa.GetIndexedFields()[OrderStatusAttr.GetName()]; ok {
+		var s string
+		if err := converter.GetDefaultDataConverter().FromPayload(status, &s); err != nil {
+			return "", err
+		}
+		return s, nil
+	}
+	return "unknown", nil
 }
