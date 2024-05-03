@@ -12,6 +12,7 @@ import (
 type orderImpl struct {
 	id           string
 	customerID   string
+	status       string
 	fulfillments []*Fulfillment
 }
 
@@ -45,6 +46,7 @@ func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*OrderStatus, error) {
 		return &OrderStatus{
 			ID:           wf.id,
+			Status:       wf.status,
 			CustomerID:   wf.customerID,
 			Fulfillments: wf.fulfillments,
 		}, nil
@@ -52,12 +54,16 @@ func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 }
 
 func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, error) {
+	wf.status = OrderStatusPending
+
 	err := wf.buildFulfillments(ctx, order.Items)
 	if err != nil {
 		return nil, err
 	}
 
-	if wf.customerConfirmationRequired() {
+	if wf.customerActionRequired() {
+		wf.status = OrderStatusCustomerActionRequired
+
 		action, err := wf.waitForCustomer(ctx)
 		if err != nil {
 			return nil, err
@@ -65,13 +71,16 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 
 		switch action {
 		case CustomerActionCancel:
-			return &OrderResult{Status: OrderStatusCancelled}, nil
+			wf.status = OrderStatusCancelled
+			return &OrderResult{Status: wf.status}, nil
 		case CustomerActionAmend:
 			wf.removeUnavailableFulfillments()
 		default:
 			return nil, fmt.Errorf("unhandled customer action %q", action)
 		}
 	}
+
+	wf.status = OrderStatusProcessing
 
 	workflow.Go(ctx, wf.handleShipmentStatusUpdates)
 
@@ -86,7 +95,9 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 
 	workflow.Await(ctx, func() bool { return completed == len(wf.fulfillments) })
 
-	return &OrderResult{Status: OrderStatusCompleted}, nil
+	wf.status = OrderStatusCompleted
+
+	return &OrderResult{Status: wf.status}, nil
 }
 
 func (wf *orderImpl) buildFulfillments(ctx workflow.Context, items []*Item) error {
@@ -128,7 +139,7 @@ func (wf *orderImpl) buildFulfillments(ctx workflow.Context, items []*Item) erro
 	return nil
 }
 
-func (wf *orderImpl) customerConfirmationRequired() bool {
+func (wf *orderImpl) customerActionRequired() bool {
 	for _, f := range wf.fulfillments {
 		if f.Status == FulfillmentStatusUnavailable {
 			return true
@@ -155,8 +166,8 @@ func (wf *orderImpl) waitForCustomer(ctx workflow.Context) (string, error) {
 	var signal CustomerActionSignal
 	ch.Receive(ctx, &signal)
 	switch signal.Action {
-	case CustomerActionCancel:
 	case CustomerActionAmend:
+	case CustomerActionCancel:
 	default:
 		return "", fmt.Errorf("invalid customer action %q", signal.Action)
 	}

@@ -128,6 +128,7 @@ func TestOrderAmendWithUnavailableItems(t *testing.T) {
 		assert.Equal(t, order.OrderStatus{
 			ID:         "1234",
 			CustomerID: "1234",
+			Status:     order.OrderStatusCustomerActionRequired,
 			Fulfillments: []*order.Fulfillment{
 				{
 					ID:     "1234:1",

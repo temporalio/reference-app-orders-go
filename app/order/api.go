@@ -42,10 +42,30 @@ type OrderInput struct {
 
 // OrderStatus holds the status of an Order workflow.
 type OrderStatus struct {
-	ID           string         `json:"id"`
-	CustomerID   string         `json:"customerId"`
+	ID         string `json:"id"`
+	CustomerID string `json:"customerId"`
+
+	Status string `json:"status"`
+
 	Fulfillments []*Fulfillment `json:"fulfillments"`
 }
+
+const (
+	// OrderStatusPending is the status of a pending Order.
+	OrderStatusPending = "pending"
+
+	// OrderStatusProcessing is the status of a processing Order.
+	OrderStatusProcessing = "processing"
+
+	// OrderStatusCustomerActionRequired is the status of an Order that requires customer action.
+	OrderStatusCustomerActionRequired = "customerActionRequired"
+
+	// OrderStatusCompleted is the status of a completed Order.
+	OrderStatusCompleted = "completed"
+
+	// OrderStatusCancelled is the status of a cancelled Order.
+	OrderStatusCancelled = "cancelled"
+)
 
 // ListOrderEntry is an entry in the Order list.
 type ListOrderEntry struct {
@@ -134,22 +154,18 @@ type CustomerActionSignal struct {
 	Action string `json:"action"`
 }
 
-// CustomerActionCancel is the action to cancel a Fulfillment.
-const CustomerActionCancel = "cancel"
+const (
+	// CustomerActionCancel is the action to cancel a Fulfillment.
+	CustomerActionCancel = "cancel"
 
-// CustomerActionAmend is the action to amend a Fulfillment.
-const CustomerActionAmend = "amend"
+	// CustomerActionAmend is the action to amend a Fulfillment.
+	CustomerActionAmend = "amend"
+)
 
 // OrderResult is the result of an Order workflow.
 type OrderResult struct {
 	Status string `json:"status"`
 }
-
-// OrderStatusCompleted is the status of a completed Order.
-const OrderStatusCompleted = "completed"
-
-// OrderStatusCancelled is the status of a cancelled Order.
-const OrderStatusCancelled = "cancelled"
 
 type handlers struct {
 	temporal client.Client
