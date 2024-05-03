@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -26,6 +27,11 @@ const StatusQuery = "status"
 // ShipmentWorkflowID returns the workflow ID for a Shipment.
 func ShipmentWorkflowID(id string) string {
 	return "Shipment:" + id
+}
+
+// ShipmentIDFromWorkflowID returns the ID for a Shipment from a WorkflowID.
+func ShipmentIDFromWorkflowID(id string) string {
+	return strings.TrimPrefix(id, "Shipment:")
 }
 
 type handlers struct {
@@ -124,7 +130,8 @@ func (h *handlers) handleListShipments(w http.ResponseWriter, r *http.Request) {
 				status = "unknown"
 			}
 
-			orders = append(orders, ListShipmentEntry{ID: e.GetExecution().GetWorkflowId(), Status: status})
+			id := ShipmentIDFromWorkflowID(e.GetExecution().GetWorkflowId())
+			orders = append(orders, ListShipmentEntry{ID: id, Status: status})
 		}
 
 		if len(resp.NextPageToken) == 0 {
@@ -148,11 +155,12 @@ func (h *handlers) handleGetShipment(w http.ResponseWriter, r *http.Request) {
 	var status ShipmentStatus
 
 	q, err := h.temporal.QueryWorkflow(r.Context(),
-		vars["id"], "",
+		ShipmentWorkflowID(vars["id"]), "",
 		StatusQuery,
 	)
 	if err != nil {
 		if _, ok := err.(*serviceerror.NotFound); ok {
+			log.Printf("Failed to query shipment workflow: %v", err)
 			http.Error(w, "Shipment not found", http.StatusNotFound)
 		} else {
 			log.Printf("Failed to query shipment workflow: %v", err)
@@ -188,12 +196,13 @@ func (h *handlers) handleUpdateShipmentStatus(w http.ResponseWriter, r *http.Req
 	}
 
 	err = h.temporal.SignalWorkflow(context.Background(),
-		vars["id"], "",
+		ShipmentWorkflowID(vars["id"]), "",
 		ShipmentCarrierUpdateSignalName,
 		signal,
 	)
 	if err != nil {
 		if _, ok := err.(*serviceerror.NotFound); ok {
+			log.Printf("Failed to signal shipment workflow: %v", err)
 			http.Error(w, "Shipment not found", http.StatusNotFound)
 		} else {
 			log.Printf("Failed to signal shipment workflow: %v", err)

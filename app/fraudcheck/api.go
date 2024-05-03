@@ -17,13 +17,13 @@ type FraudLimitInput struct {
 	Limit int32 `json:"limit"`
 }
 
-// FraudCheckInput is the input for the ChargeCustomer activity.
+// FraudCheckInput is the input for the check endpoint.
 type FraudCheckInput struct {
 	CustomerID string `json:"customerId"`
 	Charge     int32  `json:"charge"`
 }
 
-// FraudCheckResult is the result for the GenerateInvoice activity.
+// FraudCheckResult is the result for the check endpoint.
 type FraudCheckResult struct {
 	Approved bool `json:"approved"`
 }
@@ -72,7 +72,7 @@ func Router() *mux.Router {
 	h := handlers{customerChargeTally: make(map[string]int32)}
 
 	r.HandleFunc("/limit", h.handleSetLimit).Methods("POST")
-	r.HandleFunc("/reset", h.handleSetLimit).Methods("POST")
+	r.HandleFunc("/reset", h.handleReset).Methods("POST")
 	r.HandleFunc("/check", h.handleRunCheck).Methods("POST")
 
 	return r
