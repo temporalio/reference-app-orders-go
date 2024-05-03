@@ -23,6 +23,11 @@ const TaskQueue = "shipments"
 // StatusQuery is the name of the query to use to fetch a Shipment's status.
 const StatusQuery = "status"
 
+// ShipmentWorkflowID returns the workflow ID for a Shipment.
+func ShipmentWorkflowID(id string) string {
+	return "Shipment:" + id
+}
+
 type handlers struct {
 	temporal client.Client
 }

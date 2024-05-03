@@ -1,8 +1,8 @@
 package shipment_test
 
 import (
-	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -16,8 +16,8 @@ func TestShipmentWorkflow(t *testing.T) {
 	a := &shipment.Activities{}
 
 	shipmentInput := shipment.ShipmentInput{
-		OrderID:         "test",
-		OrderWorkflowID: "mywfid",
+		RequestorWID: "parentwid",
+		ID:           "test",
 		Items: []shipment.Item{
 			{SKU: "test1", Quantity: 1},
 			{SKU: "test2", Quantity: 3},
@@ -26,35 +26,47 @@ func TestShipmentWorkflow(t *testing.T) {
 
 	env.RegisterActivity(a.BookShipment)
 
-	env.OnActivity(a.ShipmentBookedNotification, mock.Anything, mock.Anything).Return(
-		func(_ context.Context, input *shipment.ShipmentBookedNotificationInput) error {
-			env.SignalWorkflow(
-				shipment.ShipmentCarrierUpdateSignalName,
-				shipment.ShipmentCarrierUpdateSignal{
-					Status: shipment.ShipmentStatusDispatched,
-				},
-			)
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(
+			shipment.ShipmentCarrierUpdateSignalName,
+			shipment.ShipmentCarrierUpdateSignal{
+				Status: shipment.ShipmentStatusDispatched,
+			},
+		)
+	}, time.Second*1)
 
-			return nil
-		},
-	)
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(
+			shipment.ShipmentCarrierUpdateSignalName,
+			shipment.ShipmentCarrierUpdateSignal{
+				Status: shipment.ShipmentStatusDelivered,
+			},
+		)
+	}, time.Second*2)
 
-	env.OnActivity(a.ShipmentDispatchedNotification, mock.Anything, mock.Anything).Return(
-		func(_ context.Context, input *shipment.ShipmentDispatchedNotificationInput) error {
-			env.SignalWorkflow(
-				shipment.ShipmentCarrierUpdateSignalName,
-				shipment.ShipmentCarrierUpdateSignal{
-					Status: shipment.ShipmentStatusDelivered,
-				},
-			)
+	env.OnSignalExternalWorkflow(mock.Anything,
+		"parentwid", "",
+		shipment.ShipmentStatusUpdatedSignalName,
+		mock.MatchedBy(func(arg shipment.ShipmentStatusUpdatedSignal) bool {
+			return arg.Status == shipment.ShipmentStatusBooked
+		}),
+	).Return(nil).Once()
 
-			return nil
-		},
-	)
+	env.OnSignalExternalWorkflow(mock.Anything,
+		"parentwid", "",
+		shipment.ShipmentStatusUpdatedSignalName,
+		mock.MatchedBy(func(arg shipment.ShipmentStatusUpdatedSignal) bool {
+			return arg.Status == shipment.ShipmentStatusDispatched
+		}),
+	).Return(nil).Once()
 
-	env.RegisterActivity(a.ShipmentDeliveredNotification)
-
-	env.OnSignalExternalWorkflow(mock.Anything, mock.Anything, mock.Anything, shipment.ShipmentStatusUpdatedSignalName, mock.Anything).Return(nil)
+	env.OnSignalExternalWorkflow(mock.Anything,
+		"parentwid", "",
+		shipment.ShipmentStatusUpdatedSignalName,
+		mock.MatchedBy(func(arg shipment.ShipmentStatusUpdatedSignal) bool {
+			return arg.Status == shipment.ShipmentStatusDelivered
+		}),
+	).Return(nil).Once()
 
 	env.ExecuteWorkflow(
 		shipment.Shipment,

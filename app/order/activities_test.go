@@ -14,19 +14,19 @@ func TestFulfillOrderZeroItems(t *testing.T) {
 	var a *order.Activities
 
 	env := testSuite.NewTestActivityEnvironment()
-	env.RegisterActivity(a.FulfillOrder)
+	env.RegisterActivity(a.ReserveItems)
 
-	input := order.FulfillOrderInput{
+	input := order.ReserveItemsInput{
 		Items: []*order.Item{},
 	}
 
-	future, err := env.ExecuteActivity(a.FulfillOrder, &input)
+	future, err := env.ExecuteActivity(a.ReserveItems, &input)
 	require.NoError(t, err)
 
-	var result order.FulfillOrderResult
+	var result order.ReserveItemsResult
 	require.NoError(t, future.Get(&result))
 
-	expected := order.FulfillOrderResult{}
+	expected := order.ReserveItemsResult{}
 
 	require.Equal(t, expected, result)
 }
@@ -37,26 +37,26 @@ func TestFulfillOrderOneItem(t *testing.T) {
 	var a *order.Activities
 
 	env := testSuite.NewTestActivityEnvironment()
-	env.RegisterActivity(a.FulfillOrder)
+	env.RegisterActivity(a.ReserveItems)
 
-	input := order.FulfillOrderInput{
+	input := order.ReserveItemsInput{
 		OrderID: "test",
 		Items: []*order.Item{
 			{SKU: "Hiking Boots", Quantity: 2},
 		},
 	}
 
-	future, err := env.ExecuteActivity(a.FulfillOrder, &input)
+	future, err := env.ExecuteActivity(a.ReserveItems, &input)
 	require.NoError(t, err)
 
-	var result order.FulfillOrderResult
+	var result order.ReserveItemsResult
 	require.NoError(t, future.Get(&result))
 
-	expected := order.FulfillOrderResult{
-		Fulfillments: []*order.Fulfillment{
+	expected := order.ReserveItemsResult{
+		Reservations: []*order.Reservation{
 			{
-				ID:       "test:1",
-				Location: "Warehouse A",
+				Available: true,
+				Location:  "Warehouse A",
 				Items: []*order.Item{
 					{SKU: "Hiking Boots", Quantity: 2},
 				},
@@ -73,9 +73,9 @@ func TestFulfillOrderTwoItems(t *testing.T) {
 	var a *order.Activities
 
 	env := testSuite.NewTestActivityEnvironment()
-	env.RegisterActivity(a.FulfillOrder)
+	env.RegisterActivity(a.ReserveItems)
 
-	input := order.FulfillOrderInput{
+	input := order.ReserveItemsInput{
 		OrderID: "test",
 		Items: []*order.Item{
 			{SKU: "Hiking Boots", Quantity: 2},
@@ -83,24 +83,24 @@ func TestFulfillOrderTwoItems(t *testing.T) {
 		},
 	}
 
-	future, err := env.ExecuteActivity(a.FulfillOrder, &input)
+	future, err := env.ExecuteActivity(a.ReserveItems, &input)
 	require.NoError(t, err)
 
-	var result order.FulfillOrderResult
+	var result order.ReserveItemsResult
 	require.NoError(t, future.Get(&result))
 
-	expected := order.FulfillOrderResult{
-		Fulfillments: []*order.Fulfillment{
+	expected := order.ReserveItemsResult{
+		Reservations: []*order.Reservation{
 			{
-				ID:       "test:1",
-				Location: "Warehouse A",
+				Available: true,
+				Location:  "Warehouse A",
 				Items: []*order.Item{
 					{SKU: "Hiking Boots", Quantity: 2},
 				},
 			},
 			{
-				ID:       "test:2",
-				Location: "Warehouse B",
+				Available: true,
+				Location:  "Warehouse B",
 				Items: []*order.Item{
 					{SKU: "Tennis Shoes", Quantity: 1},
 				},

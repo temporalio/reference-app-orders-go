@@ -21,6 +21,11 @@ const TaskQueue = "orders"
 // StatusQuery is the name of the query to use to fetch an Order's status.
 const StatusQuery = "status"
 
+// FulfillmentWorkflowID returns the workflow ID for a Fulfillment.
+func FulfillmentWorkflowID(id string) string {
+	return "Fulfillment:" + id
+}
+
 // Item represents an item being ordered.
 // All fields are required.
 type Item struct {
@@ -50,39 +55,101 @@ type ListOrderEntry struct {
 
 // ShipmentStatus holds the status of a Shipment.
 type ShipmentStatus struct {
-	ID        string    `json:"id"`
+	ID string `json:"id"`
+
 	Status    string    `json:"status"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // PaymentStatus holds the status of a Payment.
 type PaymentStatus struct {
-	// Status is the status of the payment.
-	Status   string `json:"status"`
-	SubTotal int32  `json:"subTotal"`
-	Tax      int32  `json:"tax"`
-	Shipping int32  `json:"shipping"`
-	Total    int32  `json:"total"`
+	SubTotal int32 `json:"subTotal"`
+	Tax      int32 `json:"tax"`
+	Shipping int32 `json:"shipping"`
+	Total    int32 `json:"total"`
+
+	Status string `json:"status"`
 }
+
+const (
+	// PaymentStatusPending is the status of a pending payment.
+	PaymentStatusPending = "pending"
+
+	// PaymentStatusSuccess is the status of a successful payment.
+	PaymentStatusSuccess = "success"
+
+	// PaymentStatusFailed is the status of a failed payment.
+	PaymentStatusFailed = "failed"
+)
 
 // Fulfillment holds a set of items that will be delivered in one shipment (due to location and stock level).
 type Fulfillment struct {
+	// OrderID is the ID of the order that this fulfillment is part of.
+	orderID string
+
+	// CustomerID is the ID of the customer that this fulfillment is for.
+	customerID string
+
 	// ID is an identifier for the fulfillment
 	ID string `json:"id"`
+
 	// Items is the set of the items that will be part of this shipment.
 	Items []*Item `json:"items"`
 
-	// Payment stores details of the payment
-	Payment *PaymentStatus `json:"payment"`
-	// Shipment stores details of the shipment
-	Shipment *ShipmentStatus `json:"shipment"`
+	// Location is the address for carrier pickup.
+	Location string `json:"location,omitempty"`
 
-	// location is the address for courier pickup (the warehouse).
-	Location string `json:"location"`
+	// Status is the status of the fulfillment, one of "unavailable", "pending", "processing", "dispatched", "delivered", "failed".
+	Status string `json:"status"`
+
+	// PaymentStatus is the status of the payment for this fulfillment.
+	Payment *PaymentStatus `json:"payment,omitempty"`
+
+	// ShipmentStatus is the status of the shipment for this fulfillment.
+	Shipment *ShipmentStatus `json:"shipment,omitempty"`
 }
 
+const (
+	// FulfillmentStatusUnavailable is the status of an unavailable Fulfillment.
+	FulfillmentStatusUnavailable = "unavailable"
+
+	// FulfillmentStatusPending is the status of a pending Fulfillment.
+	FulfillmentStatusPending = "pending"
+
+	// FulfillmentStatusProcessing is the status of a processing Fulfillment.
+	FulfillmentStatusProcessing = "processing"
+
+	// FulfillmentStatusCompleted is the status of a processing Fulfillment.
+	FulfillmentStatusCompleted = "completed"
+
+	// FulfillmentStatusFailed is the status of a failed Fulfillment.
+	FulfillmentStatusFailed = "failed"
+)
+
+// CustomerActionSignalName is the name of the signal used to send customer actions.
+const CustomerActionSignalName = "CustomerAction"
+
+// CustomerActionSignal is the signal sent to the Fulfillment workflow to indicate a customer action.
+type CustomerActionSignal struct {
+	Action string `json:"action"`
+}
+
+// CustomerActionCancel is the action to cancel a Fulfillment.
+const CustomerActionCancel = "cancel"
+
+// CustomerActionAmend is the action to amend a Fulfillment.
+const CustomerActionAmend = "amend"
+
 // OrderResult is the result of an Order workflow.
-type OrderResult struct{}
+type OrderResult struct {
+	Status string `json:"status"`
+}
+
+// OrderStatusCompleted is the status of a completed Order.
+const OrderStatusCompleted = "completed"
+
+// OrderStatusCancelled is the status of a cancelled Order.
+const OrderStatusCancelled = "cancelled"
 
 type handlers struct {
 	temporal client.Client
