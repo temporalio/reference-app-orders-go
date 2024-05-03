@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -20,6 +21,9 @@ type ShipmentInput struct {
 	ID    string
 	Items []Item
 }
+
+// ShipmentStatusAttr is a Custom Search Attribute that indicates current status of a shipment
+var ShipmentStatusAttr = temporal.NewSearchAttributeKeyKeyword("ShipmentStatus")
 
 // ShipmentCarrierUpdateSignalName is the name for a signal to update a shipment's status from the carrier.
 const ShipmentCarrierUpdateSignalName = "ShipmentCarrierUpdate"
@@ -78,6 +82,11 @@ func (s *shipmentImpl) setup(ctx workflow.Context, input *ShipmentInput) error {
 	s.requestorWID = input.RequestorWID
 	s.id = input.ID
 	s.status = ShipmentStatusPending
+
+	err := workflow.UpsertTypedSearchAttributes(ctx, ShipmentStatusAttr.ValueSet(ShipmentStatusPending))
+	if err != nil {
+		return err
+	}
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*ShipmentStatus, error) {
 		return &ShipmentStatus{
@@ -139,7 +148,9 @@ func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
 		return fmt.Errorf("failed to notify requestor of status: %w", err)
 	}
 
-	return nil
+	err := workflow.UpsertTypedSearchAttributes(ctx, ShipmentStatusAttr.ValueSet(status))
+
+	return err
 }
 
 func (s *shipmentImpl) notifyRequestorOfStatus(ctx workflow.Context) error {

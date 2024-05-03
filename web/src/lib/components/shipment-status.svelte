@@ -89,23 +89,20 @@
 
 	@media (max-width: 640px) {
 		li {
-		font-size: .75rem;
-		padding: 0.5em 1em;
+			font-size: 0.75rem;
+			padding: 0.5em 1em;
+		}
+
+		li:first-child {
+			/* extend the first item leftward to fill the rest of the space */
+			margin-left: -3rem;
+			padding-left: 2rem;
+		}
+
+		li:last-child {
+			/* extend the last item rightward to fill the rest of the space */
+			margin-right: -2rem;
+			padding-right: 3rem;
+		}
 	}
-
-
-	li:first-child {
-		/* extend the first item leftward to fill the rest of the space */
-		margin-left: -3rem;
-		padding-left: 2rem;
-	}
-
-	li:last-child {
-		/* extend the last item rightward to fill the rest of the space */
-		margin-right: -2rem;
-		padding-right: 3rem;
-	}
-}
-
-
 </style>

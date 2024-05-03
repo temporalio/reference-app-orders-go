@@ -98,7 +98,7 @@ func Router(c client.Client) *mux.Router {
 }
 
 func getStatusFromSearchAttributes(sa *common.SearchAttributes) (string, error) {
-	if status, ok := sa.GetIndexedFields()["status"]; ok {
+	if status, ok := sa.GetIndexedFields()[ShipmentStatusAttr.GetName()]; ok {
 		var s string
 		if err := converter.GetDefaultDataConverter().FromPayload(status, &s); err != nil {
 			return "", err

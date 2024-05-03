@@ -5,14 +5,14 @@
 </script>
 
 <div class="container">
-{#each items as item}
-	<div class="item">
-		<div class="item-header">
-			<div class="quantity">{item.quantity}</div>
-			<h3 class="name">{item.sku}</h3>
+	{#each items as item}
+		<div class="item">
+			<div class="item-header">
+				<div class="quantity">{item.quantity}</div>
+				<h3 class="name">{item.sku}</h3>
+			</div>
 		</div>
-	</div>
-{/each}
+	{/each}
 </div>
 
 <style>
@@ -23,7 +23,7 @@
 		width: 100%;
 		align-items: start;
 	}
-	
+
 	.item {
 		display: flex;
 		flex-direction: column;

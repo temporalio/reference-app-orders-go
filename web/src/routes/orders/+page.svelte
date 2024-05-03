@@ -19,7 +19,7 @@
 	<table>
 		<thead>
 			<tr>
-				<th>Order ID</th>
+				<th>ID</th>
 				<th style="text-align: right;">Date & Time</th>
 			</tr>
 		</thead>
@@ -38,6 +38,11 @@
 							second: 'numeric'
 						})}</td
 					>
+				</tr>
+			{:else}
+				<tr>
+					<td>No Active Orders</td>
+					<td />
 				</tr>
 			{/each}
 		</tbody>
