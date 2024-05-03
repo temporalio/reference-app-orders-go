@@ -32,7 +32,6 @@ body {
 		linear-gradient(180deg, var(--color-bg-0) 0%, var(--color-bg-1) 15%, var(--color-bg-2) 50%);
 }
 
-
 h1,
 h2,
 p {
@@ -159,6 +158,7 @@ tr {
 	display: table-row;
 	vertical-align: inherit;
 	border-color: inherit;
+	height: 34px;
 }
 th,
 td {

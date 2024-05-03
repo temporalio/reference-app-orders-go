@@ -16,7 +16,7 @@
 	<table>
 		<thead>
 			<tr>
-				<th>Shipment ID</th>
+				<th>ID</th>
 				<th>Status</th>
 			</tr>
 		</thead>
@@ -26,6 +26,11 @@
 					<td style="width: 100%;"><a href={`/shipments/${shipment.id}`}>{shipment.id}</a></td>
 
 					<td><div class="status">{shipment.status.toUpperCase()}</div></td>
+				</tr>
+			{:else}
+				<tr>
+					<td>No Active Shipments</td>
+					<td />
 				</tr>
 			{/each}
 		</tbody>
