@@ -36,7 +36,7 @@ type ReserveItemsResult struct {
 	Reservations []*Reservation
 }
 
-// ReserveItems creates finds items to satisfy an order. It returns a list of reservations for the items.
+// ReserveItems reserves items to satisfy an order. It returns a list of reservations for the items.
 // Any unavailable items will be returned in a Reservation with Available set to false.
 // In a real system this would involve an inventory database of some kind.
 // For our purposes we just split orders arbitrarily.
