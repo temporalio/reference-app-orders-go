@@ -49,7 +49,7 @@
 		gap: 2rem;
 		background-color: white;
 		padding: 2rem;
-		border-radius: .5rem;
+		border-radius: 0.5rem;
 	}
 	.action-btns {
 		display: flex;

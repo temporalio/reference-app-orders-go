@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import OrderDetails from '$lib/components/order-details.svelte';
 	import { generateOrders, order, type Order } from '$lib/stores/order';
+	import Logo from '$lib/components/logo.svelte';
 
 	const onItemClick = async (order: Order) => {
 		if (order.id === $order?.id) {
@@ -13,13 +14,17 @@
 
 	const onSubmit = async () => {
 		if ($order) {
+			loading = true;
 			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order }) });
-			// TODO(Rob): Add a status field to say an order is pending, or similar, so we know to refresh
-			goto(`/orders/Order:${$order.id}`);
+			setTimeout(() => {
+				goto(`/orders/Order:${$order.id}`);
+			}, 1000);
 		}
 	};
 
 	const orders = generateOrders(20);
+
+	let loading = false;
 </script>
 
 <svelte:head>
@@ -28,34 +33,41 @@
 </svelte:head>
 
 <section>
-	<div class="container">
-		<div class="list">
-			{#each orders as _order, index}
-				<button
-					class="item"
-					class:active={_order.id === $order?.id}
-					on:click={() => onItemClick(_order)}
-				>
-					<div class="name">Order {index + 1}</div>
-				</button>
-			{/each}
+	{#if loading}
+		<div class="container loading"><Logo loading /></div>
+	{:else}
+		<div class="container">
+			<div class="list">
+				{#each orders as _order, index}
+					<button
+						class="item"
+						class:active={_order.id === $order?.id}
+						on:click={() => onItemClick(_order)}
+					>
+						<div class="name">Order {index + 1}</div>
+					</button>
+				{/each}
+			</div>
+			<OrderDetails order={$order} />
 		</div>
-		<OrderDetails order={$order} />
-	</div>
-	<div class="container submit">
-		<button class="submit-button" disabled={!$order} on:click={onSubmit}
-			>Submit</button
-		>
-	</div>
+		<div class="container submit">
+			<button class="submit-button" disabled={!$order} on:click={onSubmit}>Submit</button>
+		</div>
+	{/if}
 </section>
 
 <style>
 	.container {
 		display: flex;
 		flex-direction: row;
+		justify-content: center;
 		gap: 2rem;
 		width: 100%;
-	}	
+	}
+
+	.loading {
+		align-items: center;
+	}
 
 	.submit {
 		margin: 1rem 0;
@@ -67,8 +79,7 @@
 		width: 20vw;
 		height: 55vh;
 		overflow: auto;
-		border: 3px solid black;
-		border-radius: .25rem;
+		border-radius: 0.25rem;
 	}
 
 	@media (max-width: 640px) {
@@ -81,10 +92,9 @@
 			height: 15rem;
 		}
 	}
-	
 
 	.item {
-		height: 2.25rem;
+		height: 2.5rem;
 		width: 100%;
 		display: flex;
 		flex-direction: row;
@@ -96,7 +106,6 @@
 		border-bottom: 2px solid #ccc;
 		background-color: white;
 		color: black;
-		text-transform: uppercase;
 	}
 
 	.active {

@@ -49,6 +49,7 @@
 	@media (max-width: 640px) {
 		.details {
 			width: 100%;
+			max-width: fit-content;
 		}
 	}
 </style>

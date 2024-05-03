@@ -12,7 +12,7 @@
 
 <section>
 	<div class="container">
-		<h1>{order.id}</h1>
+		<h1>{$page.params.id}</h1>
 		<FulfillmentDetails {order} />
 	</div>
 </section>
@@ -23,6 +23,7 @@
 		flex-direction: column;
 		gap: 1rem;
 	}
+
 	.container {
 		display: flex;
 		flex-direction: column;
@@ -30,6 +31,6 @@
 		gap: 2rem;
 		background-color: white;
 		padding: 2rem;
-		border-radius: .5rem;
+		border-radius: 0.5rem;
 	}
 </style>
