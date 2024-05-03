@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -26,6 +27,16 @@ const StatusQuery = "status"
 // FulfillmentWorkflowID returns the workflow ID for a Fulfillment.
 func FulfillmentWorkflowID(id string) string {
 	return "Fulfillment:" + id
+}
+
+// OrderWorkflowID returns the workflow ID for an Order.
+func OrderWorkflowID(id string) string {
+	return "Order:" + id
+}
+
+// OrderIDFromWorkflowID returns the ID for an Order from a WorkflowID.
+func OrderIDFromWorkflowID(id string) string {
+	return strings.TrimPrefix(id, "Order:")
 }
 
 // Item represents an item being ordered.
@@ -215,6 +226,7 @@ func Router(c client.Client) *mux.Router {
 	r.HandleFunc("/orders", h.handleCreateOrder).Methods("POST")
 	r.HandleFunc("/orders", h.handleListOrders).Methods("GET")
 	r.HandleFunc("/orders/{id}", h.handleGetOrder)
+	r.HandleFunc("/orders/{id}/action", h.handleCustomerAction).Methods("POST")
 
 	return r
 }
@@ -235,7 +247,7 @@ func (h *handlers) handleListOrders(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, e := range resp.Executions {
-			id := e.GetExecution().GetWorkflowId()
+			id := OrderIDFromWorkflowID(e.GetExecution().GetWorkflowId())
 			startedAt := e.GetStartTime().AsTime()
 			status, err := getStatusFromSearchAttributes(e.GetSearchAttributes())
 			if err != nil {
@@ -275,7 +287,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	_, err = h.temporal.ExecuteWorkflow(context.Background(),
 		client.StartWorkflowOptions{
 			TaskQueue: TaskQueue,
-			ID:        fmt.Sprintf("Order:%s", input.ID),
+			ID:        OrderWorkflowID(input.ID),
 		},
 		Order,
 		&input,
@@ -286,6 +298,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Location", "/orders/"+input.ID)
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -295,7 +308,7 @@ func (h *handlers) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 	var status OrderStatus
 
 	q, err := h.temporal.QueryWorkflow(r.Context(),
-		vars["id"], "",
+		OrderWorkflowID(vars["id"]), "",
 		StatusQuery,
 	)
 	if err != nil {
@@ -319,6 +332,35 @@ func (h *handlers) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(status); err != nil {
 		log.Printf("Failed to encode order status: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (h *handlers) handleCustomerAction(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	var signal CustomerActionSignal
+
+	err := json.NewDecoder(r.Body).Decode(&signal)
+	if err != nil {
+		log.Printf("Failed to decode customer action signal: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.temporal.SignalWorkflow(context.Background(),
+		OrderWorkflowID(vars["id"]), "",
+		CustomerActionSignalName,
+		signal,
+	)
+	if err != nil {
+		if _, ok := err.(*serviceerror.NotFound); ok {
+			log.Printf("Failed to signal order workflow: %v", err)
+			http.Error(w, "Order not found", http.StatusNotFound)
+		} else {
+			log.Printf("Failed to signal order workflow: %v", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+		return
 	}
 }
 

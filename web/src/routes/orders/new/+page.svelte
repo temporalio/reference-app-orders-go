@@ -17,7 +17,7 @@
 			loading = true;
 			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order }) });
 			setTimeout(() => {
-				goto(`/orders/Order:${$order.id}`);
+				goto(`/orders/${$order.id}`);
 			}, 1000);
 		}
 	};
