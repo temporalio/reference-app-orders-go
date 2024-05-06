@@ -1,5 +1,6 @@
 <script lang="ts">
 	export let loading = false;
+	export let loadingText = 'Loading';
 </script>
 
 {#if !loading}
@@ -7,20 +8,20 @@
 		<a href="/"><text x="120" y="100">Tora</text></a>
 	</svg>
 {:else}
-	<svg width="400" height="400" viewBox="0 0 400 400">
+	<svg width="400" height="200" viewBox="0 0 400 200">
 		<radialGradient id="gradient" cx="50%" cy="50%" r="70%">
 			<animate attributeName="r" values="0%;150%;100%;0%" dur="1s" repeatCount="indefinite" />
 			<stop stop-color="#366ee9" offset="0">
 				<animate
 					attributeName="stop-color"
-					values="#333;#366ee9;#366ee9;#333"
+					values="#eee;#366ee9;#366ee9;#eee"
 					dur="1s"
 					repeatCount="indefinite"
 				/>
 			</stop>
-			<stop stop-color="rgba(55,55,55,0)" offset="100%" />
+			<stop stop-color="#366ee9" offset="100%" />
 		</radialGradient>
-		<text text-anchor="middle" x="50%" y="50%" class="loading">Tora </text>
+		<text text-anchor="middle" x="50%" y="50%" class="loading">{loadingText}</text>
 	</svg>
 {/if}
 

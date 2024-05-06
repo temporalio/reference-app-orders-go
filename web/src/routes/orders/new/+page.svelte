@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidate } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import OrderDetails from '$lib/components/order-details.svelte';
 	import { generateOrders, order, type Order } from '$lib/types/order';
 	import Logo from '$lib/components/logo.svelte';
@@ -17,7 +17,8 @@
 			loading = true;
 			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order }) });
 			setTimeout(() => {
-				goto(`/orders/${$order.id}`);
+				goto(`/orders/${$order.id}`, { invalidateAll: true });
+				$order = undefined;
 			}, 1000);
 		}
 	};
