@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import OrderDetails from '$lib/components/order-details.svelte';
-	import { generateOrders, order, type Order } from '$lib/stores/order';
+	import { generateOrders, order, type Order } from '$lib/types/order';
 	import Logo from '$lib/components/logo.svelte';
 
 	const onItemClick = async (order: Order) => {

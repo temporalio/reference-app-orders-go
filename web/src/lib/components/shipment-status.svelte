@@ -1,21 +1,26 @@
 <script lang="ts">
-	import { type Shipment } from '$lib/stores/order';
+	import { type Shipment } from '$lib/types/order';
 
-	export let shipment: Shipment | undefined;
+	export let shipment: Shipment | undefined = undefined;
 	export let status = '';
 
+	const inactiveStatuses = ['pending', 'unavailable'];
 	const activeStatuses = ['booked', 'dispatched', 'delivered'];
-	const noStatus = !shipment || !activeStatuses.includes(status || shipment?.status);
-	const statuses = noStatus ? ['pending'] : activeStatuses;
-	$: currentIndex = noStatus ? 0 : statuses.indexOf(status || shipment.status);
+
+	$: finalStatus = status || shipment?.status || 'pending';
+	$: inactive = inactiveStatuses.includes(finalStatus);
+	$: statuses = inactive ? [finalStatus] : activeStatuses;
+	$: currentIndex = inactive ? 0 : activeStatuses.indexOf(finalStatus);
 </script>
 
 <ul>
 	{#each statuses as s, index}
 		<li
-			class:active={currentIndex === index}
-			class:completed={currentIndex > index}
-			class:incomplete={currentIndex < index}
+			class:active={!inactive && currentIndex === index}
+			class:completed={!inactive && currentIndex > index}
+			class:incomplete={!inactive && currentIndex < index}
+			class:pending={s === 'pending'}
+			class:unavailable={s === 'unavailable'}
 		>
 			{s.toUpperCase()}
 		</li>
@@ -70,8 +75,12 @@
 			background-color: lightgreen;
 		}
 	}
+	li.pending::before {
+		background: lightgoldenrodyellow;
+	}
 
-	li.incomplete::before {
+	li.incomplete::before,
+	li.unavailable::before {
 		background: lightcoral;
 	}
 

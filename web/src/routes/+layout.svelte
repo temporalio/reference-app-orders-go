@@ -1,20 +1,34 @@
-<script>
+<script lang="ts">
 	import { page } from '$app/stores';
+	import type { LayoutData } from './$types';
+
 	import Logo from '$lib/components/logo.svelte';
 	import StatusIcon from '$lib/components/status-icon.svelte';
+	import type { Order } from '$lib/types/order';
 	import './app.css';
+
+	export let data: LayoutData;
+
+	$: actionRequired = data?.orders.some((o: Order) => o?.status === 'customerActionRequired');
 </script>
+
+<svelte:head>
+	<title>Tora</title>
+	<meta name="description" content="Tora App" />
+</svelte:head>
 
 <div class="app">
 	<header>
 		<nav>
 			<Logo />
-			<div class="links">
-				<a href="/orders" class:active={$page.url.pathname.includes('orders')}>Orders</a>
-				<a href="/shipments" class:active={$page.url.pathname.includes('shipments')}>Shipments</a>
+			<div class="action">
+				<div class="links">
+					<a href="/orders" class:active={$page.url.pathname.includes('orders')}>Orders</a>
+					<a href="/shipments" class:active={$page.url.pathname.includes('shipments')}>Shipments</a>
+				</div>
+				<StatusIcon {actionRequired} />
 			</div>
 		</nav>
-		<StatusIcon />
 	</header>
 	<main>
 		<slot />
@@ -32,6 +46,12 @@
 		padding: 1rem 2rem;
 		display: flex;
 		justify-content: end;
+	}
+
+	.action {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
 	}
 
 	nav {

@@ -164,7 +164,6 @@ th,
 td {
 	padding: 0.25rem;
 	text-align: left;
-	vertical-align: top;
 	border-left: 1px solid #ddd;
 }
 td {
@@ -179,16 +178,6 @@ tbody:first-child tr:first-child td:first-child {
 thead:last-child tr:last-child th:first-child,
 tbody:last-child tr:last-child td:first-child {
 	border-radius: 0 0 0 4px;
-}
-
-td .status {
-	position: relative;
-	display: inline-flex;
-	border: 3px solid black;
-	border-radius: 9999px;
-	padding: 0.25rem 1rem;
-	margin: 0 auto;
-	background-color: lightgreen;
 }
 
 .quantity {

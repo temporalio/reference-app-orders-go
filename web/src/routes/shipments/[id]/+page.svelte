@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import ShipmentDetails from '$lib/components/shipment-details.svelte';
-	import type { Shipment } from '$lib/stores/order';
+	import type { Shipment } from '$lib/types/order';
 
 	$: ({ shipment } = $page.data);
 

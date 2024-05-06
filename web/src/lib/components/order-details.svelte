@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Order } from '$lib/stores/order';
+	import { type Order } from '$lib/types/order';
 
 	export let order: Order | undefined;
 </script>
@@ -31,10 +31,6 @@
 		display: flex;
 		gap: 1rem;
 		align-items: center;
-	}
-
-	.name {
-		font-weight: bold;
 	}
 
 	.details {
