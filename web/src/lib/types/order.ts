@@ -11,7 +11,7 @@ export interface OrderItem extends Item {
 
 export type OrderStatus =
 	| 'pending'
-	| 'processsing'
+	| 'processing'
 	| 'customerActionRequired'
 	| 'completed'
 	| 'cancelled';
