@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/mux"
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
@@ -30,6 +31,7 @@ type FraudCheckResult struct {
 
 type handlers struct {
 	limit               int32
+	ccTallyLock         sync.Mutex
 	customerChargeTally map[string]int32
 }
 
@@ -92,7 +94,9 @@ func (h *handlers) handleSetLimit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleReset(http.ResponseWriter, *http.Request) {
+	h.ccTallyLock.Lock()
 	h.customerChargeTally = make(map[string]int32)
+	defer h.ccTallyLock.Unlock()
 	h.limit = 0
 }
 
@@ -106,7 +110,9 @@ func (h *handlers) handleRunCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.ccTallyLock.Lock()
 	h.customerChargeTally[input.CustomerID] += input.Charge
+	defer h.ccTallyLock.Unlock()
 	approved := h.limit == 0 || h.customerChargeTally[input.CustomerID] < h.limit
 	result := FraudCheckResult{Approved: approved}
 
