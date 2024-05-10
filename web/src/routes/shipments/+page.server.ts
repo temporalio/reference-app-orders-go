@@ -1,4 +1,4 @@
-import type { Shipment } from '$lib/stores/order';
+import type { Shipment } from '$lib/types/order';
 
 export const load = async () => {
 	const response = await fetch(`http://localhost:8081/shipments`);

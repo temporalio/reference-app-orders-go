@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
+	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"golang.org/x/sync/errgroup"
@@ -43,6 +44,9 @@ var rootCmd = &cobra.Command{
 		})
 		g.Go(func() error {
 			return shipment.RunServer(ctx, 8081)
+		})
+		g.Go(func() error {
+			return fraudcheck.RunServer(ctx, 8084)
 		})
 
 		go func() {

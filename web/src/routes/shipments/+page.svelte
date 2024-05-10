@@ -1,4 +1,6 @@
 <script lang="ts">
+	import StatusBadge from '$lib/components/status-badge.svelte';
+
 	export let data;
 
 	$: ({ shipments } = data);
@@ -17,7 +19,7 @@
 		<thead>
 			<tr>
 				<th>ID</th>
-				<th>Status</th>
+				<th style="text-align: center;">Status</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -25,7 +27,7 @@
 				<tr>
 					<td style="width: 100%;"><a href={`/shipments/${shipment.id}`}>{shipment.id}</a></td>
 
-					<td><div class="status">{shipment.status.toUpperCase()}</div></td>
+					<td style="text-align: center;"><StatusBadge status={shipment.status} /></td>
 				</tr>
 			{:else}
 				<tr>

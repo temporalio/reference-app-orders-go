@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { items, type Order } from '$lib/stores/order';
+	import { type Order } from '$lib/types/order';
 	import ItemDetails from './item-details.svelte';
 	import PaymentDetails from './payment-details.svelte';
 	import ShipmentStatus from './shipment-status.svelte';
@@ -13,8 +13,18 @@
 	{#each fulfillments as fulfillment}
 		<div class="container">
 			<div class="fulfillment">
-				<p class="location">{fulfillment.location}</p>
-				<ShipmentStatus shipment={fulfillment.shipment} />
+				<p class="location">
+					{#if fulfillment?.location}
+						<i>{fulfillment.location}</i>
+					{:else}
+						<strong>Action Required</strong>
+					{/if}
+				</p>
+				{#if fulfillment.shipment}
+					<ShipmentStatus shipment={fulfillment.shipment} />
+				{:else}
+					<ShipmentStatus status={fulfillment.status} />
+				{/if}
 			</div>
 			<ItemDetails items={fulfillment.items} />
 			{#if fulfillment.payment}
@@ -27,9 +37,11 @@
 <style>
 	.fulfillment {
 		display: flex;
-		align-items: center;
+		align-items: end;
 		justify-content: space-between;
 		width: 100%;
+		border-bottom: 2px solid black;
+		margin-bottom: 1rem;
 	}
 
 	@media (max-width: 640px) {
@@ -49,7 +61,6 @@
 	}
 	.location {
 		font-size: 1.5rem;
-		font-weight: 700;
 	}
 
 	.details {

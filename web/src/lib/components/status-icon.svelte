@@ -1,59 +1,81 @@
 <script lang="ts">
-	export let statusColor = '#366ee9';
+	export let actionRequired = false;
+
+	$: statusColor = actionRequired ? '#EF8080' : '#366ee9';
 </script>
 
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg" style="transform: scale(.5);">
-	<path d="M 30,30 L 70,30 L 70,70 L 30,70 Z" fill={statusColor} stroke={statusColor} />
+<svg width="50" height="50" xmlns="http://www.w3.org/2000/svg">
+	<path d="M 15,15 L 35,15 L 35,35 L 15,35 Z" fill={statusColor} stroke={statusColor} />
 	<!-- Right arrow -->
 	<g>
 		<rect
-			x="70"
-			y="45"
-			width="5"
-			height="10"
+			x="35"
+			y="22.5"
+			width="2.5"
+			height="5"
 			fill={statusColor}
 			stroke={statusColor}
 			stroke-width="1"
 		/>
-		<polygon points="75,60 90,50 75,40" fill={statusColor} stroke={statusColor} stroke-width="1" />
+		<polygon
+			points="37.5,30 45,25 37.5,20"
+			fill={statusColor}
+			stroke={statusColor}
+			stroke-width="1"
+		/>
 	</g>
 	<!-- Bottom arrow -->
 	<g>
 		<rect
-			x="45"
-			y="70"
-			width="10"
-			height="5"
+			x="22.5"
+			y="35"
+			width="5"
+			height="2.5"
 			fill={statusColor}
 			stroke={statusColor}
 			stroke-width="1"
 		/>
-		<polygon points="60,75 50,90 40,75" fill={statusColor} stroke={statusColor} stroke-width="1" />
+		<polygon
+			points="30,37.5 25,45 20,37.5"
+			fill={statusColor}
+			stroke={statusColor}
+			stroke-width="1"
+		/>
 	</g>
 	<!-- Left arrow -->
 	<g>
 		<rect
-			x="25"
-			y="45"
-			width="5"
-			height="10"
-			fill={statusColor}
-			stroke={statusColor}
-			stroke-width="1"
-		/>
-		<polygon points="25,60 10,50 25,40" fill={statusColor} stroke={statusColor} stroke-width="1" />
-	</g>
-	<!-- Top arrow -->
-	<g>
-		<rect
-			x="45"
-			y="25"
-			width="10"
+			x="12.5"
+			y="22.5"
+			width="2.5"
 			height="5"
 			fill={statusColor}
 			stroke={statusColor}
 			stroke-width="1"
 		/>
-		<polygon points="60,25 50,10 40,25" fill={statusColor} stroke={statusColor} stroke-width="1" />
+		<polygon
+			points="12.5,30 5,25 12.5,20"
+			fill={statusColor}
+			stroke={statusColor}
+			stroke-width="1"
+		/>
+	</g>
+	<!-- Top arrow -->
+	<g>
+		<rect
+			x="22.5"
+			y="12.5"
+			width="5"
+			height="2.5"
+			fill={statusColor}
+			stroke={statusColor}
+			stroke-width="1"
+		/>
+		<polygon
+			points="30,12.5 25,5 20,12.5"
+			fill={statusColor}
+			stroke={statusColor}
+			stroke-width="1"
+		/>
 	</g>
 </svg>

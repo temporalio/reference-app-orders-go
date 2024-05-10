@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Shipment } from '$lib/stores/order';
+	import { type Shipment } from '$lib/types/order';
 	import ItemDetails from './item-details.svelte';
 	import ShipmentStatus from './shipment-status.svelte';
 

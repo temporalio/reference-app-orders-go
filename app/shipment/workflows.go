@@ -8,7 +8,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-// Item represents an item being ordered.
+// Item represents an item being shipped.
 type Item struct {
 	SKU      string `json:"sku"`
 	Quantity int32  `json:"quantity"`
@@ -16,9 +16,10 @@ type Item struct {
 
 // ShipmentInput is the input for a Shipment workflow.
 type ShipmentInput struct {
-	OrderID         string
-	OrderWorkflowID string
-	Items           []Item
+	RequestorWID string
+
+	ID    string
+	Items []Item
 }
 
 // ShipmentStatusAttr is a Custom Search Attribute that indicates current status of a shipment
@@ -46,7 +47,7 @@ type ShipmentCarrierUpdateSignal struct {
 	Status string `json:"status"`
 }
 
-// ShipmentStatusUpdatedSignal is used to notify an order of an update to a shipment's status.
+// ShipmentStatusUpdatedSignal is used to notify the requestor of an update to a shipment's status.
 type ShipmentStatusUpdatedSignal struct {
 	ShipmentID string    `json:"shipmentID"`
 	Status     string    `json:"status"`
@@ -59,10 +60,11 @@ type ShipmentResult struct {
 }
 
 type shipmentImpl struct {
-	id              string
-	orderID         string
-	orderWorkflowID string
-	status          *ShipmentStatus
+	requestorWID string
+
+	id        string
+	status    string
+	updatedAt time.Time
 }
 
 // Shipment implements the Shipment workflow.
@@ -77,10 +79,9 @@ func Shipment(ctx workflow.Context, input *ShipmentInput) (*ShipmentResult, erro
 }
 
 func (s *shipmentImpl) setup(ctx workflow.Context, input *ShipmentInput) error {
-	s.id = workflow.GetInfo(ctx).WorkflowExecution.ID
-	s.orderID = input.OrderID
-	s.orderWorkflowID = input.OrderWorkflowID
-	s.status = &ShipmentStatus{ID: s.id, Status: ShipmentStatusPending, Items: input.Items}
+	s.requestorWID = input.RequestorWID
+	s.id = input.ID
+	s.status = ShipmentStatusPending
 
 	err := workflow.UpsertTypedSearchAttributes(ctx, ShipmentStatusAttr.ValueSet(ShipmentStatusPending))
 	if err != nil {
@@ -88,7 +89,12 @@ func (s *shipmentImpl) setup(ctx workflow.Context, input *ShipmentInput) error {
 	}
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*ShipmentStatus, error) {
-		return s.status, nil
+		return &ShipmentStatus{
+			ID:        s.id,
+			Status:    s.status,
+			UpdatedAt: s.updatedAt,
+			Items:     input.Items,
+		}, nil
 	})
 }
 
@@ -99,13 +105,15 @@ func (s *shipmentImpl) run(ctx workflow.Context, input *ShipmentInput) (*Shipmen
 		},
 	)
 
+	var result BookShipmentResult
+
 	err := workflow.ExecuteActivity(ctx,
 		a.BookShipment,
 		BookShipmentInput{
-			OrderID: input.OrderID,
-			Items:   input.Items,
+			Reference: s.id,
+			Items:     input.Items,
 		},
-	).Get(ctx, nil)
+	).Get(ctx, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -114,14 +122,17 @@ func (s *shipmentImpl) run(ctx workflow.Context, input *ShipmentInput) (*Shipmen
 
 	err = s.handleCarrierUpdates(ctx)
 
-	return &ShipmentResult{}, err
+	return &ShipmentResult{
+		CourierReference: result.CourierReference,
+	}, err
 }
 
 func (s *shipmentImpl) handleCarrierUpdates(ctx workflow.Context) error {
+	ch := workflow.GetSignalChannel(ctx, ShipmentCarrierUpdateSignalName)
+
 	var signal ShipmentCarrierUpdateSignal
 
-	ch := workflow.GetSignalChannel(ctx, ShipmentCarrierUpdateSignalName)
-	for s.status.Status != ShipmentStatusDelivered {
+	for s.status != ShipmentStatusDelivered {
 		ch.Receive(ctx, &signal)
 		s.updateStatus(ctx, signal.Status)
 	}
@@ -130,69 +141,24 @@ func (s *shipmentImpl) handleCarrierUpdates(ctx workflow.Context) error {
 }
 
 func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
-	s.status.Status = status
-	s.status.UpdatedAt = workflow.Now(ctx)
+	s.status = status
+	s.updatedAt = workflow.Now(ctx)
 
-	if err := s.notifyOrderOfStatus(ctx); err != nil {
-		return fmt.Errorf("failed to notify order of status: %w", err)
-	}
-	if err := s.notifyCustomerOfStatus(ctx); err != nil {
-		workflow.GetLogger(ctx).Error("failed to notify order of status", "error", err)
+	if err := s.notifyRequestorOfStatus(ctx); err != nil {
+		return fmt.Errorf("failed to notify requestor of status: %w", err)
 	}
 
-	err := workflow.UpsertTypedSearchAttributes(ctx, ShipmentStatusAttr.ValueSet(status))
-
-	return err
+	return workflow.UpsertTypedSearchAttributes(ctx, ShipmentStatusAttr.ValueSet(status))
 }
 
-func (s *shipmentImpl) notifyOrderOfStatus(ctx workflow.Context) error {
+func (s *shipmentImpl) notifyRequestorOfStatus(ctx workflow.Context) error {
 	return workflow.SignalExternalWorkflow(ctx,
-		s.orderWorkflowID, "",
+		s.requestorWID, "",
 		ShipmentStatusUpdatedSignalName,
 		ShipmentStatusUpdatedSignal{
 			ShipmentID: s.id,
-			Status:     s.status.Status,
-			UpdatedAt:  s.status.UpdatedAt,
+			Status:     s.status,
+			UpdatedAt:  s.updatedAt,
 		},
 	).Get(ctx, nil)
-}
-
-func (s *shipmentImpl) notifyCustomerOfStatus(ctx workflow.Context) error {
-	ctx = workflow.WithActivityOptions(ctx,
-		workflow.ActivityOptions{
-			StartToCloseTimeout: 5 * time.Second,
-		},
-	)
-
-	switch s.status.Status {
-	case ShipmentStatusBooked:
-		return workflow.ExecuteActivity(ctx,
-			a.ShipmentBookedNotification,
-			ShipmentBookedNotificationInput{
-				OrderID: s.orderID,
-			},
-		).Get(ctx, nil)
-	case ShipmentStatusDispatched:
-		return workflow.ExecuteActivity(ctx,
-			a.ShipmentDispatchedNotification,
-			ShipmentDispatchedNotificationInput{
-				OrderID: s.orderID,
-			},
-		).Get(ctx, nil)
-	case ShipmentStatusDelivered:
-		return workflow.ExecuteActivity(ctx,
-			a.ShipmentDeliveredNotification,
-			ShipmentDeliveredNotificationInput{
-				OrderID: s.orderID,
-			},
-		).Get(ctx, nil)
-	}
-
-	return nil
-}
-
-func (s *shipmentImpl) waitForStatus(ctx workflow.Context, status string) {
-	workflow.Await(ctx, func() bool {
-		return s.status.Status == status
-	})
 }

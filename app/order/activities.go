@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 )
@@ -17,54 +18,79 @@ type Activities struct{}
 
 var a Activities
 
-// FulfillOrderInput is the input to the FulfillOrder activity.
-type FulfillOrderInput struct {
+// ReserveItemsInput is the input to the ReserveItems activity.
+type ReserveItemsInput struct {
 	OrderID string
 	Items   []*Item
 }
 
-// FulfillOrderResult is the result from the FulfillOrder activity.
-type FulfillOrderResult struct {
-	// A set of Fulfillments.
-	Fulfillments []*Fulfillment
+// Reservation is a reservation of items for an order.
+type Reservation struct {
+	Available bool
+	Location  string
+	Items     []*Item
 }
 
-// FulfillOrder creates fulfillments to satisfy an order.
+// ReserveItemsResult is the result from the ReserveItems activity.
+type ReserveItemsResult struct {
+	Reservations []*Reservation
+}
+
+// ReserveItems reserves items to satisfy an order. It returns a list of reservations for the items.
+// Any unavailable items will be returned in a Reservation with Available set to false.
 // In a real system this would involve an inventory database of some kind.
 // For our purposes we just split orders arbitrarily.
-func (a *Activities) FulfillOrder(_ context.Context, input *FulfillOrderInput) (*FulfillOrderResult, error) {
+func (a *Activities) ReserveItems(_ context.Context, input *ReserveItemsInput) (*ReserveItemsResult, error) {
 	if len(input.Items) < 1 {
-		return &FulfillOrderResult{}, nil
+		return &ReserveItemsResult{}, nil
 	}
 
-	var fulfillments []*Fulfillment
+	var reservations []*Reservation
+	var unavailableItems []*Item
+	var availableItems []*Item
 
-	// Hard coded. Open discussion where this stub boundary should live.
+	for _, item := range input.Items {
+		if strings.Contains(item.SKU, "Adidas") {
+			unavailableItems = append(unavailableItems, item)
+		} else {
+			availableItems = append(availableItems, item)
+		}
+	}
 
-	// First item from one warehouse
-	fulfillments = append(
-		fulfillments,
-		&Fulfillment{
-			ID:       fmt.Sprintf("%s:%d", input.OrderID, 1),
-			Items:    input.Items[0:1],
-			Location: "Warehouse A",
-		},
-	)
-
-	if len(input.Items) > 1 {
-		// Second fulfillment with all other items
-		fulfillments = append(
-			fulfillments,
-			&Fulfillment{
-				ID:       fmt.Sprintf("%s:%d", input.OrderID, 2),
-				Items:    input.Items[1:len(input.Items)],
-				Location: "Warehouse B",
+	if len(unavailableItems) > 0 {
+		reservations = append(
+			reservations,
+			&Reservation{
+				Available: false,
+				Items:     unavailableItems,
 			},
 		)
 	}
 
-	return &FulfillOrderResult{
-		Fulfillments: fulfillments,
+	// First item from one warehouse
+	reservations = append(
+		reservations,
+		&Reservation{
+			Available: true,
+			Location:  "Warehouse A",
+			Items:     availableItems[0:1],
+		},
+	)
+
+	if len(availableItems) > 1 {
+		// Second fulfillment with all other items
+		reservations = append(
+			reservations,
+			&Reservation{
+				Available: true,
+				Location:  "Warehouse B",
+				Items:     availableItems[1:],
+			},
+		)
+	}
+
+	return &ReserveItemsResult{
+		Reservations: reservations,
 	}, nil
 }
 

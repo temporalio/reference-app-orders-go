@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Payment } from '$lib/stores/order';
+	import type { Payment } from '$lib/types/order';
+	import StatusBadge from './status-badge.svelte';
 
 	export let payment: Payment;
 </script>
@@ -7,7 +8,7 @@
 <div class="container">
 	<div class="row">
 		<p class="label">Payment</p>
-		<p><strong>{payment.status.toUpperCase()}</strong></p>
+		<StatusBadge status={payment.status} />
 	</div>
 	<div class="row">
 		<p class="label">Subtotal</p>
@@ -21,7 +22,7 @@
 			{payment.tax.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
 		</p>
 	</div>
-	<div class="row">
+	<div class="row" style="border-bottom: 2px solid black;">
 		<p class="label">Shipping</p>
 		<p class="value">
 			{payment.shipping.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
@@ -47,12 +48,13 @@
 	}
 
 	.label {
-		width: 180px;
+		width: 240px;
 		font-weight: 700;
 	}
 
 	.value {
 		width: 100%;
 		text-align: right;
+		padding-right: 0.15rem;
 	}
 </style>

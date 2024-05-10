@@ -31,7 +31,7 @@ func TestShipmentUpdate(t *testing.T) {
 	c.AssertCalled(t,
 		"SignalWorkflow",
 		mock.Anything,
-		"test", "",
+		shipment.ShipmentWorkflowID("test"), "",
 		"ShipmentCarrierUpdate",
 		shipment.ShipmentCarrierUpdateSignal{
 			Status: shipment.ShipmentStatusDispatched,

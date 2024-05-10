@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { OrderItem } from '$lib/stores/order';
+	import type { OrderItem } from '$lib/types/order';
 
 	export let items: OrderItem[];
 </script>
@@ -9,7 +9,7 @@
 		<div class="item">
 			<div class="item-header">
 				<div class="quantity">{item.quantity}</div>
-				<h3 class="name">{item.sku}</h3>
+				<p>{item.sku}</p>
 			</div>
 		</div>
 	{/each}
@@ -33,8 +33,5 @@
 		display: flex;
 		gap: 1rem;
 		align-items: center;
-	}
-	.name {
-		font-weight: 700;
 	}
 </style>

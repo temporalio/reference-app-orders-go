@@ -8,12 +8,23 @@ export interface OrderItem extends Item {
 	sku: string;
 	quantity: number;
 }
+
+export type OrderStatus =
+	| 'pending'
+	| 'processing'
+	| 'customerActionRequired'
+	| 'completed'
+	| 'cancelled';
+
 export interface Order {
 	id: string;
 	customerId: string;
 	items: OrderItem[];
 	fulfillments?: Fulfillment[];
+	status: OrderStatus;
 }
+
+export type FulfillmentStatus = 'unavailable' | 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface Fulfillment {
 	id: string;
@@ -21,6 +32,7 @@ export interface Fulfillment {
 	items: OrderItem[];
 	payment?: Payment;
 	location: string;
+	status?: FulfillmentStatus;
 }
 
 export interface Shipment {
@@ -30,13 +42,17 @@ export interface Shipment {
 	updatedAt: string;
 }
 
+export type PaymentStatus = 'pending' | 'success' | 'failed';
+
 export interface Payment {
 	shipping: number;
 	tax: number;
 	subTotal: number;
 	total: number;
-	status: string;
+	status: PaymentStatus;
 }
+
+export type Action = 'amend' | 'cancel';
 
 export const order = writable<Order | undefined>();
 

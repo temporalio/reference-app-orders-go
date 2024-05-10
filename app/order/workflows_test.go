@@ -3,10 +3,10 @@ package order_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/testsuite"
@@ -18,23 +18,13 @@ func TestOrderWorkflow(t *testing.T) {
 	env := s.NewTestWorkflowEnvironment()
 	var a *order.Activities
 
-	env.RegisterActivity(billing.GenerateInvoice)
-	env.RegisterActivity(billing.ChargeCustomer)
+	env.RegisterActivity(a.ReserveItems)
+	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.ChargeInput) (*order.ChargeResult, error) {
+		return &order.ChargeResult{Success: true}, nil
+	})
 	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
-		return nil, nil
-	})
-
-	env.RegisterActivity(a.FulfillOrder)
-	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *billing.ChargeInput) (*order.ChargeResult, error) {
-		return &order.ChargeResult{
-			InvoiceReference: input.Reference,
-			SubTotal:         1,
-			Tax:              0,
-			Shipping:         1,
-			Success:          true,
-			AuthCode:         "1234",
-		}, nil
-	})
+		return &shipment.ShipmentResult{CourierReference: "test"}, nil
+	}).Times(2)
 
 	orderInput := order.OrderInput{
 		ID:         "1234",
@@ -54,6 +44,176 @@ func TestOrderWorkflow(t *testing.T) {
 	err := env.GetWorkflowResult(&result)
 	assert.NoError(t, err)
 
-	env.AssertActivityNumberOfCalls(t, "Charge", 2)
 	env.AssertWorkflowNumberOfCalls(t, "Shipment", 2)
+}
+
+func TestOrderShipmentStatus(t *testing.T) {
+	s := testsuite.WorkflowTestSuite{}
+	env := s.NewTestWorkflowEnvironment()
+	var a *order.Activities
+
+	env.RegisterActivity(a.ReserveItems)
+	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.ChargeInput) (*order.ChargeResult, error) {
+		return &order.ChargeResult{Success: true}, nil
+	})
+	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
+		env.SignalWorkflow(
+			shipment.ShipmentStatusUpdatedSignalName,
+			shipment.ShipmentStatusUpdatedSignal{
+				ShipmentID: input.ID,
+				Status:     shipment.ShipmentStatusDelivered,
+				UpdatedAt:  env.Now(),
+			},
+		)
+
+		return &shipment.ShipmentResult{CourierReference: "test"}, nil
+	}).Times(2)
+
+	orderInput := order.OrderInput{
+		ID:         "1234",
+		CustomerID: "1234",
+		Items: []*order.Item{
+			{SKU: "test1", Quantity: 1},
+		},
+	}
+
+	env.ExecuteWorkflow(
+		order.Order,
+		&orderInput,
+	)
+
+	var result order.OrderResult
+	err := env.GetWorkflowResult(&result)
+	assert.NoError(t, err)
+
+	var status order.OrderStatus
+	v, err := env.QueryWorkflow(order.StatusQuery, nil)
+	assert.NoError(t, err)
+
+	err = v.Get(&status)
+	assert.NoError(t, err)
+
+	f := status.Fulfillments[0]
+	assert.Equal(t, shipment.ShipmentStatusDelivered, f.Shipment.Status)
+}
+
+func TestOrderAmendWithUnavailableItems(t *testing.T) {
+	s := testsuite.WorkflowTestSuite{}
+	env := s.NewTestWorkflowEnvironment()
+	var a *order.Activities
+
+	env.RegisterActivity(a.ReserveItems)
+	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.ChargeInput) (*order.ChargeResult, error) {
+		return &order.ChargeResult{Success: true}, nil
+	})
+	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
+		return &shipment.ShipmentResult{CourierReference: "test"}, nil
+	})
+
+	orderInput := order.OrderInput{
+		ID:         "1234",
+		CustomerID: "1234",
+		Items: []*order.Item{
+			{SKU: "Adidas", Quantity: 1},
+			{SKU: "test2", Quantity: 3},
+		},
+	}
+
+	env.RegisterDelayedCallback(func() {
+		var status order.OrderStatus
+		v, err := env.QueryWorkflow(order.StatusQuery, nil)
+		assert.NoError(t, err)
+
+		err = v.Get(&status)
+		assert.Equal(t, order.OrderStatus{
+			ID:         "1234",
+			CustomerID: "1234",
+			Status:     order.OrderStatusCustomerActionRequired,
+			Fulfillments: []*order.Fulfillment{
+				{
+					ID:     "1234:1",
+					Status: order.FulfillmentStatusUnavailable,
+					Items: []*order.Item{
+						{SKU: "Adidas", Quantity: 1},
+					},
+				},
+				{
+					ID:       "1234:2",
+					Status:   order.FulfillmentStatusPending,
+					Location: "Warehouse A",
+					Items: []*order.Item{
+						{SKU: "test2", Quantity: 3},
+					},
+				},
+			},
+		}, status)
+	}, time.Second*1)
+
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(
+			order.CustomerActionSignalName,
+			order.CustomerActionSignal{
+				Action: order.CustomerActionAmend,
+			},
+		)
+
+	}, time.Second*2)
+
+	env.ExecuteWorkflow(
+		order.Order,
+		&orderInput,
+	)
+
+	var result order.OrderResult
+	err := env.GetWorkflowResult(&result)
+	assert.NoError(t, err)
+
+	var status order.OrderStatus
+	v, err := env.QueryWorkflow(order.StatusQuery, nil)
+	assert.NoError(t, err)
+
+	err = v.Get(&status)
+	assert.Len(t, status.Fulfillments, 1)
+
+	f := status.Fulfillments[0]
+	assert.Equal(t, order.FulfillmentStatusCompleted, f.Status)
+	assert.Equal(t, order.PaymentStatusSuccess, f.Payment.Status)
+	assert.Equal(t, f.ID, f.Shipment.ID)
+
+	env.AssertWorkflowNumberOfCalls(t, "Shipment", 1)
+}
+
+func TestOrderCancelWithUnavailableItems(t *testing.T) {
+	s := testsuite.WorkflowTestSuite{}
+	env := s.NewTestWorkflowEnvironment()
+	var a *order.Activities
+
+	env.RegisterActivity(a.ReserveItems)
+
+	orderInput := order.OrderInput{
+		ID:         "1234",
+		CustomerID: "1234",
+		Items: []*order.Item{
+			{SKU: "Adidas", Quantity: 1},
+			{SKU: "test2", Quantity: 3},
+		},
+	}
+
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(
+			order.CustomerActionSignalName,
+			order.CustomerActionSignal{
+				Action: order.CustomerActionCancel,
+			},
+		)
+	}, 1)
+
+	env.ExecuteWorkflow(
+		order.Order,
+		&orderInput,
+	)
+
+	var result order.OrderResult
+	err := env.GetWorkflowResult(&result)
+	assert.NoError(t, err)
 }

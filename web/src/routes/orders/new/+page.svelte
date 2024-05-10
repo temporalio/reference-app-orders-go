@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import OrderDetails from '$lib/components/order-details.svelte';
-	import { generateOrders, order, type Order } from '$lib/stores/order';
+	import { generateOrders, order, type Order } from '$lib/types/order';
 	import Logo from '$lib/components/logo.svelte';
 
 	const onItemClick = async (order: Order) => {
@@ -17,7 +17,8 @@
 			loading = true;
 			await fetch('/api/order', { method: 'POST', body: JSON.stringify({ order: $order }) });
 			setTimeout(() => {
-				goto(`/orders/Order:${$order.id}`);
+				goto(`/orders/${$order.id}`, { invalidateAll: true });
+				$order = undefined;
 			}, 1000);
 		}
 	};

@@ -6,13 +6,18 @@ import (
 
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
+// OrderStatusAttr is a Custom Search Attribute that indicates current status of an order
+var OrderStatusAttr = temporal.NewSearchAttributeKeyKeyword("ShipmentStatus")
+
 type orderImpl struct {
-	id         string
-	customerID string
-	status     *OrderStatus
+	id           string
+	customerID   string
+	status       string
+	fulfillments []*Fulfillment
 }
 
 // Order Workflow process an order from a customer.
@@ -26,7 +31,7 @@ func Order(ctx workflow.Context, input *OrderInput) (*OrderResult, error) {
 	return wf.run(ctx, input)
 }
 
-func (o *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
+func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 	if input.ID == "" {
 		return fmt.Errorf("ID is required")
 	}
@@ -39,73 +44,185 @@ func (o *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 		return fmt.Errorf("order must contain items")
 	}
 
-	o.id = input.ID
-	o.customerID = input.CustomerID
-	o.status = &OrderStatus{ID: input.ID, CustomerID: input.CustomerID}
+	wf.id = input.ID
+	wf.customerID = input.CustomerID
+	wf.updateStatus(ctx, OrderStatusPending)
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*OrderStatus, error) {
-		return o.status, nil
+		return &OrderStatus{
+			ID:           wf.id,
+			Status:       wf.status,
+			CustomerID:   wf.customerID,
+			Fulfillments: wf.fulfillments,
+		}, nil
 	})
 }
 
-func (o *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, error) {
-	var result OrderResult
-
-	fulfillments, err := o.fulfill(ctx, order.Items)
+func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, error) {
+	err := wf.buildFulfillments(ctx, order.Items)
 	if err != nil {
 		return nil, err
 	}
-	for _, f := range fulfillments {
-		f.Shipment = &ShipmentStatus{}
-		f.Payment = &PaymentStatus{}
+
+	if wf.customerActionRequired() {
+		wf.updateStatus(ctx, OrderStatusCustomerActionRequired)
+
+		action, err := wf.waitForCustomer(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		switch action {
+		case CustomerActionCancel:
+			err := wf.updateStatus(ctx, OrderStatusCancelled)
+			return &OrderResult{Status: wf.status}, err
+		case CustomerActionAmend:
+			wf.removeUnavailableFulfillments()
+		default:
+			return nil, fmt.Errorf("unhandled customer action %q", action)
+		}
 	}
-	o.status.Fulfillments = fulfillments
+
+	if err := wf.updateStatus(ctx, OrderStatusProcessing); err != nil {
+		return nil, err
+	}
+
+	workflow.Go(ctx, wf.handleShipmentStatusUpdates)
 
 	completed := 0
-	for _, f := range fulfillments {
+	for _, f := range wf.fulfillments {
 		f := f
 		workflow.Go(ctx, func(ctx workflow.Context) {
-			err := o.processFulfillment(ctx, f)
-			if err != nil {
-				workflow.GetLogger(ctx).Error("fulfillment error", "order", order.ID, "fulfillment", f.ID, "error", err)
-			}
+			f.process(ctx)
 			completed++
 		})
 	}
 
-	workflow.Go(ctx, o.handleShipmentStatusUpdates)
+	workflow.Await(ctx, func() bool { return completed == len(wf.fulfillments) })
 
-	workflow.Await(ctx, func() bool { return completed == len(fulfillments) })
+	if err := wf.updateStatus(ctx, OrderStatusCompleted); err != nil {
+		return nil, err
+	}
 
-	return &result, nil
+	return &OrderResult{Status: wf.status}, nil
 }
 
-func (o *orderImpl) fulfill(ctx workflow.Context, items []*Item) ([]*Fulfillment, error) {
+func (wf *orderImpl) updateStatus(ctx workflow.Context, status string) error {
+	wf.status = status
+	return workflow.UpsertTypedSearchAttributes(ctx, OrderStatusAttr.ValueSet(status))
+}
+
+func (wf *orderImpl) buildFulfillments(ctx workflow.Context, items []*Item) error {
 	ctx = workflow.WithActivityOptions(ctx,
 		workflow.ActivityOptions{
 			StartToCloseTimeout: 30 * time.Second,
 		},
 	)
 
-	var result FulfillOrderResult
+	var result ReserveItemsResult
 
 	err := workflow.ExecuteActivity(ctx,
-		a.FulfillOrder,
-		FulfillOrderInput{
-			OrderID: o.id,
+		a.ReserveItems,
+		ReserveItemsInput{
+			OrderID: wf.id,
 			Items:   items,
 		},
 	).Get(ctx, &result)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return result.Fulfillments, nil
+	for i, r := range result.Reservations {
+		f := &Fulfillment{
+			orderID:    wf.id,
+			customerID: wf.customerID,
+
+			ID:       fmt.Sprintf("%s:%d", wf.id, i+1),
+			Items:    r.Items,
+			Location: r.Location,
+			Status:   FulfillmentStatusPending,
+		}
+		if !r.Available {
+			f.Status = FulfillmentStatusUnavailable
+		}
+		wf.fulfillments = append(wf.fulfillments, f)
+	}
+
+	return nil
 }
 
-func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment *Fulfillment) error {
+func (wf *orderImpl) customerActionRequired() bool {
+	for _, f := range wf.fulfillments {
+		if f.Status == FulfillmentStatusUnavailable {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (wf *orderImpl) removeUnavailableFulfillments() {
+	var available []*Fulfillment
+	for _, f := range wf.fulfillments {
+		if f.Status != FulfillmentStatusUnavailable {
+			available = append(available, f)
+		}
+	}
+
+	wf.fulfillments = available
+}
+
+func (wf *orderImpl) waitForCustomer(ctx workflow.Context) (string, error) {
+	ch := workflow.GetSignalChannel(ctx, CustomerActionSignalName)
+
+	var signal CustomerActionSignal
+	ch.Receive(ctx, &signal)
+	switch signal.Action {
+	case CustomerActionAmend:
+	case CustomerActionCancel:
+	default:
+		return "", fmt.Errorf("invalid customer action %q", signal.Action)
+	}
+
+	return signal.Action, nil
+}
+
+func (wf *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
+	ch := workflow.GetSignalChannel(ctx, shipment.ShipmentStatusUpdatedSignalName)
+
+	for {
+		var signal shipment.ShipmentStatusUpdatedSignal
+		_ = ch.Receive(ctx, &signal)
+		for _, f := range wf.fulfillments {
+			if f.ID == signal.ShipmentID {
+				f.Shipment.Status = signal.Status
+				f.Shipment.UpdatedAt = signal.UpdatedAt
+				break
+			}
+		}
+	}
+}
+
+func (f *Fulfillment) process(ctx workflow.Context) error {
+	f.Status = FulfillmentStatusProcessing
+
+	if err := f.processPayment(ctx); err != nil {
+		f.Status = FulfillmentStatusFailed
+		return err
+	}
+
+	if err := f.processShipment(ctx); err != nil {
+		f.Status = FulfillmentStatusFailed
+		return err
+	}
+
+	f.Status = FulfillmentStatusCompleted
+	return nil
+}
+
+func (f *Fulfillment) processPayment(ctx workflow.Context) error {
 	var billingItems []billing.Item
-	for _, i := range fulfillment.Items {
+	for _, i := range f.Items {
 		billingItems = append(billingItems, billing.Item{SKU: i.SKU, Quantity: i.Quantity})
 	}
 
@@ -117,76 +234,64 @@ func (o *orderImpl) processFulfillment(ctx workflow.Context, fulfillment *Fulfil
 		},
 	)
 
-	fulfillment.Payment.Status = "pending"
+	f.Payment = &PaymentStatus{Status: PaymentStatusPending}
 
-	f := workflow.ExecuteActivity(ctx,
+	c := workflow.ExecuteActivity(ctx,
 		a.Charge,
 		&ChargeInput{
-			CustomerID: o.customerID,
-			Reference:  fulfillment.ID,
+			CustomerID: f.customerID,
+			Reference:  f.ID,
 			Items:      billingItems,
 		},
 	)
-	err := f.Get(ctx, &charge)
-	if err != nil {
-		fulfillment.Payment.Status = "failed"
-		return nil
-	}
-
-	fulfillment.Payment.SubTotal = charge.SubTotal
-	fulfillment.Payment.Tax = charge.Tax
-	fulfillment.Payment.Shipping = charge.Shipping
-	fulfillment.Payment.Total = charge.Total
-	if !charge.Success {
-		fulfillment.Payment.Status = "failed"
-		return nil
-	}
-
-	fulfillment.Payment.Status = "succeeded"
-
-	shipmentID := fmt.Sprintf("Shipment:%s", fulfillment.ID)
-
-	ctx = workflow.WithChildOptions(ctx,
-		workflow.ChildWorkflowOptions{
-			TaskQueue:  shipment.TaskQueue,
-			WorkflowID: shipmentID,
-		},
-	)
-
-	var shippingItems []shipment.Item
-	for _, i := range fulfillment.Items {
-		shippingItems = append(shippingItems, shipment.Item{SKU: i.SKU, Quantity: i.Quantity})
-	}
-
-	shipment := workflow.ExecuteChildWorkflow(ctx,
-		shipment.Shipment,
-		shipment.ShipmentInput{
-			OrderID:         o.id,
-			OrderWorkflowID: workflow.GetInfo(ctx).WorkflowExecution.ID,
-			Items:           shippingItems,
-		},
-	)
-	fulfillment.Shipment = &ShipmentStatus{ID: shipmentID}
-
-	if err := shipment.Get(ctx, nil); err != nil {
-		// TODO: On shipment failure, prompt user if they'd like to re-ship or cancel
+	if err := c.Get(ctx, &charge); err != nil {
+		f.Payment.Status = PaymentStatusFailed
 		return err
+	}
+
+	p := f.Payment
+
+	p.SubTotal = charge.SubTotal
+	p.Tax = charge.Tax
+	p.Shipping = charge.Shipping
+	p.Total = charge.Total
+	if charge.Success {
+		p.Status = PaymentStatusSuccess
+	} else {
+		p.Status = PaymentStatusFailed
 	}
 
 	return nil
 }
 
-func (o *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
-	ch := workflow.GetSignalChannel(ctx, shipment.ShipmentStatusUpdatedSignalName)
-	for {
-		var signal shipment.ShipmentStatusUpdatedSignal
-		_ = ch.Receive(ctx, &signal)
-		for _, f := range o.status.Fulfillments {
-			if f.Shipment.ID == signal.ShipmentID {
-				f.Shipment.Status = signal.Status
-				f.Shipment.UpdatedAt = signal.UpdatedAt
-				break
-			}
-		}
+func (f *Fulfillment) processShipment(ctx workflow.Context) error {
+	ctx = workflow.WithChildOptions(ctx,
+		workflow.ChildWorkflowOptions{
+			TaskQueue:  shipment.TaskQueue,
+			WorkflowID: shipment.ShipmentWorkflowID(f.ID),
+		},
+	)
+
+	var shippingItems []shipment.Item
+	for _, i := range f.Items {
+		shippingItems = append(shippingItems, shipment.Item{SKU: i.SKU, Quantity: i.Quantity})
 	}
+
+	f.Shipment = &ShipmentStatus{
+		ID:        f.ID,
+		Status:    shipment.ShipmentStatusPending,
+		UpdatedAt: workflow.Now(ctx),
+	}
+
+	err := workflow.ExecuteChildWorkflow(ctx,
+		shipment.Shipment,
+		shipment.ShipmentInput{
+			RequestorWID: workflow.GetInfo(ctx).WorkflowExecution.ID,
+
+			ID:    f.ID,
+			Items: shippingItems,
+		},
+	).Get(ctx, nil)
+
+	return err
 }
