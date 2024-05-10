@@ -1,6 +1,10 @@
 <script lang="ts">
-	export let actionRequired = false;
+	import { page } from '$app/stores';
+	import { type Order } from '$lib/types/order';
 
+	$: actionRequired = $page.data?.orders?.some(
+		(o: Order) => o?.status === 'customerActionRequired'
+	);
 	$: statusColor = actionRequired ? '#EF8080' : '#366ee9';
 </script>
 

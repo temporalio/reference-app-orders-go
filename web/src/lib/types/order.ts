@@ -60,7 +60,7 @@ export const generateOrders = (quantity: number): Order[] => {
 	const orders = [];
 	for (let i = 0; i < quantity; i++) {
 		const shuffledItems = items.sort(() => 0.5 - Math.random());
-		const n = Math.floor(Math.random() * 5) + 1;
+		const n = Math.floor(Math.random() * 5) + 2;
 		const selected = shuffledItems.slice(0, n);
 		orders.push({
 			id: `A${i + 1}-${Date.now()}`,

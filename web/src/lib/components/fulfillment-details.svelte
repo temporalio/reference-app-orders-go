@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Order } from '$lib/types/order';
+	import { type Fulfillment, type Order } from '$lib/types/order';
 	import ItemDetails from './item-details.svelte';
 	import PaymentDetails from './payment-details.svelte';
 	import ShipmentStatus from './shipment-status.svelte';
@@ -7,6 +7,11 @@
 	export let order: Order;
 
 	$: fulfillments = order?.fulfillments || [];
+
+	$: getStatus = (fulfillment: Fulfillment) => {
+		if (!fulfillment.shipment) return fulfillment.status;
+		return fulfillment.shipment.status;
+	};
 </script>
 
 <div class="details">
@@ -20,11 +25,7 @@
 						<strong>Action Required</strong>
 					{/if}
 				</p>
-				{#if fulfillment.shipment}
-					<ShipmentStatus shipment={fulfillment.shipment} />
-				{:else}
-					<ShipmentStatus status={fulfillment.status} />
-				{/if}
+				<ShipmentStatus id={fulfillment?.shipment?.id} status={getStatus(fulfillment)} />
 			</div>
 			<ItemDetails items={fulfillment.items} />
 			{#if fulfillment.payment}
