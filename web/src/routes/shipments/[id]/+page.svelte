@@ -7,16 +7,25 @@
 
 	$: status = shipment?.status;
 
+	let broadcaster: BroadcastChannel;
+	$: {
+		if (shipment?.id) {
+			broadcaster = new BroadcastChannel(`shipment-${shipment.id}`);
+		}
+	}
+
 	const dispatchShipment = async (shipment: Shipment) => {
 		const signal = { name: 'ShipmentUpdate', status: 'dispatched' };
 		await fetch('/api/shipment', { method: 'POST', body: JSON.stringify({ shipment, signal }) });
 		status = 'dispatched';
+		broadcaster?.postMessage(status);
 	};
 
 	const deliverShipment = async (shipment: Shipment) => {
 		const signal = { name: 'ShipmentUpdate', status: 'delivered' };
 		await fetch('/api/shipment', { method: 'POST', body: JSON.stringify({ shipment, signal }) });
 		status = 'delivered';
+		broadcaster?.postMessage(status);
 	};
 </script>
 

@@ -2,7 +2,6 @@
 	import { page } from '$app/stores';
 	import FulfillmentDetails from '$lib/components/fulfillment-details.svelte';
 	import OrderActions from '$lib/components/order-actions.svelte';
-	import { onMount } from 'svelte';
 
 	$: ({ order } = $page.data);
 </script>

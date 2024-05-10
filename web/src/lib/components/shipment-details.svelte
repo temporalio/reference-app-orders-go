@@ -8,7 +8,7 @@
 </script>
 
 <div class="details">
-	<ShipmentStatus {shipment} {status} />
+	<ShipmentStatus {status} />
 	<ItemDetails items={shipment.items} />
 </div>
 

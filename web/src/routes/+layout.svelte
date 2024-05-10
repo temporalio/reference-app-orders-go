@@ -1,15 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import type { LayoutData } from './$types';
 
 	import Logo from '$lib/components/logo.svelte';
-	import StatusIcon from '$lib/components/status-icon.svelte';
-	import type { Order } from '$lib/types/order';
 	import './app.css';
-
-	export let data: LayoutData;
-
-	$: actionRequired = data?.orders.some((o: Order) => o?.status === 'customerActionRequired');
 </script>
 
 <svelte:head>
@@ -26,7 +19,6 @@
 					<a href="/orders" class:active={$page.url.pathname.includes('orders')}>Orders</a>
 					<a href="/shipments" class:active={$page.url.pathname.includes('shipments')}>Shipments</a>
 				</div>
-				<StatusIcon {actionRequired} />
 			</div>
 		</nav>
 	</header>
