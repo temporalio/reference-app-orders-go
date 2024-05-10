@@ -87,7 +87,7 @@ func Test_Order(t *testing.T) {
 	require.NoError(t, err)
 
 	go func() {
-		_ = server.RunServer(ctx, c)
+		require.NoError(t, server.RunServer(ctx, c))
 	}()
 
 	res, err := postJSON("http://localhost:8083/orders", &order.OrderInput{
