@@ -16,7 +16,7 @@
 		<a href="/"><text fill={statusColor} x="120" y="100">Tora</text></a>
 	</svg>
 {:else}
-	<svg width="400" height="120" viewBox="0 0 400 120">
+	<svg width="400" height="150" viewBox="0 0 400 150">
 		<radialGradient id="gradient" cx="50%" cy="50%" r="70%">
 			<animate attributeName="r" values="0%;150%;100%;0%" dur="1s" repeatCount="indefinite" />
 			<stop stop-color="#366ee9" offset="0">
