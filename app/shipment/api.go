@@ -52,22 +52,26 @@ type ListShipmentEntry struct {
 	Status string `json:"status"`
 }
 
+// EnsureValidTemporalEnv validates the Temporal Server environment for the Shipment Worker and API.
+func EnsureValidTemporalEnv(ctx context.Context, clientOptions client.Options) error {
+	client, err := client.Dial(clientOptions)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+	defer client.Close()
+
+	if err := temporalutil.EnsureSearchAttributeExists(ctx, client, clientOptions, ShipmentStatusAttr); err != nil {
+		return fmt.Errorf("failed to ensure search attribute exists: %w", err)
+	}
+
+	return nil
+}
+
 // RunServer runs a Shipment API HTTP server on the given port.
-func RunServer(ctx context.Context, port int) error {
-	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
-	if err != nil {
-		return fmt.Errorf("failed to create client options: %v", err)
-	}
-
-	c, err := client.Dial(clientOptions)
-	if err != nil {
-		return fmt.Errorf("client error: %v", err)
-	}
-	defer c.Close()
-
+func RunServer(ctx context.Context, port int, client client.Client) error {
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
-		Handler: Router(c),
+		Handler: Router(client),
 	}
 
 	fmt.Printf("Listening on http://127.0.0.1:%d\n", port)
@@ -78,7 +82,7 @@ func RunServer(ctx context.Context, port int) error {
 	select {
 	case <-ctx.Done():
 		srv.Close()
-	case err = <-errCh:
+	case err := <-errCh:
 		return err
 	}
 
@@ -86,9 +90,9 @@ func RunServer(ctx context.Context, port int) error {
 }
 
 // Router implements the http.Handler interface for the Shipment API
-func Router(c client.Client) *mux.Router {
+func Router(client client.Client) *mux.Router {
 	r := mux.NewRouter()
-	h := handlers{temporal: c}
+	h := handlers{temporal: client}
 
 	r.HandleFunc("/shipments", h.handleListShipments).Methods("GET")
 	r.HandleFunc("/shipments/{id}", h.handleGetShipment).Methods("GET")

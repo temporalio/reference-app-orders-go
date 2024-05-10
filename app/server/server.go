@@ -1,11 +1,17 @@
-package temporalutil
+package server
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"os"
 
+	"github.com/temporalio/orders-reference-app-go/app/billing"
+	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
+	"github.com/temporalio/orders-reference-app-go/app/order"
+	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/client"
+	"golang.org/x/sync/errgroup"
 )
 
 // CreateClientOptionsFromEnv creates a client.Options instance, configures
@@ -20,13 +26,10 @@ import (
 // If these environment variables are not set, the client.Options
 // instance returned will be based on the SDK's default configuration.
 func CreateClientOptionsFromEnv() (client.Options, error) {
-	namespaceName := os.Getenv("TEMPORAL_NAMESPACE")
 	hostPort := os.Getenv("TEMPORAL_ADDRESS")
+	namespaceName := os.Getenv("TEMPORAL_NAMESPACE")
 
-	// Must explicitly set the Namepace for non-cloud use, since the
-	// call to create the Custom Search Attribute will fail if it's
-	// unset, even though it's not required to create ClientOptions.
-	if namespaceName == "" && ! IsTemporalCloud(hostPort)  {
+	if namespaceName == "" {
 		namespaceName = "default"
 		fmt.Printf("Namespace name unspecified; using value '%s'\n", namespaceName)
 	}
@@ -48,4 +51,40 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	}
 
 	return clientOpts, nil
+}
+
+// RunServer runs all the workers and API servers for the Order/Shipment/Fraud/Billing system.
+func RunServer(ctx context.Context, client client.Client) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		return billing.RunWorker(ctx, client)
+	})
+	g.Go(func() error {
+		return shipment.RunWorker(ctx, client)
+	})
+	g.Go(func() error {
+		return order.RunWorker(ctx, client)
+	})
+	g.Go(func() error {
+		return billing.RunServer(ctx, 8082, client)
+	})
+	g.Go(func() error {
+		return order.RunServer(ctx, 8083, client)
+	})
+	g.Go(func() error {
+		return shipment.RunServer(ctx, 8081, client)
+	})
+	g.Go(func() error {
+		return fraudcheck.RunServer(ctx, 8084)
+	})
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	return nil
 }

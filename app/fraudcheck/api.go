@@ -9,8 +9,6 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
-	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
-	"go.temporal.io/sdk/client"
 )
 
 // FraudLimitInput is the input for the SetLimit API.
@@ -37,17 +35,6 @@ type handlers struct {
 
 // RunServer runs a FraudCheck API HTTP server on the given port.
 func RunServer(ctx context.Context, port int) error {
-	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
-	if err != nil {
-		return fmt.Errorf("failed to create client options: %v", err)
-	}
-
-	c, err := client.Dial(clientOptions)
-	if err != nil {
-		return fmt.Errorf("client error: %v", err)
-	}
-	defer c.Close()
-
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
 		Handler: Router(),
@@ -61,7 +48,7 @@ func RunServer(ctx context.Context, port int) error {
 	select {
 	case <-ctx.Done():
 		srv.Close()
-	case err = <-errCh:
+	case err := <-errCh:
 		return err
 	}
 
