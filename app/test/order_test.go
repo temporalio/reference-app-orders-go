@@ -98,6 +98,7 @@ func Test_Order(t *testing.T) {
 			{SKU: "Nike Air", Quantity: 2},
 		},
 	})
+	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, res.StatusCode)
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
