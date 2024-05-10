@@ -77,7 +77,7 @@ func ChargeCustomer(ctx context.Context, input *ChargeCustomerInput) (*ChargeCus
 		return nil, fmt.Errorf("failed to encode input: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://localhost:8084/check", bytes.NewReader(jsonInput))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://127.0.0.1:8084/check", bytes.NewReader(jsonInput))
 	if err != nil {
 		return nil, fmt.Errorf("failed to build fraud check request: %w", err)
 	}

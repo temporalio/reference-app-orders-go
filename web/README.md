@@ -7,7 +7,7 @@ pnpm i
 pnpm dev
 ```
 
-Navigate to http://localhost:5173/ to view UI.
+Navigate to http://127.0.0.1:5173/ to view UI.
 
 ## Building
 

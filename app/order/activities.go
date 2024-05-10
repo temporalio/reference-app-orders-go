@@ -107,7 +107,7 @@ func (a *Activities) Charge(ctx context.Context, input *ChargeInput) (*ChargeRes
 		return nil, fmt.Errorf("unable to encode input: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://localhost:8082/charge", bytes.NewReader(jsonInput))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://127.0.0.1:8082/charge", bytes.NewReader(jsonInput))
 	if err != nil {
 		return nil, fmt.Errorf("unable to build request: %w", err)
 	}

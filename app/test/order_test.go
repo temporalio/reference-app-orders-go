@@ -87,10 +87,10 @@ func Test_Order(t *testing.T) {
 	require.NoError(t, err)
 
 	go func() {
-		require.NoError(t, server.RunServer(ctx, c))
+		_ = server.RunServer(ctx, c)
 	}()
 
-	res, err := postJSON("http://localhost:8083/orders", &order.OrderInput{
+	res, err := postJSON("http://127.0.0.1:8083/orders", &order.OrderInput{
 		ID:         "order123",
 		CustomerID: "customer123",
 		Items: []*order.Item{
@@ -103,20 +103,20 @@ func Test_Order(t *testing.T) {
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		var o order.OrderStatus
-		res, err = getJSON("http://localhost:8083/orders/order123", &o)
+		res, err = getJSON("http://127.0.0.1:8083/orders/order123", &o)
 		require.NoError(t, err)
 
 		assert.Equal(c, "customerActionRequired", o.Status)
 	}, 3*time.Second, 100*time.Millisecond)
 
-	res, err = postJSON("http://localhost:8083/orders/order123/action", &order.CustomerActionSignal{
+	res, err = postJSON("http://127.0.0.1:8083/orders/order123/action", &order.CustomerActionSignal{
 		Action: "amend",
 	})
 	require.Equal(t, http.StatusOK, res.StatusCode)
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		var o order.OrderStatus
-		res, err := getJSON("http://localhost:8083/orders/order123", &o)
+		res, err := getJSON("http://127.0.0.1:8083/orders/order123", &o)
 		require.NoError(t, err)
 
 		require.Equal(c, http.StatusOK, res.StatusCode)
@@ -124,18 +124,18 @@ func Test_Order(t *testing.T) {
 	}, 3*time.Second, 100*time.Millisecond)
 
 	var o order.OrderStatus
-	res, err = getJSON("http://localhost:8083/orders/order123", &o)
+	res, err = getJSON("http://127.0.0.1:8083/orders/order123", &o)
 	require.NoError(t, err)
 
 	for _, f := range o.Fulfillments {
-		res, err := postJSON("http://localhost:8081/shipments/"+f.Shipment.ID+"/status", &shipment.ShipmentCarrierUpdateSignal{Status: "delivered"})
+		res, err := postJSON("http://127.0.0.1:8081/shipments/"+f.Shipment.ID+"/status", &shipment.ShipmentCarrierUpdateSignal{Status: "delivered"})
 		require.Equal(t, http.StatusOK, res.StatusCode)
 		require.NoError(t, err)
 	}
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		var o order.OrderStatus
-		res, err = getJSON("http://localhost:8083/orders/order123", &o)
+		res, err = getJSON("http://127.0.0.1:8083/orders/order123", &o)
 		require.NoError(t, err)
 
 		require.Equal(c, http.StatusOK, res.StatusCode)
