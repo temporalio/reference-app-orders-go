@@ -1,13 +1,18 @@
 <script lang="ts">
-	import { type Shipment } from '$lib/types/order';
-
-	export let shipment: Shipment | undefined = undefined;
+	export let id: string | undefined = undefined;
 	export let status = '';
+
+	if (id) {
+		const broadcaster = new BroadcastChannel(`shipment-${id}`);
+		broadcaster?.addEventListener('message', (event) => {
+			status = event.data;
+		});
+	}
 
 	const inactiveStatuses = ['pending', 'unavailable'];
 	const activeStatuses = ['booked', 'dispatched', 'delivered'];
 
-	$: finalStatus = status || shipment?.status || 'pending';
+	$: finalStatus = status || 'pending';
 	$: inactive = inactiveStatuses.includes(finalStatus);
 	$: statuses = inactive ? [finalStatus] : activeStatuses;
 	$: currentIndex = inactive ? 0 : activeStatuses.indexOf(finalStatus);
