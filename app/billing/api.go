@@ -99,9 +99,14 @@ func Router(c client.Client) *mux.Router {
 	r := mux.NewRouter()
 	h := handlers{temporal: c}
 
+	r.HandleFunc("/health", h.handleHealth)
 	r.HandleFunc("/charge", h.handleCharge)
 
 	return r
+}
+
+func (h *handlers) handleHealth(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {

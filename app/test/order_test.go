@@ -50,6 +50,10 @@ func getJSON(url string, result interface{}) (*http.Response, error) {
 	defer r.Body.Close()
 
 	if r.StatusCode >= 200 && r.StatusCode < 300 {
+		if result == nil {
+			return r, nil
+		}
+
 		err = json.NewDecoder(r.Body).Decode(result)
 		return r, err
 	}
@@ -89,6 +93,30 @@ func Test_Order(t *testing.T) {
 	go func() {
 		_ = server.RunServer(ctx, c)
 	}()
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		res, err := getJSON("http://127.0.0.1:8081/health", nil)
+		require.NoError(t, err)
+		require.Equal(c, http.StatusOK, res.StatusCode)
+	}, 3*time.Second, 100*time.Millisecond)
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		res, err := getJSON("http://127.0.0.1:8082/health", nil)
+		require.NoError(t, err)
+		require.Equal(c, http.StatusOK, res.StatusCode)
+	}, 3*time.Second, 100*time.Millisecond)
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		res, err := getJSON("http://127.0.0.1:8083/health", nil)
+		require.NoError(t, err)
+		require.Equal(c, http.StatusOK, res.StatusCode)
+	}, 3*time.Second, 100*time.Millisecond)
+
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		res, err := getJSON("http://127.0.0.1:8084/health", nil)
+		require.NoError(t, err)
+		require.Equal(c, http.StatusOK, res.StatusCode)
+	}, 3*time.Second, 100*time.Millisecond)
 
 	res, err := postJSON("http://127.0.0.1:8083/orders", &order.OrderInput{
 		ID:         "order123",

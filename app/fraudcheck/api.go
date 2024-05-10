@@ -60,11 +60,16 @@ func Router() *mux.Router {
 	r := mux.NewRouter()
 	h := handlers{customerChargeTally: make(map[string]int32)}
 
+	r.HandleFunc("/health", h.handleHealth)
 	r.HandleFunc("/limit", h.handleSetLimit).Methods("POST")
 	r.HandleFunc("/reset", h.handleReset).Methods("POST")
 	r.HandleFunc("/check", h.handleRunCheck).Methods("POST")
 
 	return r
+}
+
+func (h *handlers) handleHealth(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *handlers) handleSetLimit(w http.ResponseWriter, r *http.Request) {
