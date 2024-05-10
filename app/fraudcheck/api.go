@@ -31,7 +31,7 @@ type FraudCheckResult struct {
 
 type handlers struct {
 	limit               int32
-	ccTallyLock         sync.Mutex
+	tallyLock           sync.Mutex
 	customerChargeTally map[string]int32
 }
 
@@ -94,9 +94,10 @@ func (h *handlers) handleSetLimit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleReset(http.ResponseWriter, *http.Request) {
-	h.ccTallyLock.Lock()
+	h.tallyLock.Lock()
 	h.customerChargeTally = make(map[string]int32)
-	defer h.ccTallyLock.Unlock()
+	h.tallyLock.Unlock()
+
 	h.limit = 0
 }
 
@@ -110,10 +111,10 @@ func (h *handlers) handleRunCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.ccTallyLock.Lock()
+	h.tallyLock.Lock()
 	h.customerChargeTally[input.CustomerID] += input.Charge
-	defer h.ccTallyLock.Unlock()
 	approved := h.limit == 0 || h.customerChargeTally[input.CustomerID] < h.limit
+	h.tallyLock.Unlock()
 	result := FraudCheckResult{Approved: approved}
 
 	w.Header().Set("Content-Type", "application/json")
