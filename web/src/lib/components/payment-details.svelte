@@ -13,25 +13,25 @@
 	<div class="row">
 		<p class="label">Subtotal</p>
 		<p class="value">
-			{payment.subTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+			{(payment.subTotal / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
 		</p>
 	</div>
 	<div class="row">
 		<p class="label">Tax</p>
 		<p class="value">
-			{payment.tax.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+			{(payment.tax / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
 		</p>
 	</div>
 	<div class="row" style="border-bottom: 2px solid black;">
 		<p class="label">Shipping</p>
 		<p class="value">
-			{payment.shipping.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+			{(payment.shipping / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
 		</p>
 	</div>
 	<div class="row">
 		<p class="label">Total</p>
 		<p class="value">
-			{payment.total.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+			{(payment.total / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
 		</p>
 	</div>
 </div>

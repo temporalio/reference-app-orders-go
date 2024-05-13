@@ -68,18 +68,20 @@ export const generateOrders = (quantity: number): Order[] => {
 			items: selected.map((item) => ({ ...item, quantity: Math.floor(Math.random() * 3) + 1 }))
 		});
 	}
-	// For demo purposes, we'll ensure that the first order always 
-	// contains a single specific item (whose SKU does not trigger 
+	// For demo purposes, we'll ensure that the first order always
+	// contains a single specific item (whose SKU does not trigger
 	// item unavailability). This will make it easy to demonstrate
 	// the simplest possible case.
-	const sortedItems = items.sort(function(a, b) {
-		return (a.sku < b.sku) ? -1 : (a.sku > b.sku) ? 1 : 0;
+	const sortedItems = items.sort(function (a, b) {
+		return a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0;
 	});
-	orders[0].items = [{
-		sku: sortedItems[sortedItems.length - 1].sku,
-		description: items[sortedItems.length - 1].description,
-		quantity: 1
-	}];
+	orders[0].items = [
+		{
+			sku: sortedItems[sortedItems.length - 1].sku,
+			description: items[sortedItems.length - 1].description,
+			quantity: 1
+		}
+	];
 	return orders;
 };
 
