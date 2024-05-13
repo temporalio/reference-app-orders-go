@@ -52,7 +52,7 @@ func calculateCosts(item Item) (cost int32, tax int32) {
 // calculateShippingCost calculates the shipping cost for an item.
 func calculateShippingCost(item Item) int32 {
 	// This is just a simulation, so make up a cost
-	// Normally this would looked up on the SKU
+	// Normally this would be looked up on the SKU
 	costPerUnit := 500 + rand.Int31n(500)
 	return costPerUnit * int32(item.Quantity)
 }
