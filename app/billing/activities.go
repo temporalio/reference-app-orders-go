@@ -44,7 +44,7 @@ func GenerateInvoice(_ context.Context, input *GenerateInvoiceInput) (*GenerateI
 func calculateCosts(item Item) (cost int32, tax int32) {
 	// This is just a simulation, so make up a cost
 	// Normally this would be looked up on the SKU
-	costPerUnit := rand.Int31n(10000)
+	costPerUnit := 4500 + rand.Int31n(9500)
 	// Return tax at 20%
 	return costPerUnit * int32(item.Quantity), costPerUnit * int32(item.Quantity) / 5
 }
@@ -53,7 +53,7 @@ func calculateCosts(item Item) (cost int32, tax int32) {
 func calculateShippingCost(item Item) int32 {
 	// This is just a simulation, so make up a cost
 	// Normally this would looked up on the SKU
-	costPerUnit := rand.Int31n(500)
+	costPerUnit := 500 + rand.Int31n(500)
 	return costPerUnit * int32(item.Quantity)
 }
 
