@@ -18,7 +18,10 @@ import (
 // using a self-hosted deployment. If using Temporal Cloud, it will emit
 // a reminder stating that the user must create the attribute.
 func EnsureSearchAttributeExists(ctx context.Context, client client.Client, clientOptions client.Options, attr temporal.SearchAttributeKey) error {
-	if IsTemporalCloud(clientOptions.HostPort) {
+	// Must explicitly set the Namepace for non-cloud use, since the
+	// call to create the Custom Search Attribute will fail if it's
+	// unset, even though it's not required to create ClientOptions.
+	if clientOptions.Namespace == "" && !IsTemporalCloud(clientOptions.HostPort) {
 		log.Printf("Reminder: You must ensure that the '%s' Custom Search Attribute exists in your Temporal Cloud Namespace", attr.GetName())
 		return nil
 	}

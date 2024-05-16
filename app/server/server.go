@@ -8,6 +8,7 @@ import (
 
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
+	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/client"
@@ -28,6 +29,11 @@ import (
 func CreateClientOptionsFromEnv() (client.Options, error) {
 	hostPort := os.Getenv("TEMPORAL_ADDRESS")
 	namespaceName := os.Getenv("TEMPORAL_NAMESPACE")
+
+	// Must explicitly set the Namepace for non-cloud use.
+	if temporalutil.IsTemporalCloud(hostPort) && namespaceName == "" {
+		return client.Options{}, fmt.Errorf("Namespace name unspecified; required for Temporal Cloud")
+	}
 
 	if namespaceName == "" {
 		namespaceName = "default"
