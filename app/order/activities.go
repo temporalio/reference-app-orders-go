@@ -14,7 +14,9 @@ import (
 
 // Activities implements the order package's Activities.
 // Any state shared by the worker among the activities is stored here.
-type Activities struct{}
+type Activities struct {
+	BillingURL string
+}
 
 var a Activities
 
@@ -107,14 +109,14 @@ func (a *Activities) Charge(ctx context.Context, input *ChargeInput) (*ChargeRes
 		return nil, fmt.Errorf("unable to encode input: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://127.0.0.1:8082/charge", bytes.NewReader(jsonInput))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.BillingURL+"/charge", bytes.NewReader(jsonInput))
 	if err != nil {
 		return nil, fmt.Errorf("unable to build request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := http.Client{}
+	client := http.DefaultClient
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err

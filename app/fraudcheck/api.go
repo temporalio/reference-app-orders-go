@@ -24,7 +24,7 @@ type FraudCheckInput struct {
 
 // FraudCheckResult is the result for the check endpoint.
 type FraudCheckResult struct {
-	Approved bool `json:"approved"`
+	Declined bool `json:"declined"`
 }
 
 type handlers struct {
@@ -105,9 +105,9 @@ func (h *handlers) handleRunCheck(w http.ResponseWriter, r *http.Request) {
 
 	h.tallyLock.Lock()
 	h.customerChargeTally[input.CustomerID] += input.Charge
-	approved := h.limit == 0 || h.customerChargeTally[input.CustomerID] < h.limit
+	declined := h.limit >= 0 && h.customerChargeTally[input.CustomerID] > h.limit
 	h.tallyLock.Unlock()
-	result := FraudCheckResult{Approved: approved}
+	result := FraudCheckResult{Declined: declined}
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(result)

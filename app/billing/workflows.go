@@ -17,7 +17,7 @@ func Charge(ctx workflow.Context, input *ChargeInput) (*ChargeResult, error) {
 	var invoice GenerateInvoiceResult
 
 	cwf := workflow.ExecuteActivity(ctx,
-		GenerateInvoice,
+		a.GenerateInvoice,
 		GenerateInvoiceInput{
 			CustomerID: input.CustomerID,
 			Reference:  input.Reference,
@@ -32,7 +32,7 @@ func Charge(ctx workflow.Context, input *ChargeInput) (*ChargeResult, error) {
 	var charge ChargeCustomerResult
 
 	cwf = workflow.ExecuteActivity(ctx,
-		ChargeCustomer,
+		a.ChargeCustomer,
 		ChargeCustomerInput{
 			CustomerID: input.CustomerID,
 			Reference:  invoice.InvoiceReference,

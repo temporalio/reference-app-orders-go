@@ -61,15 +61,6 @@ func RunServer(ctx context.Context, client client.Client) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		return billing.RunWorker(ctx, client)
-	})
-	g.Go(func() error {
-		return shipment.RunWorker(ctx, client)
-	})
-	g.Go(func() error {
-		return order.RunWorker(ctx, client)
-	})
-	g.Go(func() error {
 		return billing.RunServer(ctx, 8082, client)
 	})
 	g.Go(func() error {
@@ -80,6 +71,16 @@ func RunServer(ctx context.Context, client client.Client) error {
 	})
 	g.Go(func() error {
 		return fraudcheck.RunServer(ctx, 8084)
+	})
+
+	g.Go(func() error {
+		return billing.RunWorker(ctx, client, billing.Config{FraudCheckURL: "http://localhost:8084"})
+	})
+	g.Go(func() error {
+		return shipment.RunWorker(ctx, client)
+	})
+	g.Go(func() error {
+		return order.RunWorker(ctx, client, order.Config{BillingURL: "http://localhost:8082"})
 	})
 
 	if err := g.Wait(); err != nil {

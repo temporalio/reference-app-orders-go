@@ -8,12 +8,17 @@ import (
 	"go.temporal.io/sdk/worker"
 )
 
+// Config is the configuration for the Order system.
+type Config struct {
+	BillingURL string
+}
+
 // RunWorker runs a Workflow and Activity worker for the Order system.
-func RunWorker(ctx context.Context, client client.Client) error {
+func RunWorker(ctx context.Context, client client.Client, config Config) error {
 	w := worker.New(client, TaskQueue, worker.Options{})
 
 	w.RegisterWorkflow(Order)
-	w.RegisterActivity(&Activities{})
+	w.RegisterActivity(&Activities{BillingURL: config.BillingURL})
 
 	return w.Run(temporalutil.WorkerInterruptFromContext(ctx))
 }

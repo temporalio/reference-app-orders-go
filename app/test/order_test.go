@@ -7,16 +7,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/order"
-	"github.com/temporalio/orders-reference-app-go/app/server"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/testsuite"
+	"golang.org/x/sync/errgroup"
 )
 
 func postJSON(url string, input interface{}) (*http.Response, error) {
@@ -32,8 +34,7 @@ func postJSON(url string, input interface{}) (*http.Response, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := http.DefaultClient
-	return client.Do(req)
+	return http.DefaultClient.Do(req)
 }
 
 func getJSON(url string, result interface{}) (*http.Response, error) {
@@ -42,10 +43,9 @@ func getJSON(url string, result interface{}) (*http.Response, error) {
 		return nil, fmt.Errorf("unable to build request: %w", err)
 	}
 
-	client := http.DefaultClient
-	r, err := client.Do(req)
+	r, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return r, err
 	}
 	defer r.Body.Close()
 
@@ -90,35 +90,26 @@ func Test_Order(t *testing.T) {
 	err = shipment.EnsureValidTemporalEnv(ctx, options)
 	require.NoError(t, err)
 
-	go func() {
-		_ = server.RunServer(ctx, c)
-	}()
+	billingAPI := httptest.NewServer(billing.Router(c))
+	defer billingAPI.Close()
+	orderAPI := httptest.NewServer(order.Router(c))
+	defer orderAPI.Close()
+	shipmentAPI := httptest.NewServer(shipment.Router(c))
+	defer shipmentAPI.Close()
 
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		res, err := getJSON("http://127.0.0.1:8081/health", nil)
-		require.NoError(t, err)
-		require.Equal(c, http.StatusOK, res.StatusCode)
-	}, 3*time.Second, 100*time.Millisecond)
+	g, ctx := errgroup.WithContext(ctx)
 
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		res, err := getJSON("http://127.0.0.1:8082/health", nil)
-		require.NoError(t, err)
-		require.Equal(c, http.StatusOK, res.StatusCode)
-	}, 3*time.Second, 100*time.Millisecond)
+	g.Go(func() error {
+		return billing.RunWorker(ctx, c, billing.Config{FraudCheckURL: ""})
+	})
+	g.Go(func() error {
+		return shipment.RunWorker(ctx, c)
+	})
+	g.Go(func() error {
+		return order.RunWorker(ctx, c, order.Config{BillingURL: billingAPI.URL})
+	})
 
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		res, err := getJSON("http://127.0.0.1:8083/health", nil)
-		require.NoError(t, err)
-		require.Equal(c, http.StatusOK, res.StatusCode)
-	}, 3*time.Second, 100*time.Millisecond)
-
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
-		res, err := getJSON("http://127.0.0.1:8084/health", nil)
-		require.NoError(t, err)
-		require.Equal(c, http.StatusOK, res.StatusCode)
-	}, 3*time.Second, 100*time.Millisecond)
-
-	res, err := postJSON("http://127.0.0.1:8083/orders", &order.OrderInput{
+	res, err := postJSON(orderAPI.URL+"/orders", &order.OrderInput{
 		ID:         "order123",
 		CustomerID: "customer123",
 		Items: []*order.Item{
@@ -129,22 +120,22 @@ func Test_Order(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, res.StatusCode)
 
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		var o order.OrderStatus
-		res, err = getJSON("http://127.0.0.1:8083/orders/order123", &o)
+		res, err = getJSON(orderAPI.URL+"/orders/order123", &o)
 		require.NoError(t, err)
 
 		assert.Equal(c, "customerActionRequired", o.Status)
 	}, 3*time.Second, 100*time.Millisecond)
 
-	res, err = postJSON("http://127.0.0.1:8083/orders/order123/action", &order.CustomerActionSignal{
+	res, err = postJSON(orderAPI.URL+"/orders/order123/action", &order.CustomerActionSignal{
 		Action: "amend",
 	})
 	require.Equal(t, http.StatusOK, res.StatusCode)
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		var o order.OrderStatus
-		res, err := getJSON("http://127.0.0.1:8083/orders/order123", &o)
+		res, err := getJSON(orderAPI.URL+"/orders/order123", &o)
 		require.NoError(t, err)
 
 		require.Equal(c, http.StatusOK, res.StatusCode)
@@ -152,18 +143,18 @@ func Test_Order(t *testing.T) {
 	}, 3*time.Second, 100*time.Millisecond)
 
 	var o order.OrderStatus
-	res, err = getJSON("http://127.0.0.1:8083/orders/order123", &o)
+	res, err = getJSON(orderAPI.URL+"/orders/order123", &o)
 	require.NoError(t, err)
 
 	for _, f := range o.Fulfillments {
-		res, err := postJSON("http://127.0.0.1:8081/shipments/"+f.Shipment.ID+"/status", &shipment.ShipmentCarrierUpdateSignal{Status: "delivered"})
+		res, err := postJSON(shipmentAPI.URL+"/shipments/"+f.Shipment.ID+"/status", &shipment.ShipmentCarrierUpdateSignal{Status: "delivered"})
 		require.Equal(t, http.StatusOK, res.StatusCode)
 		require.NoError(t, err)
 	}
 
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		var o order.OrderStatus
-		res, err = getJSON("http://127.0.0.1:8083/orders/order123", &o)
+		res, err = getJSON(orderAPI.URL+"/orders/order123", &o)
 		require.NoError(t, err)
 
 		require.Equal(c, http.StatusOK, res.StatusCode)
@@ -172,6 +163,9 @@ func Test_Order(t *testing.T) {
 
 	cancel()
 
+	err = g.Wait()
+	require.NoError(t, err)
+
 	err = s.Stop()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
