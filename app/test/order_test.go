@@ -87,7 +87,7 @@ func Test_Order(t *testing.T) {
 	require.NoError(t, err)
 	defer c.Close()
 
-	err = shipment.EnsureValidTemporalEnv(ctx, options)
+	err = shipment.EnsureValidTemporalEnv(ctx, c, options)
 	require.NoError(t, err)
 
 	billingAPI := httptest.NewServer(billing.Router(c))

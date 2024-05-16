@@ -53,13 +53,7 @@ type ListShipmentEntry struct {
 }
 
 // EnsureValidTemporalEnv validates the Temporal Server environment for the Shipment Worker and API.
-func EnsureValidTemporalEnv(ctx context.Context, clientOptions client.Options) error {
-	client, err := client.Dial(clientOptions)
-	if err != nil {
-		return fmt.Errorf("failed to create client: %w", err)
-	}
-	defer client.Close()
-
+func EnsureValidTemporalEnv(ctx context.Context, client client.Client, clientOptions client.Options) error {
 	if err := temporalutil.EnsureSearchAttributeExists(ctx, client, clientOptions, ShipmentStatusAttr); err != nil {
 		return fmt.Errorf("failed to ensure search attribute exists: %w", err)
 	}

@@ -29,16 +29,16 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("failed to create client options: %w", err)
 		}
 
-		err = shipment.EnsureValidTemporalEnv(ctx, clientOptions)
-		if err != nil {
-			return fmt.Errorf("environment is not valid for shipment system: %w", err)
-		}
-
 		client, err := client.Dial(clientOptions)
 		if err != nil {
 			return fmt.Errorf("client error: %w", err)
 		}
 		defer client.Close()
+
+		err = shipment.EnsureValidTemporalEnv(ctx, client, clientOptions)
+		if err != nil {
+			return fmt.Errorf("environment is not valid for shipment system: %w", err)
+		}
 
 		go func() {
 			<-sigCh
