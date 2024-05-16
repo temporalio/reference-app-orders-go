@@ -211,17 +211,12 @@ func Router(client client.Client) *mux.Router {
 	r := mux.NewRouter()
 	h := handlers{temporal: client}
 
-	r.HandleFunc("/health", h.handleHealth)
 	r.HandleFunc("/orders", h.handleCreateOrder).Methods("POST")
 	r.HandleFunc("/orders", h.handleListOrders).Methods("GET")
 	r.HandleFunc("/orders/{id}", h.handleGetOrder)
 	r.HandleFunc("/orders/{id}/action", h.handleCustomerAction).Methods("POST")
 
 	return r
-}
-
-func (h *handlers) handleHealth(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
 }
 
 func (h *handlers) handleListOrders(w http.ResponseWriter, r *http.Request) {

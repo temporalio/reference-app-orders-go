@@ -88,16 +88,11 @@ func Router(client client.Client) *mux.Router {
 	r := mux.NewRouter()
 	h := handlers{temporal: client}
 
-	r.HandleFunc("/health", h.handleHealth)
 	r.HandleFunc("/shipments", h.handleListShipments).Methods("GET")
 	r.HandleFunc("/shipments/{id}", h.handleGetShipment).Methods("GET")
 	r.HandleFunc("/shipments/{id}/status", h.handleUpdateShipmentStatus).Methods("POST")
 
 	return r
-}
-
-func (h *handlers) handleHealth(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
 }
 
 func getStatusFromSearchAttributes(sa *common.SearchAttributes) (string, error) {
