@@ -2,16 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 
 	"github.com/spf13/cobra"
-	"github.com/temporalio/orders-reference-app-go/app/billing"
-	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
-	"github.com/temporalio/orders-reference-app-go/app/order"
+	"github.com/temporalio/orders-reference-app-go/app/server"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
-	"golang.org/x/sync/errgroup"
+	"go.temporal.io/sdk/client"
 )
 
 var rootCmd = &cobra.Command{
@@ -25,29 +24,21 @@ var rootCmd = &cobra.Command{
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt)
 
-		g, ctx := errgroup.WithContext(ctx)
+		clientOptions, err := server.CreateClientOptionsFromEnv()
+		if err != nil {
+			return fmt.Errorf("failed to create client options: %w", err)
+		}
 
-		g.Go(func() error {
-			return billing.RunWorker(ctx)
-		})
-		g.Go(func() error {
-			return shipment.RunWorker(ctx)
-		})
-		g.Go(func() error {
-			return order.RunWorker(ctx)
-		})
-		g.Go(func() error {
-			return billing.RunServer(ctx, 8082)
-		})
-		g.Go(func() error {
-			return order.RunServer(ctx, 8083)
-		})
-		g.Go(func() error {
-			return shipment.RunServer(ctx, 8081)
-		})
-		g.Go(func() error {
-			return fraudcheck.RunServer(ctx, 8084)
-		})
+		client, err := client.Dial(clientOptions)
+		if err != nil {
+			return fmt.Errorf("client error: %w", err)
+		}
+		defer client.Close()
+
+		err = shipment.EnsureValidTemporalEnv(ctx, client, clientOptions)
+		if err != nil {
+			return fmt.Errorf("environment is not valid for shipment system: %w", err)
+		}
 
 		go func() {
 			<-sigCh
@@ -55,7 +46,7 @@ var rootCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if err := g.Wait(); err != nil {
+		if err := server.RunServer(ctx, client); err != nil {
 			return err
 		}
 

@@ -26,3 +26,5 @@ jobs:
       - name: Test
         run: go test ./...
 
+      - name: Coverage
+        run: make unit-test-coverage functional-test-coverage coverage-report

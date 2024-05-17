@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
 	"go.temporal.io/api/common/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/api/workflowservice/v1"
@@ -186,21 +185,10 @@ type handlers struct {
 }
 
 // RunServer runs a Order API HTTP server on the given port.
-func RunServer(ctx context.Context, port int) error {
-	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
-	if err != nil {
-		return fmt.Errorf("failed to create client options: %v", err)
-	}
-
-	c, err := client.Dial(clientOptions)
-	if err != nil {
-		return fmt.Errorf("client error: %v", err)
-	}
-	defer c.Close()
-
+func RunServer(ctx context.Context, port int, client client.Client) error {
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
-		Handler: Router(c),
+		Handler: Router(client),
 	}
 
 	fmt.Printf("Listening on http://127.0.0.1:%d\n", port)
@@ -211,7 +199,7 @@ func RunServer(ctx context.Context, port int) error {
 	select {
 	case <-ctx.Done():
 		srv.Close()
-	case err = <-errCh:
+	case err := <-errCh:
 		return err
 	}
 
@@ -219,9 +207,9 @@ func RunServer(ctx context.Context, port int) error {
 }
 
 // Router implements the http.Handler interface for the Billing API
-func Router(c client.Client) *mux.Router {
+func Router(client client.Client) *mux.Router {
 	r := mux.NewRouter()
-	h := handlers{temporal: c}
+	h := handlers{temporal: client}
 
 	r.HandleFunc("/orders", h.handleCreateOrder).Methods("POST")
 	r.HandleFunc("/orders", h.handleListOrders).Methods("GET")

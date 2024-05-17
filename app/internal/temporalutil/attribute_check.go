@@ -3,7 +3,6 @@ package temporalutil
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"strings"
 
@@ -18,16 +17,10 @@ import (
 // Custom Search Attribute. If missing, it will attempt to create it if
 // using a self-hosted deployment. If using Temporal Cloud, it will emit
 // a reminder stating that the user must create the attribute.
-func EnsureSearchAttributeExists(ctx context.Context, client client.Client, namespaceName string, temporalHostPort string, attr temporal.SearchAttributeKey) error {
-	if IsTemporalCloud(temporalHostPort) {
+func EnsureSearchAttributeExists(ctx context.Context, client client.Client, clientOptions client.Options, attr temporal.SearchAttributeKey) error {
+	if IsTemporalCloud(clientOptions.HostPort) {
 		log.Printf("Reminder: You must ensure that the '%s' Custom Search Attribute exists in your Temporal Cloud Namespace", attr.GetName())
 		return nil
-	}
-
-	if namespaceName == "" {
-		// Unlike ClientOptions creation, the AddSearchAttributes call
-		// below requires that the Namespace is explicitly specified
-		return fmt.Errorf("namespace name undefined in check for '%s' attribute", attr.GetName())
 	}
 
 	attribMap := map[string]enums.IndexedValueType{
@@ -36,7 +29,7 @@ func EnsureSearchAttributeExists(ctx context.Context, client client.Client, name
 
 	_, err := client.OperatorService().AddSearchAttributes(ctx,
 		&operatorservice.AddSearchAttributesRequest{
-			Namespace:        namespaceName,
+			Namespace:        clientOptions.Namespace,
 			SearchAttributes: attribMap,
 		})
 	var alreadyErr *serviceerror.AlreadyExists

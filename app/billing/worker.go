@@ -2,31 +2,23 @@ package billing
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 )
 
+// Config for the Billing system.
+type Config struct {
+	FraudCheckURL string
+}
+
 // RunWorker runs a Workflow and Activity worker for the Billing system.
-func RunWorker(ctx context.Context) error {
-	clientOptions, err := temporalutil.CreateClientOptionsFromEnv()
-	if err != nil {
-		return fmt.Errorf("failed to create client options: %w", err)
-	}
-
-	c, err := client.Dial(clientOptions)
-	if err != nil {
-		return fmt.Errorf("client error: %w", err)
-	}
-	defer c.Close()
-
-	w := worker.New(c, TaskQueue, worker.Options{})
+func RunWorker(ctx context.Context, client client.Client, config Config) error {
+	w := worker.New(client, TaskQueue, worker.Options{})
 
 	w.RegisterWorkflow(Charge)
-	w.RegisterActivity(GenerateInvoice)
-	w.RegisterActivity(ChargeCustomer)
+	w.RegisterActivity(&Activities{FraudCheckURL: config.FraudCheckURL})
 
 	return w.Run(temporalutil.WorkerInterruptFromContext(ctx))
 }
