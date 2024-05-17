@@ -211,6 +211,11 @@ func (f *Fulfillment) process(ctx workflow.Context) error {
 		return err
 	}
 
+	if f.Payment.Status != PaymentStatusSuccess {
+		f.Status = FulfillmentStatusFailed
+		return nil
+	}
+
 	if err := f.processShipment(ctx); err != nil {
 		f.Status = FulfillmentStatusFailed
 		return err

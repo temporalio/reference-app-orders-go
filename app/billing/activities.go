@@ -79,7 +79,7 @@ func (a *Activities) fraudCheck(ctx context.Context, input *ChargeCustomerInput)
 		return nil, fmt.Errorf("failed to encode input: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.FraudCheckURL, bytes.NewReader(jsonInput))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.FraudCheckURL+"/check", bytes.NewReader(jsonInput))
 	if err != nil {
 		return nil, fmt.Errorf("failed to build fraud check request: %w", err)
 	}
