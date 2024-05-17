@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
+	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/client"
@@ -90,6 +91,8 @@ func Test_Order(t *testing.T) {
 	err = shipment.EnsureValidTemporalEnv(ctx, c, options)
 	require.NoError(t, err)
 
+	fraudAPI := httptest.NewServer(fraudcheck.Router())
+	defer fraudAPI.Close()
 	billingAPI := httptest.NewServer(billing.Router(c))
 	defer billingAPI.Close()
 	orderAPI := httptest.NewServer(order.Router(c))
@@ -100,7 +103,7 @@ func Test_Order(t *testing.T) {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		return billing.RunWorker(ctx, c, billing.Config{FraudCheckURL: ""})
+		return billing.RunWorker(ctx, c, billing.Config{FraudCheckURL: fraudAPI.URL})
 	})
 	g.Go(func() error {
 		return shipment.RunWorker(ctx, c)
