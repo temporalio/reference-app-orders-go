@@ -22,7 +22,9 @@ $(SUMMARY_COVERAGE_OUTPUT_ROOT):
 
 unit-test-coverage: $(TEST_COVERAGE_OUTPUT_ROOT)
 	@echo Unit test coverage
-	go test -cover ./app/{billing,order,shipment} -args -test.gocoverdir=$(TEST_COVERAGE_OUTPUT_ROOT) 
+	go test -cover ./app/billing -args -test.gocoverdir=$(TEST_COVERAGE_OUTPUT_ROOT) 
+	go test -cover ./app/order -args -test.gocoverdir=$(TEST_COVERAGE_OUTPUT_ROOT) 
+	go test -cover ./app/shipment -args -test.gocoverdir=$(TEST_COVERAGE_OUTPUT_ROOT) 
 
 functional-test-coverage: $(FUNCTIONAL_COVERAGE_OUTPUT_ROOT)
 	@echo Functional test coverage
