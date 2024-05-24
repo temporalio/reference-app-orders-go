@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
@@ -60,7 +61,7 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 }
 
 // RunServer runs all the workers and API servers for the Order/Shipment/Fraud/Billing system.
-func RunServer(ctx context.Context, client client.Client) error {
+func RunServer(ctx context.Context, client client.Client, db *sqlx.DB) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -70,10 +71,10 @@ func RunServer(ctx context.Context, client client.Client) error {
 		return billing.RunServer(ctx, 8082, client)
 	})
 	g.Go(func() error {
-		return order.RunServer(ctx, 8083, client)
+		return order.RunServer(ctx, 8083, client, db)
 	})
 	g.Go(func() error {
-		return shipment.RunServer(ctx, 8081, client)
+		return shipment.RunServer(ctx, 8081, client, db)
 	})
 	g.Go(func() error {
 		return fraudcheck.RunServer(ctx, 8084)
@@ -83,10 +84,10 @@ func RunServer(ctx context.Context, client client.Client) error {
 		return billing.RunWorker(ctx, client, billing.Config{FraudCheckURL: "http://localhost:8084"})
 	})
 	g.Go(func() error {
-		return shipment.RunWorker(ctx, client)
+		return shipment.RunWorker(ctx, client, shipment.Config{ShipmentURL: "http://localhost:8081"})
 	})
 	g.Go(func() error {
-		return order.RunWorker(ctx, client, order.Config{BillingURL: "http://localhost:8082"})
+		return order.RunWorker(ctx, client, order.Config{BillingURL: "http://localhost:8082", OrderURL: "http://localhost:8083"})
 	})
 
 	if err := g.Wait(); err != nil {

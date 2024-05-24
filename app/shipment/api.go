@@ -10,12 +10,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
-	"go.temporal.io/api/common/v1"
+	"github.com/jmoiron/sqlx"
 	"go.temporal.io/api/serviceerror"
-	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/converter"
 )
 
 // TaskQueue is the default task queue for the Shipment system.
@@ -36,6 +33,7 @@ func ShipmentIDFromWorkflowID(id string) string {
 
 type handlers struct {
 	temporal client.Client
+	db       *sqlx.DB
 }
 
 // ShipmentStatus holds the status of a Shipment.
@@ -46,26 +44,41 @@ type ShipmentStatus struct {
 	Items     []Item    `json:"items"`
 }
 
+// ShipmentStatusUpdate is used to update the status of a Shipment.
+type ShipmentStatusUpdate struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+}
+
 // ListShipmentEntry is an entry in the Shipment list.
 type ListShipmentEntry struct {
 	ID     string `json:"id"`
 	Status string `json:"status"`
 }
 
-// EnsureValidTemporalEnv validates the Temporal Server environment for the Shipment Worker and API.
-func EnsureValidTemporalEnv(ctx context.Context, client client.Client, clientOptions client.Options) error {
-	if err := temporalutil.EnsureSearchAttributeExists(ctx, client, clientOptions, ShipmentStatusAttr); err != nil {
-		return fmt.Errorf("failed to ensure search attribute exists: %w", err)
+// SetupDB creates the necessary tables in the database.
+func SetupDB(db *sqlx.DB) error {
+	_, err := db.Exec(`
+	CREATE TABLE IF NOT EXISTS shipments (
+		id TEXT PRIMARY KEY,
+		status TEXT NOT NULL,
+		booked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE INDEX IF NOT EXISTS shipments_booked_at ON shipments (booked_at DESC);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create shipments table: %w", err)
 	}
 
 	return nil
 }
 
 // RunServer runs a Shipment API HTTP server on the given port.
-func RunServer(ctx context.Context, port int, client client.Client) error {
+func RunServer(ctx context.Context, port int, client client.Client, db *sqlx.DB) error {
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
-		Handler: Router(client),
+		Handler: Router(client, db),
 	}
 
 	fmt.Printf("Listening on http://127.0.0.1:%d\n", port)
@@ -84,59 +97,26 @@ func RunServer(ctx context.Context, port int, client client.Client) error {
 }
 
 // Router implements the http.Handler interface for the Shipment API
-func Router(client client.Client) *mux.Router {
+func Router(client client.Client, db *sqlx.DB) *mux.Router {
 	r := mux.NewRouter()
-	h := handlers{temporal: client}
+	h := handlers{temporal: client, db: db}
 
 	r.HandleFunc("/shipments", h.handleListShipments).Methods("GET")
 	r.HandleFunc("/shipments/{id}", h.handleGetShipment).Methods("GET")
-	r.HandleFunc("/shipments/{id}/status", h.handleUpdateShipmentStatus).Methods("POST")
+	r.HandleFunc("/shipments/{id}", h.handleUpdateShipmentStatus).Methods("POST")
+	r.HandleFunc("/shipments/{id}/status", h.handleUpdateShipmentCarrierStatus).Methods("POST")
 
 	return r
 }
 
-func getStatusFromSearchAttributes(sa *common.SearchAttributes) (string, error) {
-	if status, ok := sa.GetIndexedFields()[ShipmentStatusAttr.GetName()]; ok {
-		var s string
-		if err := converter.GetDefaultDataConverter().FromPayload(status, &s); err != nil {
-			return "", err
-		}
-		return s, nil
-	}
-	return "unknown", nil
-}
-
-func (h *handlers) handleListShipments(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) handleListShipments(w http.ResponseWriter, _ *http.Request) {
 	orders := []ListShipmentEntry{}
-	var nextPageToken []byte
 
-	for {
-		resp, err := h.temporal.ListWorkflow(r.Context(), &workflowservice.ListWorkflowExecutionsRequest{
-			NextPageToken: nextPageToken,
-			Query:         "WorkflowType='Shipment' AND ExecutionStatus='Running'",
-		})
-		if err != nil {
-			log.Printf("Failed to list shipment workflows: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		for _, e := range resp.Executions {
-			status, err := getStatusFromSearchAttributes(e.GetSearchAttributes())
-			if err != nil {
-				log.Printf("Failed to retrieve status for shipment: %v", err)
-				status = "unknown"
-			}
-
-			id := ShipmentIDFromWorkflowID(e.GetExecution().GetWorkflowId())
-			orders = append(orders, ListShipmentEntry{ID: id, Status: status})
-		}
-
-		if len(resp.NextPageToken) == 0 {
-			break
-		}
-
-		nextPageToken = resp.NextPageToken
+	err := h.db.Select(&orders, `SELECT id, status FROM shipments ORDER BY booked_at DESC`)
+	if err != nil {
+		log.Printf("Failed to list shipments: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -182,6 +162,30 @@ func (h *handlers) handleGetShipment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleUpdateShipmentStatus(w http.ResponseWriter, r *http.Request) {
+	var status ShipmentStatusUpdate
+
+	err := json.NewDecoder(r.Body).Decode(&status)
+	if err != nil {
+		log.Printf("Failed to decode shipment status: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if status.Status == ShipmentStatusBooked {
+		_, err = h.db.NamedExec(`INSERT INTO shipments (id, status) VALUES(:id, :status)`, status)
+	} else {
+		_, err = h.db.NamedExec(`UPDATE shipments SET status = :status WHERE id = :id`, status)
+	}
+	if err != nil {
+		log.Printf("Failed to update shipment status: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *handlers) handleUpdateShipmentCarrierStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	var signal ShipmentCarrierUpdateSignal

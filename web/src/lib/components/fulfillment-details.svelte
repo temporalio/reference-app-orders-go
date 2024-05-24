@@ -6,7 +6,7 @@
 
 	export let order: Order;
 
-	$: fulfillments = order?.fulfillments || [];
+	$: fulfillments = order?.fulfillments?.filter((f) => f.status != "cancelled") || [];
 
 	$: getStatus = (fulfillment: Fulfillment) => {
 		if (!fulfillment.shipment) return fulfillment.status;

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
@@ -20,6 +21,7 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/testsuite"
 	"golang.org/x/sync/errgroup"
+	_ "modernc.org/sqlite"
 )
 
 func postJSON(url string, input interface{}) (*http.Response, error) {
@@ -88,16 +90,21 @@ func Test_Order(t *testing.T) {
 	require.NoError(t, err)
 	defer c.Close()
 
-	err = shipment.EnsureValidTemporalEnv(ctx, c, options)
-	require.NoError(t, err)
-
 	fraudAPI := httptest.NewServer(fraudcheck.Router())
 	defer fraudAPI.Close()
 	billingAPI := httptest.NewServer(billing.Router(c))
 	defer billingAPI.Close()
-	orderAPI := httptest.NewServer(order.Router(c))
+
+	db, err := sqlx.Open("sqlite", ":memory:")
+	require.NoError(t, err)
+	err = order.SetupDB(db)
+	require.NoError(t, err)
+	err = shipment.SetupDB(db)
+	require.NoError(t, err)
+
+	orderAPI := httptest.NewServer(order.Router(c, db))
 	defer orderAPI.Close()
-	shipmentAPI := httptest.NewServer(shipment.Router(c))
+	shipmentAPI := httptest.NewServer(shipment.Router(c, db))
 	defer shipmentAPI.Close()
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -106,10 +113,10 @@ func Test_Order(t *testing.T) {
 		return billing.RunWorker(ctx, c, billing.Config{FraudCheckURL: fraudAPI.URL})
 	})
 	g.Go(func() error {
-		return shipment.RunWorker(ctx, c)
+		return shipment.RunWorker(ctx, c, shipment.Config{ShipmentURL: shipmentAPI.URL})
 	})
 	g.Go(func() error {
-		return order.RunWorker(ctx, c, order.Config{BillingURL: billingAPI.URL})
+		return order.RunWorker(ctx, c, order.Config{BillingURL: billingAPI.URL, OrderURL: orderAPI.URL})
 	})
 
 	res, err := postJSON(orderAPI.URL+"/orders", &order.OrderInput{
@@ -142,7 +149,7 @@ func Test_Order(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(c, http.StatusOK, res.StatusCode)
-		assert.NotNil(c, o.Fulfillments[0].Shipment)
+		require.Equal(c, order.OrderStatusProcessing, o.Status)
 	}, 3*time.Second, 100*time.Millisecond)
 
 	var o order.OrderStatus
@@ -150,6 +157,9 @@ func Test_Order(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, f := range o.Fulfillments {
+		if f.Shipment == nil {
+			continue
+		}
 		res, err := postJSON(shipmentAPI.URL+"/shipments/"+f.Shipment.ID+"/status", &shipment.ShipmentCarrierUpdateSignal{Status: "delivered"})
 		require.Equal(t, http.StatusOK, res.StatusCode)
 		require.NoError(t, err)
