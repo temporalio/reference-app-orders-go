@@ -13,10 +13,10 @@ func TestEncryptAndDecrypt(t *testing.T) {
 	key := []byte("c555af41f0f17e7bd4bdab1e9e6f7873")
 
 	encrypted, err := encrypt(original, key)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	decrypted, err := decrypt(encrypted, key)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.NotEqual(t, original, encrypted)
 	require.Equal(t, original, decrypted)
