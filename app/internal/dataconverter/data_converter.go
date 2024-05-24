@@ -8,28 +8,36 @@ import (
 )
 
 const (
+	// MetadataEncodingEncrypted identifies payloads encoded with an encrypted binary format
 	MetadataEncodingEncrypted = "binary/encrypted"
+	// MetadataEncryptionKeyID identifies the key used to encrypt a payload
 	MetadataEncryptionKeyID   = "encryption-key-id"
 )
 
+// DataConverter wraps an underlying DataConverter with a CodecDataConverter that uses encryption to protect the confidentiality of payload data
 type DataConverter struct {
 	parent converter.DataConverter
 	converter.DataConverter
 	options DataConverterOptions
 }
 
+// DataConverterOptions holds options related to DataConverter configuration
 type DataConverterOptions struct {
 	EncryptionKeyID string
 }
 
+// Codec provides methods for encrypting and decrypting payload data
 type Codec struct {
 	EncryptionKeyID string
 }
 
 // this function simulates the retrieval of an encryption key (identified by
 // the provided key ID) from secure storage, such as a key management server
-func (e *Codec) getKey(keyID string) (key []byte) {
-	return []byte("trivial-key-for-example-use-only")
+func (e *Codec) getKey(keyID string) (key []byte, err error) {
+	if keyID == "" {
+		return nil, fmt.Errorf("key retrieval failed due to empty identifier")
+	}
+	return []byte("trivial-key-for-example-use-only"), nil
 }
 
 // NewEncryptionDataConverter creates and returns an instance of a DataConverter that wraps the default DataConverter with a CodecDataConverter that uses encryption to protect the confidentiality of payload data
@@ -54,7 +62,10 @@ func (e *Codec) Encode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error
 			return payloads, err
 		}
 
-		key := e.getKey(e.EncryptionKeyID)
+		key, err := e.getKey(e.EncryptionKeyID)
+		if err != nil {
+			return payloads, err
+		}
 
 		encryptedData, err := encrypt(unencryptedData, key)
 		if err != nil {
@@ -92,7 +103,10 @@ func (e *Codec) Decode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error
 			return payloads, fmt.Errorf("encryption key id missing from metadata")
 		}
 
-		key := e.getKey(string(keyID))
+		key, err := e.getKey(string(keyID))
+		if err != nil {
+			return payloads, err
+		}
 
 		decryptedData, err := decrypt(encryptedData, key)
 		if err != nil {
