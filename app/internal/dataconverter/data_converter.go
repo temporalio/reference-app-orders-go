@@ -1,6 +1,7 @@
 package dataconverter
 
 import (
+	"crypto/sha256"
 	"fmt"
 
 	commonpb "go.temporal.io/api/common/v1"
@@ -11,7 +12,7 @@ const (
 	// MetadataEncodingEncrypted identifies payloads encoded with an encrypted binary format
 	MetadataEncodingEncrypted = "binary/encrypted"
 	// MetadataEncryptionKeyID identifies the key used to encrypt a payload
-	MetadataEncryptionKeyID   = "encryption-key-id"
+	MetadataEncryptionKeyID = "encryption-key-id"
 )
 
 // DataConverter wraps an underlying DataConverter with a CodecDataConverter that uses encryption to protect the confidentiality of payload data
@@ -33,11 +34,16 @@ type Codec struct {
 
 // this function simulates the retrieval of an encryption key (identified by
 // the provided key ID) from secure storage, such as a key management server
-func (e *Codec) getKey(keyID string) (key []byte, err error) {
+func (e *Codec) retrieveKey(keyID string) (key []byte, err error) {
 	if keyID == "" {
 		return nil, fmt.Errorf("key retrieval failed due to empty identifier")
 	}
-	return []byte("trivial-key-for-example-use-only"), nil
+
+	// Simulate key retrieval by using a hash function to generate
+	// a 256-bit value that will be consistent for a given key ID
+	h := sha256.Sum256([]byte(keyID))
+
+	return h[:], nil
 }
 
 // NewEncryptionDataConverter creates and returns an instance of a DataConverter that wraps the default DataConverter with a CodecDataConverter that uses encryption to protect the confidentiality of payload data
@@ -62,7 +68,7 @@ func (e *Codec) Encode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error
 			return payloads, err
 		}
 
-		key, err := e.getKey(e.EncryptionKeyID)
+		key, err := e.retrieveKey(e.EncryptionKeyID)
 		if err != nil {
 			return payloads, err
 		}
@@ -103,7 +109,7 @@ func (e *Codec) Decode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error
 			return payloads, fmt.Errorf("encryption key id missing from metadata")
 		}
 
-		key, err := e.getKey(string(keyID))
+		key, err := e.retrieveKey(string(keyID))
 		if err != nil {
 			return payloads, err
 		}
