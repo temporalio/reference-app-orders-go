@@ -18,7 +18,7 @@ var urlFlag string
 
 func init() {
 	flag.IntVar(&portFlag, "port", 8089, "Port number on which this codec server will listen for requests")
-	flag.StringVar(&urlFlag, "url", "", "Temporal Web UI base URL. This option enables CORS, as required by that UI.")
+	flag.StringVar(&urlFlag, "url", "", "Temporal Web UI base URL. This option enables CORS, as required by the UI.")
 }
 
 func newCORSHTTPHandler(web string, next http.Handler) http.Handler {
