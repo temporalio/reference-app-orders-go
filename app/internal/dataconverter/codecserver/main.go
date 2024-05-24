@@ -58,6 +58,8 @@ func main() {
 		Handler: handler,
 	}
 
+	log.Printf("Starting codec server on port %d\n", portFlag)
+
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
 
