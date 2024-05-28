@@ -32,6 +32,6 @@ RUN pnpm run build
 
 FROM web-builder AS web
 COPY --from=web-builder-deps /app/node_modules /app/node_modules
-COPY --from=web-builder-build /app/dist /app/dist
+COPY --from=web-builder-build /app/build /app/build
 EXPOSE 5173
 CMD ["pnpm", "start"]
