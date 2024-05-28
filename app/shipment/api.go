@@ -56,24 +56,6 @@ type ListShipmentEntry struct {
 	Status string `json:"status"`
 }
 
-// SetupDB creates the necessary tables in the database.
-func SetupDB(db *sqlx.DB) error {
-	_, err := db.Exec(`
-	CREATE TABLE IF NOT EXISTS shipments (
-		id TEXT PRIMARY KEY,
-		status TEXT NOT NULL,
-		booked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE INDEX IF NOT EXISTS shipments_booked_at ON shipments (booked_at DESC);
-	`)
-	if err != nil {
-		return fmt.Errorf("failed to create shipments table: %w", err)
-	}
-
-	return nil
-}
-
 // RunServer runs a Shipment API HTTP server on the given port.
 func RunServer(ctx context.Context, port int, client client.Client, db *sqlx.DB) error {
 	srv := &http.Server{

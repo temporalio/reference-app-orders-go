@@ -17,6 +17,7 @@ import (
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
 	"github.com/temporalio/orders-reference-app-go/app/order"
+	"github.com/temporalio/orders-reference-app-go/app/server"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/testsuite"
@@ -97,9 +98,7 @@ func Test_Order(t *testing.T) {
 
 	db, err := sqlx.Open("sqlite", ":memory:")
 	require.NoError(t, err)
-	err = order.SetupDB(db)
-	require.NoError(t, err)
-	err = shipment.SetupDB(db)
+	err = server.SetupDB(db)
 	require.NoError(t, err)
 
 	orderAPI := httptest.NewServer(order.Router(c, db))

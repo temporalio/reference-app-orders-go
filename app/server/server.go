@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	_ "embed"
 	"fmt"
 	"os"
 
@@ -58,6 +59,19 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	}
 
 	return clientOpts, nil
+}
+
+//go:embed schema.sql
+var schema string
+
+// SetupDB creates the necessary tables in the database.
+func SetupDB(db *sqlx.DB) error {
+	_, err := db.Exec(schema)
+	if err != nil {
+		return fmt.Errorf("failed to create the database schema: %w", err)
+	}
+
+	return nil
 }
 
 // RunServer runs all the workers and API servers for the Order/Shipment/Fraud/Billing system.

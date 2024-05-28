@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/temporalio/orders-reference-app-go/app/server"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/mocks"
 	_ "modernc.org/sqlite"
@@ -22,7 +23,7 @@ func TestShipmentUpdate(t *testing.T) {
 
 	db, err := sqlx.Open("sqlite", ":memory:")
 	require.NoError(t, err)
-	err = shipment.SetupDB(db)
+	err = server.SetupDB(db)
 	require.NoError(t, err)
 
 	r := shipment.Router(c, db)

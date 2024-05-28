@@ -9,9 +9,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/cobra"
-	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/server"
-	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/client"
 	_ "modernc.org/sqlite"
 )
@@ -43,10 +41,7 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to open database: %w", err)
 		}
-		if err := order.SetupDB(db); err != nil {
-			return fmt.Errorf("failed to setup order database: %w", err)
-		}
-		if err := shipment.SetupDB(db); err != nil {
+		if err := server.SetupDB(db); err != nil {
 			return fmt.Errorf("failed to setup shipment database: %w", err)
 		}
 
