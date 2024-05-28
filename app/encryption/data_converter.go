@@ -1,4 +1,4 @@
-package dataconverter
+package encryption
 
 import (
 	"crypto/sha256"
@@ -46,7 +46,9 @@ func (e *Codec) retrieveKey(keyID string) (key []byte, err error) {
 	return h[:], nil
 }
 
-// NewEncryptionDataConverter creates and returns an instance of a DataConverter that wraps the default DataConverter with a CodecDataConverter that uses encryption to protect the confidentiality of payload data
+// NewEncryptionDataConverter creates and returns an instance of a DataConverter
+// that wraps the default DataConverter with a CodecDataConverter that uses
+// encryption to protect the confidentiality of payload data
 func NewEncryptionDataConverter(dataConverter converter.DataConverter, options DataConverterOptions) *DataConverter {
 	codecs := []converter.PayloadCodec{
 		&Codec{EncryptionKeyID: options.EncryptionKeyID},

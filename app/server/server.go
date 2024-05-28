@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/temporalio/orders-reference-app-go/app/billing"
+	"github.com/temporalio/orders-reference-app-go/app/encryption"
 	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
-	"github.com/temporalio/orders-reference-app-go/app/internal/dataconverter"
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
@@ -69,9 +69,9 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	// UI will be unable to view the original (unencrypted) data unless
 	// you run a Codec server and configure them to use it.
 	if encKeyID := os.Getenv("CLIENT_ENCRYPTION_KEY_ID"); encKeyID != "" {
-		clientOpts.DataConverter = dataconverter.NewEncryptionDataConverter(
+		clientOpts.DataConverter = encryption.NewEncryptionDataConverter(
 			converter.GetDefaultDataConverter(),
-			dataconverter.DataConverterOptions{EncryptionKeyID: encKeyID},
+			encryption.DataConverterOptions{EncryptionKeyID: encKeyID},
 		)
 	}
 
