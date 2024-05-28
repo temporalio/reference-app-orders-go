@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/workflow"
@@ -246,12 +247,22 @@ func (f *Fulfillment) processPayment(ctx workflow.Context) error {
 
 	f.Payment = &PaymentStatus{Status: PaymentStatusPending}
 
+	var chargeKey string
+	v := workflow.SideEffect(ctx, func(_ workflow.Context) interface{} {
+		return uuid.NewString()
+	})
+	if err := v.Get(&chargeKey); err != nil {
+		f.Payment.Status = PaymentStatusFailed
+		return err
+	}
+
 	c := workflow.ExecuteActivity(ctx,
 		a.Charge,
 		&ChargeInput{
-			CustomerID: f.customerID,
-			Reference:  f.ID,
-			Items:      billingItems,
+			CustomerID:     f.customerID,
+			Reference:      f.ID,
+			Items:          billingItems,
+			IdempotencyKey: chargeKey,
 		},
 	)
 	if err := c.Get(ctx, &charge); err != nil {
