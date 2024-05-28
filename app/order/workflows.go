@@ -6,12 +6,8 @@ import (
 
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
-	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
-
-// OrderStatusAttr is a Custom Search Attribute that indicates current status of an order
-var OrderStatusAttr = temporal.NewSearchAttributeKeyKeyword("ShipmentStatus")
 
 type orderImpl struct {
 	id           string
@@ -46,7 +42,6 @@ func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 
 	wf.id = input.ID
 	wf.customerID = input.CustomerID
-	wf.updateStatus(ctx, OrderStatusPending)
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*OrderStatus, error) {
 		return &OrderStatus{
@@ -65,7 +60,10 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 	}
 
 	if wf.customerActionRequired() {
-		wf.updateStatus(ctx, OrderStatusCustomerActionRequired)
+		err = wf.updateStatus(ctx, OrderStatusCustomerActionRequired)
+		if err != nil {
+			return nil, err
+		}
 
 		action, err := wf.waitForCustomer(ctx)
 		if err != nil {
@@ -77,7 +75,7 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 			err := wf.updateStatus(ctx, OrderStatusCancelled)
 			return &OrderResult{Status: wf.status}, err
 		case CustomerActionAmend:
-			wf.removeUnavailableFulfillments()
+			wf.cancelUnavailableFulfillments()
 		default:
 			return nil, fmt.Errorf("unhandled customer action %q", action)
 		}
@@ -109,7 +107,16 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 
 func (wf *orderImpl) updateStatus(ctx workflow.Context, status string) error {
 	wf.status = status
-	return workflow.UpsertTypedSearchAttributes(ctx, OrderStatusAttr.ValueSet(status))
+
+	update := &OrderStatusUpdate{
+		ID:     wf.id,
+		Status: wf.status,
+	}
+
+	ctx = workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
+		ScheduleToCloseTimeout: 5 * time.Second,
+	})
+	return workflow.ExecuteLocalActivity(ctx, a.UpdateOrderStatus, update).Get(ctx, nil)
 }
 
 func (wf *orderImpl) buildFulfillments(ctx workflow.Context, items []*Item) error {
@@ -161,15 +168,12 @@ func (wf *orderImpl) customerActionRequired() bool {
 	return false
 }
 
-func (wf *orderImpl) removeUnavailableFulfillments() {
-	var available []*Fulfillment
+func (wf *orderImpl) cancelUnavailableFulfillments() {
 	for _, f := range wf.fulfillments {
-		if f.Status != FulfillmentStatusUnavailable {
-			available = append(available, f)
+		if f.Status == FulfillmentStatusUnavailable {
+			f.Status = FulfillmentStatusCancelled
 		}
 	}
-
-	wf.fulfillments = available
 }
 
 func (wf *orderImpl) waitForCustomer(ctx workflow.Context) (string, error) {
@@ -204,16 +208,16 @@ func (wf *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
 }
 
 func (f *Fulfillment) process(ctx workflow.Context) error {
-	f.Status = FulfillmentStatusProcessing
-
-	if err := f.processPayment(ctx); err != nil {
-		f.Status = FulfillmentStatusFailed
-		return err
+	if f.Status == FulfillmentStatusCancelled {
+		return nil
 	}
 
-	if f.Payment.Status != PaymentStatusSuccess {
+	f.Status = FulfillmentStatusProcessing
+
+	err := f.processPayment(ctx)
+	if err != nil || f.Payment.Status != PaymentStatusSuccess {
 		f.Status = FulfillmentStatusFailed
-		return nil
+		return err
 	}
 
 	if err := f.processShipment(ctx); err != nil {
@@ -222,6 +226,7 @@ func (f *Fulfillment) process(ctx workflow.Context) error {
 	}
 
 	f.Status = FulfillmentStatusCompleted
+
 	return nil
 }
 

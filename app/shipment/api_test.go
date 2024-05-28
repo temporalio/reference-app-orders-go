@@ -6,10 +6,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/temporalio/orders-reference-app-go/app/server"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/mocks"
+	_ "modernc.org/sqlite"
 )
 
 func TestShipmentUpdate(t *testing.T) {
@@ -17,7 +21,12 @@ func TestShipmentUpdate(t *testing.T) {
 
 	c.On("SignalWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-	r := shipment.Router(c)
+	db, err := sqlx.Open("sqlite", ":memory:")
+	require.NoError(t, err)
+	err = server.SetupDB(db)
+	require.NoError(t, err)
+
+	r := shipment.Router(c, db)
 	req, err := http.NewRequest("POST", "/shipments/test/status", strings.NewReader(`{"status":"dispatched"}`))
 	assert.NoError(t, err)
 

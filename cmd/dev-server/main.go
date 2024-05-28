@@ -7,10 +7,11 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/spf13/cobra"
 	"github.com/temporalio/orders-reference-app-go/app/server"
-	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/client"
+	_ "modernc.org/sqlite"
 )
 
 var rootCmd = &cobra.Command{
@@ -35,9 +36,13 @@ var rootCmd = &cobra.Command{
 		}
 		defer client.Close()
 
-		err = shipment.EnsureValidTemporalEnv(ctx, client, clientOptions)
+		db, err := sqlx.Connect("sqlite", "./api-store.db")
+		db.SetMaxOpenConns(1) // SQLite does not support concurrent writes
 		if err != nil {
-			return fmt.Errorf("environment is not valid for shipment system: %w", err)
+			return fmt.Errorf("failed to open database: %w", err)
+		}
+		if err := server.SetupDB(db); err != nil {
+			return fmt.Errorf("failed to setup shipment database: %w", err)
 		}
 
 		go func() {
@@ -46,7 +51,7 @@ var rootCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if err := server.RunServer(ctx, client); err != nil {
+		if err := server.RunServer(ctx, client, db); err != nil {
 			return err
 		}
 
