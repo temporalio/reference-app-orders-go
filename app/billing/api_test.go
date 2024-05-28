@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
-	_ "modernc.org/sqlite"
 )
 
 func TestChargeWorkflowID(t *testing.T) {
