@@ -248,7 +248,7 @@ func (f *Fulfillment) processPayment(ctx workflow.Context) error {
 	f.Payment = &PaymentStatus{Status: PaymentStatusPending}
 
 	var chargeKey string
-	v := workflow.SideEffect(ctx, func(_ workflow.Context) interface{} {
+	v := workflow.SideEffect(ctx, func(_ workflow.Context) any {
 		return uuid.NewString()
 	})
 	if err := v.Get(&chargeKey); err != nil {
