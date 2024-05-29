@@ -24,9 +24,9 @@ func newCORSHTTPHandler(origin string, next http.Handler) http.Handler {
 	})
 }
 
-// StartCodecServer launches the Codec Server on the specified port, enabling
+// RunCodecServer launches the Codec Server on the specified port, enabling
 // CORS for the Temporal Web UI at the specified URL
-func StartCodecServer(port int, url string) {
+func RunCodecServer(port int, url string) {
 	// The EncryptionKeyID attribute is omitted when creating the Codec
 	// instance below because the Codec Server only decrypts. It locates
 	// the encryption key ID from the payload's metadata.
