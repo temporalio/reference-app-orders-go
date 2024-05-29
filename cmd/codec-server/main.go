@@ -23,15 +23,20 @@ var rootCmd = &cobra.Command{
 	Short: "Codec Server decrypts payloads displayed by Temporal CLI and Web UI",
 	RunE: func(*cobra.Command, []string) error {
 
-		if strings.HasSuffix(url, "/") {
-			// In my experience, a slash character at the end of the URL will
-			// result in a "Codec server could not connect" in the Web UI and
-			// the cause will not be obvious. I don't want to strip it off, in
-			// case there really is a valid reason to have one, but warning the
-			// user could help them to more quickly spot the problem otherwise.
-			log.Println("Warning: Temporal Web UI base URL ends with '/'")
+		if url != "" {
+			log.Printf("Codec Server will support Temporal Web UI at %s\n", url)
+
+			if strings.HasSuffix(url, "/") {
+				// In my experience, a slash character at the end of the URL will
+				// result in a "Codec server could not connect" in the Web UI and
+				// the cause will not be obvious. I don't want to strip it off, in
+				// case there really is a valid reason to have one, but warning the
+				// user could help them to more quickly spot the problem otherwise.
+				log.Println("Warning: Temporal Web UI base URL ends with '/'")
+			}
 		}
 
+		log.Printf("Starting Codec Server on port %d\n", port)
 		encryption.StartCodecServer(port, url)
 
 		return nil

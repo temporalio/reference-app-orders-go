@@ -33,7 +33,6 @@ func RunCodecServer(port int, url string) {
 	handler := converter.NewPayloadCodecHTTPHandler(&Codec{})
 
 	if url != "" {
-		log.Printf("Codec Server will support Temporal Web UI at %s\n", url)
 		handler = newCORSHTTPHandler(url, handler)
 	}
 
@@ -41,8 +40,6 @@ func RunCodecServer(port int, url string) {
 		Addr:    "0.0.0.0:" + strconv.Itoa(port),
 		Handler: handler,
 	}
-
-	log.Printf("Starting Codec Server on port %d\n", port)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
