@@ -7,13 +7,11 @@ import (
 	"os"
 
 	"github.com/temporalio/orders-reference-app-go/app/billing"
-	"github.com/temporalio/orders-reference-app-go/app/encryption"
 	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/converter"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -25,7 +23,6 @@ import (
 //	TEMPORAL_NAMESPACE: Namespace to be used by the Client
 //	TEMPORAL_TLS_CERT: Path to the x509 certificate
 //	TEMPORAL_TLS_KEY: Path to the private certificate key
-//	CLIENT_ENCRYPTION_KEY_ID: If set, Client encrypts payloads using key referenced by ID
 //
 // If these environment variables are not set, the client.Options
 // instance returned will be based on the SDK's default configuration.
@@ -57,20 +54,6 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 		clientOpts.ConnectionOptions.TLS = &tls.Config{
 			Certificates: []tls.Certificate{cert},
 		}
-	}
-
-	// The CLIENT_ENCRYPTION_KEY_ID environment variable contains a value
-	// that can be used to look up an encryption key (e.g., from a key
-	// management system). If this environment variable is set, then inputs
-	// to Workflows and Activities, as well as the outputs returned by the
-	// Workflows and Activities, will be encrypted with that key before
-	// being transmitted by the Client in this application. This Client
-	// will likewise decrypt them upon receipt. The Temporal CLI and Web
-	// UI will be unable to view the original (unencrypted) data unless
-	// you run a Codec server and configure them to use it.
-	if encKeyID := os.Getenv("CLIENT_ENCRYPTION_KEY_ID"); encKeyID != "" {
-		defaultConverter := converter.GetDefaultDataConverter()
-		clientOpts.DataConverter = encryption.NewEncryptionDataConverter(defaultConverter, encKeyID)
 	}
 
 	return clientOpts, nil

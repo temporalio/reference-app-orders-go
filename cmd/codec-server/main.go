@@ -39,9 +39,6 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	// TODO: set Client Key ID through command-line flag
-	// instead of CLIENT_ENCRYPTION_KEY_ID environment variable
-
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", defaultPort,
 		"Port number on which this Codec Server will listen for requests")
 	rootCmd.PersistentFlags().StringVarP(&url, "url", "u", defaultURL,
