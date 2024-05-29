@@ -10,11 +10,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"go.temporal.io/api/common/v1"
+	"github.com/jmoiron/sqlx"
 	"go.temporal.io/api/serviceerror"
-	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/converter"
 )
 
 // TaskQueue is the default task queue for the Order system.
@@ -22,11 +20,6 @@ const TaskQueue = "orders"
 
 // StatusQuery is the name of the query to use to fetch an Order's status.
 const StatusQuery = "status"
-
-// FulfillmentWorkflowID returns the workflow ID for a Fulfillment.
-func FulfillmentWorkflowID(id string) string {
-	return "Fulfillment:" + id
-}
 
 // OrderWorkflowID returns the workflow ID for an Order.
 func OrderWorkflowID(id string) string {
@@ -54,12 +47,19 @@ type OrderInput struct {
 
 // OrderStatus holds the status of an Order workflow.
 type OrderStatus struct {
-	ID         string `json:"id"`
-	CustomerID string `json:"customerId"`
+	ID         string    `json:"id"`
+	CustomerID string    `json:"customerId" db:"customer_id"`
+	ReceivedAt time.Time `json:"receivedAt" db:"received_at"`
 
 	Status string `json:"status"`
 
 	Fulfillments []*Fulfillment `json:"fulfillments"`
+}
+
+// OrderStatusUpdate is used to update an Order's status.
+type OrderStatusUpdate struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
 }
 
 const (
@@ -81,9 +81,9 @@ const (
 
 // ListOrderEntry is an entry in the Order list.
 type ListOrderEntry struct {
-	ID        string    `json:"id"`
-	Status    string    `json:"status"`
-	StartedAt time.Time `json:"startedAt"`
+	ID         string    `json:"id"`
+	Status     string    `json:"status"`
+	ReceivedAt time.Time `json:"receivedAt" db:"received_at"`
 }
 
 // ShipmentStatus holds the status of a Shipment.
@@ -155,6 +155,9 @@ const (
 	// FulfillmentStatusCompleted is the status of a processing Fulfillment.
 	FulfillmentStatusCompleted = "completed"
 
+	// FulfillmentStatusCancelled is the status of a cancelled Fulfillment.
+	FulfillmentStatusCancelled = "cancelled"
+
 	// FulfillmentStatusFailed is the status of a failed Fulfillment.
 	FulfillmentStatusFailed = "failed"
 )
@@ -182,13 +185,33 @@ type OrderResult struct {
 
 type handlers struct {
 	temporal client.Client
+	db       *sqlx.DB
+}
+
+// SetupDB creates the necessary tables in the database.
+func SetupDB(db *sqlx.DB) error {
+	_, err := db.Exec(`
+	CREATE TABLE IF NOT EXISTS orders (
+		id TEXT PRIMARY KEY,
+		customer_id TEXT NOT NULL,
+		received_at TIMESTAMP NOT NULL,
+		status TEXT NOT NULL
+	);
+
+	CREATE INDEX IF NOT EXISTS orders_received_at ON orders(received_at DESC);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create orders table: %w", err)
+	}
+
+	return nil
 }
 
 // RunServer runs a Order API HTTP server on the given port.
-func RunServer(ctx context.Context, port int, client client.Client) error {
+func RunServer(ctx context.Context, port int, client client.Client, db *sqlx.DB) error {
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
-		Handler: Router(client),
+		Handler: Router(client, db),
 	}
 
 	fmt.Printf("Listening on http://127.0.0.1:%d\n", port)
@@ -207,55 +230,33 @@ func RunServer(ctx context.Context, port int, client client.Client) error {
 }
 
 // Router implements the http.Handler interface for the Billing API
-func Router(client client.Client) *mux.Router {
+func Router(client client.Client, db *sqlx.DB) *mux.Router {
 	r := mux.NewRouter()
-	h := handlers{temporal: client}
+
+	h := handlers{temporal: client, db: db}
 
 	r.HandleFunc("/orders", h.handleCreateOrder).Methods("POST")
 	r.HandleFunc("/orders", h.handleListOrders).Methods("GET")
-	r.HandleFunc("/orders/{id}", h.handleGetOrder)
+	r.HandleFunc("/orders/{id}", h.handleGetOrder).Methods("GET")
+	r.HandleFunc("/orders/{id}/status", h.handleUpdateOrderStatus).Methods("POST")
 	r.HandleFunc("/orders/{id}/action", h.handleCustomerAction).Methods("POST")
 
 	return r
 }
 
-func (h *handlers) handleListOrders(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
 	orders := []ListOrderEntry{}
-	var nextPageToken []byte
 
-	for {
-		resp, err := h.temporal.ListWorkflow(r.Context(), &workflowservice.ListWorkflowExecutionsRequest{
-			NextPageToken: nextPageToken,
-			Query:         "WorkflowType='Order' AND ExecutionStatus='Running'",
-		})
-		if err != nil {
-			log.Printf("Failed to list order workflows: %v", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		for _, e := range resp.Executions {
-			id := OrderIDFromWorkflowID(e.GetExecution().GetWorkflowId())
-			startedAt := e.GetStartTime().AsTime()
-			status, err := getStatusFromSearchAttributes(e.GetSearchAttributes())
-			if err != nil {
-				log.Printf("Failed to get order status: %v", err)
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			orders = append(orders, ListOrderEntry{ID: id, StartedAt: startedAt, Status: status})
-		}
-
-		if len(resp.NextPageToken) == 0 {
-			break
-		}
-
-		nextPageToken = resp.NextPageToken
+	err := h.db.Select(&orders, `SELECT id, status, received_at FROM orders ORDER BY received_at DESC`)
+	if err != nil {
+		log.Printf("Failed to list orders: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(w).Encode(orders)
+	err = json.NewEncoder(w).Encode(orders)
 	if err != nil {
 		log.Printf("Failed to encode orders: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -282,6 +283,20 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		log.Printf("Failed to start order workflow: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	status := &OrderStatus{
+		ID:         input.ID,
+		CustomerID: input.CustomerID,
+		ReceivedAt: time.Now().UTC(),
+		Status:     OrderStatusPending,
+	}
+
+	_, err = h.db.NamedExec(`INSERT INTO orders (id, customer_id, received_at, status) VALUES (:id, :customer_id, :received_at, :status)`, status)
+	if err != nil {
+		log.Printf("Failed to record workflow status: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -323,6 +338,26 @@ func (h *handlers) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *handlers) handleUpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
+	var status OrderStatusUpdate
+
+	err := json.NewDecoder(r.Body).Decode(&status)
+	if err != nil {
+		log.Printf("Failed to decode order status: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, err = h.db.NamedExec(`UPDATE orders SET status = :status WHERE id = :id`, status)
+	if err != nil {
+		log.Printf("Failed to update order status: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *handlers) handleCustomerAction(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
@@ -350,15 +385,4 @@ func (h *handlers) handleCustomerAction(w http.ResponseWriter, r *http.Request) 
 		}
 		return
 	}
-}
-
-func getStatusFromSearchAttributes(sa *common.SearchAttributes) (string, error) {
-	if status, ok := sa.GetIndexedFields()[OrderStatusAttr.GetName()]; ok {
-		var s string
-		if err := converter.GetDefaultDataConverter().FromPayload(status, &s); err != nil {
-			return "", err
-		}
-		return s, nil
-	}
-	return "unknown", nil
 }

@@ -22,6 +22,9 @@ func TestOrderWorkflow(t *testing.T) {
 	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.ChargeInput) (*order.ChargeResult, error) {
 		return &order.ChargeResult{Success: true}, nil
 	})
+	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusUpdate) error {
+		return nil
+	})
 	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
 		return &shipment.ShipmentResult{CourierReference: "test"}, nil
 	}).Times(2)
@@ -55,6 +58,9 @@ func TestOrderShipmentStatus(t *testing.T) {
 	env.RegisterActivity(a.ReserveItems)
 	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.ChargeInput) (*order.ChargeResult, error) {
 		return &order.ChargeResult{Success: true}, nil
+	})
+	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusUpdate) error {
+		return nil
 	})
 	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
 		env.SignalWorkflow(
@@ -105,6 +111,9 @@ func TestOrderAmendWithUnavailableItems(t *testing.T) {
 	env.RegisterActivity(a.ReserveItems)
 	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.ChargeInput) (*order.ChargeResult, error) {
 		return &order.ChargeResult{Success: true}, nil
+	})
+	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusUpdate) error {
+		return nil
 	})
 	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
 		return &shipment.ShipmentResult{CourierReference: "test"}, nil
@@ -173,10 +182,12 @@ func TestOrderAmendWithUnavailableItems(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = v.Get(&status)
-	assert.Len(t, status.Fulfillments, 1)
+	assert.Len(t, status.Fulfillments, 2)
 
 	f := status.Fulfillments[0]
-	assert.Equal(t, order.FulfillmentStatusCompleted, f.Status)
+	assert.Equal(t, order.FulfillmentStatusCancelled, f.Status)
+
+	f = status.Fulfillments[1]
 	assert.Equal(t, order.PaymentStatusSuccess, f.Payment.Status)
 	assert.Equal(t, f.ID, f.Shipment.ID)
 
@@ -189,6 +200,9 @@ func TestOrderCancelWithUnavailableItems(t *testing.T) {
 	var a *order.Activities
 
 	env.RegisterActivity(a.ReserveItems)
+	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusUpdate) error {
+		return nil
+	})
 
 	orderInput := order.OrderInput{
 		ID:         "1234",
