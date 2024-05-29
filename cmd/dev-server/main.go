@@ -77,7 +77,7 @@ func init() {
 	// by the Client in this application. This Client will likewise decrypt them
 	// upon receipt. The Temporal CLI and Web UI will be unable to view the original
 	// (unencrypted) data unless you run a Codec server and configure them to use it.
-	rootCmd.PersistentFlags().StringVarP(&encryptionKeyID, "encryption-key-id", "e", "",
+	rootCmd.PersistentFlags().StringVarP(&encryptionKeyID, "encryption-key-id", "k", "",
 		"ID of key used to encrypt payload data (optional)")
 }
 
