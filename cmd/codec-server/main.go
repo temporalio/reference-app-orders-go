@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/temporalio/orders-reference-app-go/app/encryption"
+	"github.com/temporalio/orders-reference-app-go/app/temporalutil"
 )
 
 const (
@@ -37,7 +37,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		log.Printf("Starting Codec Server on port %d\n", port)
-		err := encryption.RunCodecServer(port, url)
+		err := temporalutil.RunCodecServer(port, url)
 
 		return err
 	},

@@ -1,4 +1,4 @@
-package encryption
+package temporalutil
 
 import (
 	"net/http"

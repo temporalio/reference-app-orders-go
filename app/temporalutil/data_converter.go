@@ -1,8 +1,12 @@
-package encryption
+package temporalutil
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
+	"io"
 
 	commonpb "go.temporal.io/api/common/v1"
 	"go.temporal.io/sdk/converter"
@@ -114,4 +118,42 @@ func (e *Codec) Decode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error
 	}
 
 	return result, nil
+}
+
+// Uses AES to encrypt the provided block of data using with the provided key
+func encrypt(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	nonce := make([]byte, aesgcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+
+	encrypted := aesgcm.Seal(nonce, nonce, data, nil)
+	return encrypted, nil
+}
+
+// Uses AES to decrypt the provided block of data using the provided key
+func decrypt(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	nonceSize := aesgcm.NonceSize()
+	nonce, encrypted := data[:nonceSize], data[nonceSize:]
+	return aesgcm.Open(nil, nonce, encrypted, nil)
 }

@@ -9,8 +9,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/cobra"
-	"github.com/temporalio/orders-reference-app-go/app/encryption"
 	"github.com/temporalio/orders-reference-app-go/app/server"
+	"github.com/temporalio/orders-reference-app-go/app/temporalutil"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/converter"
 	_ "modernc.org/sqlite"
@@ -37,7 +37,7 @@ var rootCmd = &cobra.Command{
 		if encryptionKeyID != "" {
 			log.Printf("Enabling encrypting Data Converter using key ID '%s'", encryptionKeyID)
 			ddc := converter.GetDefaultDataConverter()
-			clientOptions.DataConverter = encryption.NewEncryptionDataConverter(ddc, encryptionKeyID)
+			clientOptions.DataConverter = temporalutil.NewEncryptionDataConverter(ddc, encryptionKeyID)
 		}
 
 		client, err := client.Dial(clientOptions)
