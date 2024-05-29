@@ -9,9 +9,13 @@ COPY app ./app
 COPY cmd ./cmd
 RUN go build -v -o /usr/local/bin/dev-server ./cmd/dev-server
 
-FROM scratch AS dev-server-builder
+FROM scratch AS dev-server
+EXPOSE 8081
+EXPOSE 8082
+EXPOSE 8083
+EXPOSE 8084
 
-COPY --from=builder /usr/local/bin/dev-server /usr/local/bin/dev-server
+COPY --from=dev-server-builder /usr/local/bin/dev-server /usr/local/bin/dev-server
 
 CMD ["/usr/local/bin/dev-server"]
 
@@ -31,7 +35,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm run build
 
 FROM web-builder AS web
-COPY --from=web-builder-deps /app/node_modules /app/node_modules
-COPY --from=web-builder-build /app/build /app/build
 EXPOSE 5173
+COPY --from=web-builder-build /app/build /app
+COPY --from=web-builder-deps /app/node_modules /app/node_modules
 CMD ["pnpm", "start"]

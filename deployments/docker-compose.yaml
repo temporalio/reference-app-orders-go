@@ -1,0 +1,16 @@
+services:
+  app:
+    build:
+      context: ../
+      target: dev-server
+    ports:
+      - "8081"
+      - "8082"
+      - "8083"
+      - "8084"
+  web:
+    build:
+      context: ../
+      target: web
+    ports:
+      - "5173"
