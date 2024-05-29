@@ -9,23 +9,11 @@ import (
 )
 
 const (
-	// MetadataEncodingEncrypted identifies payloads encoded with an encrypted binary format
-	MetadataEncodingEncrypted = "binary/encrypted"
-	// MetadataEncryptionKeyID identifies the key used to encrypt a payload
-	MetadataEncryptionKeyID = "encryption-key-id"
+	// metadataEncodingEncrypted identifies payloads encoded with an encrypted binary format
+	metadataEncodingEncrypted = "binary/encrypted"
+	// metadataEncryptionKeyID identifies the key used to encrypt a payload
+	metadataEncryptionKeyID = "encryption-key-id"
 )
-
-// DataConverter wraps an underlying DataConverter with a CodecDataConverter that uses encryption to protect the confidentiality of payload data
-type DataConverter struct {
-	parent converter.DataConverter
-	converter.DataConverter
-	options DataConverterOptions
-}
-
-// DataConverterOptions holds options related to DataConverter configuration
-type DataConverterOptions struct {
-	EncryptionKeyID string
-}
 
 // Codec provides methods for encrypting and decrypting payload data
 type Codec struct {
@@ -46,19 +34,16 @@ func (e *Codec) retrieveKey(keyID string) (key []byte, err error) {
 	return h[:], nil
 }
 
-// NewEncryptionDataConverter creates and returns an instance of a DataConverter
-// that wraps the default DataConverter with a CodecDataConverter that uses
-// encryption to protect the confidentiality of payload data
-func NewEncryptionDataConverter(dataConverter converter.DataConverter, options DataConverterOptions) *DataConverter {
+// NewEncryptionDataConverter creates and returns a DataConverter instance that
+// wraps the default DataConverter with a CodecDataConverter that uses encryption
+// to protect the confidentiality of payload data. This instance will encrypt data
+// using a key associated with the specified encryption key ID.
+func NewEncryptionDataConverter(underlying converter.DataConverter, encryptionKeyID string) converter.DataConverter {
 	codecs := []converter.PayloadCodec{
-		&Codec{EncryptionKeyID: options.EncryptionKeyID},
+		&Codec{EncryptionKeyID: encryptionKeyID},
 	}
 
-	return &DataConverter{
-		parent:        dataConverter,
-		DataConverter: converter.NewCodecDataConverter(dataConverter, codecs...),
-		options:       options,
-	}
+	return converter.NewCodecDataConverter(underlying, codecs...)
 }
 
 // Encode implements the Encode method defined by the converter.PayloadCodec interface
@@ -82,8 +67,8 @@ func (e *Codec) Encode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error
 
 		result[i] = &commonpb.Payload{
 			Metadata: map[string][]byte{
-				converter.MetadataEncoding: []byte(MetadataEncodingEncrypted),
-				MetadataEncryptionKeyID:    []byte(e.EncryptionKeyID),
+				converter.MetadataEncoding: []byte(metadataEncodingEncrypted),
+				metadataEncryptionKeyID:    []byte(e.EncryptionKeyID),
 			},
 			Data: encryptedData,
 		}
@@ -99,14 +84,14 @@ func (e *Codec) Decode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error
 		payloadFormatID := string(payload.Metadata[converter.MetadataEncoding])
 
 		// Skip decryption for any payload not using our encrypted format
-		if payloadFormatID != MetadataEncodingEncrypted {
+		if payloadFormatID != metadataEncodingEncrypted {
 			result[i] = payload
 			continue
 		}
 
 		encryptedData := payload.Data
 
-		keyID, ok := payload.Metadata[MetadataEncryptionKeyID]
+		keyID, ok := payload.Metadata[metadataEncryptionKeyID]
 		if !ok {
 			return payloads, fmt.Errorf("encryption key id missing from metadata")
 		}

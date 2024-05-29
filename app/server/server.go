@@ -69,10 +69,8 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	// UI will be unable to view the original (unencrypted) data unless
 	// you run a Codec server and configure them to use it.
 	if encKeyID := os.Getenv("CLIENT_ENCRYPTION_KEY_ID"); encKeyID != "" {
-		clientOpts.DataConverter = encryption.NewEncryptionDataConverter(
-			converter.GetDefaultDataConverter(),
-			encryption.DataConverterOptions{EncryptionKeyID: encKeyID},
-		)
+		defaultConverter := converter.GetDefaultDataConverter()
+		clientOpts.DataConverter = encryption.NewEncryptionDataConverter(defaultConverter, encKeyID)
 	}
 
 	return clientOpts, nil
