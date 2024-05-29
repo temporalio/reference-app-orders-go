@@ -37,9 +37,9 @@ var rootCmd = &cobra.Command{
 		}
 
 		log.Printf("Starting Codec Server on port %d\n", port)
-		encryption.StartCodecServer(port, url)
+		err := encryption.RunCodecServer(port, url)
 
-		return nil
+		return err
 	},
 }
 

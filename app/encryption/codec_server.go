@@ -1,7 +1,6 @@
 package encryption
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,7 +25,7 @@ func newCORSHTTPHandler(origin string, next http.Handler) http.Handler {
 
 // RunCodecServer launches the Codec Server on the specified port, enabling
 // CORS for the Temporal Web UI at the specified URL
-func RunCodecServer(port int, url string) {
+func RunCodecServer(port int, url string) error {
 	// The EncryptionKeyID attribute is omitted when creating the Codec
 	// instance below because the Codec Server only decrypts. It locates
 	// the encryption key ID from the payload's metadata.
@@ -51,6 +50,8 @@ func RunCodecServer(port int, url string) {
 	case <-sigCh:
 		_ = srv.Close()
 	case err := <-errCh:
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
 }
