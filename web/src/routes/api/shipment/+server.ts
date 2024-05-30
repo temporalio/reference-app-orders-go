@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { SHIPMENT_API_URL } from '$env/static/private';
+import { SHIPMENT_API_URL } from '$env/dynamic/private';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const { signal, shipment } = await request.json();

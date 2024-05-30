@@ -1,7 +1,7 @@
-import { ORDER_API_URL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export const load = async () => {
-	const response = await fetch(`${ORDER_API_URL}/orders`);
+	const response = await fetch(`${env.ORDER_API_URL}/orders`);
 	const orders = await response.json();
 
 	return { orders };
