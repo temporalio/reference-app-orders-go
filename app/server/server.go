@@ -10,9 +10,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
-	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
+	"github.com/temporalio/orders-reference-app-go/app/temporalutil"
 	"go.temporal.io/sdk/client"
 	"golang.org/x/sync/errgroup"
 )
