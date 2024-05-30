@@ -48,11 +48,11 @@ services:
       - temporal
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
-    ports:
-      - "8081"
-      - "8082"
-      - "8083"
-      - "8084"
+      - BIND_ON_IP=0.0.0.0
+      - BILLING_API_PORT=8081
+      - ORDER_API_PORT=8082
+      - SHIPMENT_API_PORT=8083
+      - FRAUD_API_PORT=8084
     restart: on-failure
   web:
     build:
@@ -60,6 +60,12 @@ services:
       target: web
     depends_on:
       - temporal
+    environment:
+      - ORIGIN=http://localhost:3000
+      - BILLING_API_URL=http://app:8081
+      - ORDER_API_URL=http://app:8082
+      - SHIPMENT_API_URL=http://app:8083
+      - FRAUD_API_URL=http://app:8084
     ports:
-      - "3000"
+      - "3000:3000"
     restart: on-failure

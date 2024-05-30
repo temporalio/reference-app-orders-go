@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/temporalio/orders-reference-app-go/app/config"
 	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
 	"go.temporal.io/api/common/v1"
 	"go.temporal.io/api/serviceerror"
@@ -62,13 +63,15 @@ func EnsureValidTemporalEnv(ctx context.Context, client client.Client, clientOpt
 }
 
 // RunServer runs a Shipment API HTTP server on the given port.
-func RunServer(ctx context.Context, port int, client client.Client) error {
+func RunServer(ctx context.Context, config config.AppConfig, client client.Client) error {
+	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.ShipmentPort)
+
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
+		Addr:    hostPort,
 		Handler: Router(client),
 	}
 
-	fmt.Printf("Listening on http://127.0.0.1:%d\n", port)
+	fmt.Printf("Listening on http://%s\n", hostPort)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()

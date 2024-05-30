@@ -8,6 +8,7 @@ import (
 	"os/signal"
 
 	"github.com/spf13/cobra"
+	"github.com/temporalio/orders-reference-app-go/app/config"
 	"github.com/temporalio/orders-reference-app-go/app/server"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"go.temporal.io/sdk/client"
@@ -23,6 +24,11 @@ var rootCmd = &cobra.Command{
 
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt)
+
+		config, err := config.AppConfigFromEnv()
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
 
 		clientOptions, err := server.CreateClientOptionsFromEnv()
 		if err != nil {
@@ -46,7 +52,7 @@ var rootCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if err := server.RunServer(ctx, client); err != nil {
+		if err := server.RunServer(ctx, config, client); err != nil {
 			return err
 		}
 

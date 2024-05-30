@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/temporalio/orders-reference-app-go/app/config"
 	"go.temporal.io/api/common/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/api/workflowservice/v1"
@@ -185,13 +186,14 @@ type handlers struct {
 }
 
 // RunServer runs a Order API HTTP server on the given port.
-func RunServer(ctx context.Context, port int, client client.Client) error {
+func RunServer(ctx context.Context, config config.AppConfig, client client.Client) error {
+	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.OrderPort)
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
+		Addr:    hostPort,
 		Handler: Router(client),
 	}
 
-	fmt.Printf("Listening on http://127.0.0.1:%d\n", port)
+	fmt.Printf("Listening on http://%s\n", hostPort)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
@@ -264,6 +266,8 @@ func (h *handlers) handleListOrders(w http.ResponseWriter, r *http.Request) {
 
 func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	var input OrderInput
+
+	fmt.Printf("Hit create order\n")
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
