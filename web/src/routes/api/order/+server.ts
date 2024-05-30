@@ -1,10 +1,11 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
+import { ORDER_API_URL } from '$env/static/private';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const { order } = await request.json();
 
 	try {
-		const response = await fetch(`http://127.0.0.1:8083/orders`, {
+		const response = await fetch(`${ORDER_API_URL}/orders`, {
 			method: 'POST',
 			body: JSON.stringify(order)
 		});
