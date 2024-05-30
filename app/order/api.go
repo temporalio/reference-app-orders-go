@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 )
@@ -275,8 +276,9 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.temporal.ExecuteWorkflow(context.Background(),
 		client.StartWorkflowOptions{
-			TaskQueue: TaskQueue,
-			ID:        OrderWorkflowID(input.ID),
+			TaskQueue:             TaskQueue,
+			ID:                    OrderWorkflowID(input.ID),
+			WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE,
 		},
 		Order,
 		&input,
@@ -294,7 +296,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		Status:     OrderStatusPending,
 	}
 
-	_, err = h.db.NamedExec(`INSERT INTO orders (id, customer_id, received_at, status) VALUES (:id, :customer_id, :received_at, :status)`, status)
+	_, err = h.db.NamedExec(`INSERT INTO orders (id, customer_id, received_at, status) VALUES (:id, :customer_id, :received_at, :status) ON CONFLICT IGNORE`, status)
 	if err != nil {
 		log.Printf("Failed to record workflow status: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

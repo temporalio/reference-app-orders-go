@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
 )
 
@@ -131,12 +132,13 @@ func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Start the Charge workflow.
-	// If the workflow is already running, this will return the existing workflow.
+	// If the workflow is already running, or is finished but still within retention period, this will return the existing workflow.
 	// If an idempotency key was provided, this provides idempotency guarantees for the Charge operation.
 	wf, err := h.temporal.ExecuteWorkflow(context.Background(),
 		client.StartWorkflowOptions{
-			TaskQueue: TaskQueue,
-			ID:        ChargeWorkflowID(input),
+			TaskQueue:             TaskQueue,
+			ID:                    ChargeWorkflowID(input),
+			WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE,
 		},
 		Charge,
 		&input,
