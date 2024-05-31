@@ -24,7 +24,13 @@ export interface Order {
 	status?: OrderStatus;
 }
 
-export type FulfillmentStatus = 'unavailable' | 'pending' | 'processing' | 'completed' | 'cancelled' | 'failed';
+export type FulfillmentStatus =
+	| 'unavailable'
+	| 'pending'
+	| 'processing'
+	| 'completed'
+	| 'cancelled'
+	| 'failed';
 
 export interface Fulfillment {
 	id: string;
