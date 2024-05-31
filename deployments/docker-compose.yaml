@@ -37,6 +37,7 @@ services:
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+      - TEMPORAL_CODEC_ENDPOINT=http://localhost:8089
     image: temporalio/ui:2.26.2
     ports:
       - 8080:8080
@@ -53,6 +54,15 @@ services:
       - ORDER_API_PORT=8082
       - SHIPMENT_API_PORT=8083
       - FRAUD_API_PORT=8084
+    command: ["dev-server", "-k", "supersecretkey"]
+    restart: on-failure
+  codec-server:
+    build:
+      context: ../
+      target: dev-server
+    command: ["codec-server", "-p", "8089", "-u", "http://localhost:8080"]
+    ports:
+      - "8089:8089"
     restart: on-failure
   web:
     build:
