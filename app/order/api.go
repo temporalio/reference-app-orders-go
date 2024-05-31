@@ -296,7 +296,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		Status:     OrderStatusPending,
 	}
 
-	_, err = h.db.NamedExec(`INSERT INTO orders (id, customer_id, received_at, status) VALUES (:id, :customer_id, :received_at, :status) ON CONFLICT IGNORE`, status)
+	_, err = h.db.NamedExec(`INSERT OR IGNORE INTO orders (id, customer_id, received_at, status) VALUES (:id, :customer_id, :received_at, :status)`, status)
 	if err != nil {
 		log.Printf("Failed to record workflow status: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
