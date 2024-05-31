@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
 )
 
@@ -22,9 +24,10 @@ type Item struct {
 
 // ChargeInput is the input for the Charge workflow.
 type ChargeInput struct {
-	CustomerID string `json:"customerId"`
-	Reference  string `json:"orderReference"`
-	Items      []Item `json:"items"`
+	CustomerID     string `json:"customerId"`
+	Reference      string `json:"orderReference"`
+	Items          []Item `json:"items"`
+	IdempotencyKey string `json:"idempotencyKey,omitempty"`
 }
 
 // ChargeResult is the result for the Charge workflow.
@@ -104,6 +107,20 @@ func Router(c client.Client) *mux.Router {
 	return r
 }
 
+// ChargeWorkflowID returns the workflow ID for a Charge workflow.
+func ChargeWorkflowID(input ChargeInput) string {
+	// If an idempotency key is provided, use it as the workflow ID.
+	// This ensures that the same charge is not processed multiple times.
+	key := input.IdempotencyKey
+	if key == "" {
+		// If no idempotency key is provided, generate a random one.
+		// This will not offer any idempotency guarantees.
+		key = uuid.NewString()
+	}
+
+	return fmt.Sprintf("Charge:%s", key)
+}
+
 func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 	var input ChargeInput
 
@@ -114,10 +131,14 @@ func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Start the Charge workflow.
+	// If the workflow is already running, or is finished but still within retention period, this will return the existing workflow.
+	// If an idempotency key was provided, this provides idempotency guarantees for the Charge operation.
 	wf, err := h.temporal.ExecuteWorkflow(context.Background(),
 		client.StartWorkflowOptions{
-			TaskQueue: TaskQueue,
-			ID:        fmt.Sprintf("Charge:%s", input.Reference),
+			TaskQueue:             TaskQueue,
+			ID:                    ChargeWorkflowID(input),
+			WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE,
 		},
 		Charge,
 		&input,
