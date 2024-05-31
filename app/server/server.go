@@ -3,15 +3,17 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	_ "embed"
 	"fmt"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/config"
 	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
-	"github.com/temporalio/orders-reference-app-go/app/internal/temporalutil"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
+	"github.com/temporalio/orders-reference-app-go/app/temporalutil"
 	"go.temporal.io/sdk/client"
 	"golang.org/x/sync/errgroup"
 )
@@ -60,8 +62,21 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	return clientOpts, nil
 }
 
+//go:embed schema.sql
+var schema string
+
+// SetupDB creates the necessary tables in the database.
+func SetupDB(db *sqlx.DB) error {
+	_, err := db.Exec(schema)
+	if err != nil {
+		return fmt.Errorf("failed to create the database schema: %w", err)
+	}
+
+	return nil
+}
+
 // RunServer runs all the workers and API servers for the Order/Shipment/Fraud/Billing system.
-func RunServer(ctx context.Context, config config.AppConfig, client client.Client) error {
+func RunServer(ctx context.Context, config config.AppConfig, client client.Client, db *sqlx.DB) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -71,10 +86,10 @@ func RunServer(ctx context.Context, config config.AppConfig, client client.Clien
 		return billing.RunServer(ctx, config, client)
 	})
 	g.Go(func() error {
-		return order.RunServer(ctx, config, client)
+		return order.RunServer(ctx, config, client, db)
 	})
 	g.Go(func() error {
-		return shipment.RunServer(ctx, config, client)
+		return shipment.RunServer(ctx, config, client, db)
 	})
 	g.Go(func() error {
 		return fraudcheck.RunServer(ctx, config)

@@ -16,9 +16,38 @@ import (
 // Any state shared by the worker among the activities is stored here.
 type Activities struct {
 	BillingURL string
+	OrderURL   string
 }
 
 var a Activities
+
+// UpdateOrderStatus stores the Order status to the database.
+func (a *Activities) UpdateOrderStatus(ctx context.Context, status *OrderStatusUpdate) error {
+	jsonInput, err := json.Marshal(status)
+	if err != nil {
+		return fmt.Errorf("unable to encode status: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.OrderURL+"/orders/"+status.ID+"/status", bytes.NewReader(jsonInput))
+	if err != nil {
+		return fmt.Errorf("unable to build request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		body, _ := io.ReadAll(res.Body)
+		return fmt.Errorf("%s: %s", http.StatusText(res.StatusCode), body)
+	}
+
+	return nil
+}
 
 // ReserveItemsInput is the input to the ReserveItems activity.
 type ReserveItemsInput struct {
@@ -116,8 +145,7 @@ func (a *Activities) Charge(ctx context.Context, input *ChargeInput) (*ChargeRes
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := http.DefaultClient
-	res, err := client.Do(req)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

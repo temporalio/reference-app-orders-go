@@ -1,12 +1,19 @@
 package shipment
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 )
 
 // Activities implements the shipment package's Activities.
 // Any state shared by the worker among the activities is stored here.
-type Activities struct{}
+type Activities struct {
+	ShipmentURL string
+}
 
 var a Activities
 
@@ -28,4 +35,32 @@ func (a *Activities) BookShipment(_ context.Context, input *BookShipmentInput) (
 	return &BookShipmentResult{
 		CourierReference: input.Reference + ":1234",
 	}, nil
+}
+
+// UpdateShipmentStatus stores the Order status to the database.
+func (a *Activities) UpdateShipmentStatus(ctx context.Context, status *ShipmentStatusUpdate) error {
+	jsonInput, err := json.Marshal(status)
+	if err != nil {
+		return fmt.Errorf("unable to encode status: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.ShipmentURL+"/shipments/"+status.ID, bytes.NewReader(jsonInput))
+	if err != nil {
+		return fmt.Errorf("unable to build request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		body, _ := io.ReadAll(res.Body)
+		return fmt.Errorf("%s: %s", http.StatusText(res.StatusCode), body)
+	}
+
+	return nil
 }
