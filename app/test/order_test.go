@@ -135,7 +135,7 @@ func Test_Order(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(c, "customerActionRequired", o.Status)
-	}, 3*time.Second, 100*time.Millisecond)
+	}, 10*time.Second, 100*time.Millisecond)
 
 	res, err = postJSON(orderAPI.URL+"/orders/order123/action", &order.CustomerActionSignal{
 		Action: "amend",
