@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-
 	import Logo from '$lib/components/logo.svelte';
 	import './app.css';
 </script>
