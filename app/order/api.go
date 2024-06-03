@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	"github.com/temporalio/orders-reference-app-go/app/config"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
@@ -209,13 +210,14 @@ func SetupDB(db *sqlx.DB) error {
 }
 
 // RunServer runs a Order API HTTP server on the given port.
-func RunServer(ctx context.Context, port int, client client.Client, db *sqlx.DB) error {
+func RunServer(ctx context.Context, config config.AppConfig, client client.Client, db *sqlx.DB) error {
+	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.OrderPort)
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
+		Addr:    hostPort,
 		Handler: Router(client, db),
 	}
 
-	fmt.Printf("Listening on http://127.0.0.1:%d\n", port)
+	fmt.Printf("Listening on http://%s\n", hostPort)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
@@ -266,6 +268,8 @@ func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
 
 func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	var input OrderInput
+
+	fmt.Printf("Hit create order\n")
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {

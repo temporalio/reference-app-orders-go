@@ -1,10 +1,11 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const { signal, shipment } = await request.json();
 
 	try {
-		const response = await fetch(`http://127.0.0.1:8081/shipments/${shipment.id}/status`, {
+		const response = await fetch(`${env.SHIPMENT_API_URL}/shipments/${shipment.id}/status`, {
 			method: 'POST',
 			body: JSON.stringify({ status: signal.status })
 		});

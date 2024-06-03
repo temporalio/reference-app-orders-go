@@ -6,9 +6,11 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
+	"github.com/temporalio/orders-reference-app-go/app/config"
 	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
@@ -74,35 +76,83 @@ func SetupDB(db *sqlx.DB) error {
 	return nil
 }
 
-// RunServer runs all the workers and API servers for the Order/Shipment/Fraud/Billing system.
-func RunServer(ctx context.Context, client client.Client, db *sqlx.DB) error {
+// RunWorkers runs workers for the requested services.
+func RunWorkers(ctx context.Context, config config.AppConfig, client client.Client, services []string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	g.Go(func() error {
-		return billing.RunServer(ctx, 8082, client)
-	})
-	g.Go(func() error {
-		return order.RunServer(ctx, 8083, client, db)
-	})
-	g.Go(func() error {
-		return shipment.RunServer(ctx, 8081, client, db)
-	})
-	g.Go(func() error {
-		return fraudcheck.RunServer(ctx, 8084)
-	})
+	for _, service := range services {
+		switch service {
+		case "billing":
+			g.Go(func() error {
+				return billing.RunWorker(ctx, config, client)
+			})
+		case "order":
+			g.Go(func() error {
+				return order.RunWorker(ctx, config, client)
+			})
+		case "shipment":
+			g.Go(func() error {
+				return shipment.RunWorker(ctx, config, client)
+			})
+		default:
+			return fmt.Errorf("unknown service: %s", service)
+		}
+	}
 
-	g.Go(func() error {
-		return billing.RunWorker(ctx, client, billing.Config{FraudCheckURL: "http://localhost:8084"})
-	})
-	g.Go(func() error {
-		return shipment.RunWorker(ctx, client, shipment.Config{ShipmentURL: "http://localhost:8081"})
-	})
-	g.Go(func() error {
-		return order.RunWorker(ctx, client, order.Config{BillingURL: "http://localhost:8082", OrderURL: "http://localhost:8083"})
-	})
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RunAPIServers runs API servers for the requested services.
+func RunAPIServers(ctx context.Context, config config.AppConfig, client client.Client, services []string) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	var db *sqlx.DB
+	var err error
+
+	if slices.Contains(services, "orders") || slices.Contains(services, "shipment") {
+		db, err = sqlx.Connect("sqlite", "./api-store.db")
+		db.SetMaxOpenConns(1) // SQLite does not support concurrent writes
+		if err != nil {
+			return fmt.Errorf("failed to open database: %w", err)
+		}
+
+		if err := SetupDB(db); err != nil {
+			return err
+		}
+	}
+
+	for _, service := range services {
+		switch service {
+		case "billing":
+			g.Go(func() error {
+				return billing.RunServer(ctx, config, client)
+			})
+		case "order":
+			g.Go(func() error {
+				return order.RunServer(ctx, config, client, db)
+			})
+		case "shipment":
+			g.Go(func() error {
+				return shipment.RunServer(ctx, config, client, db)
+			})
+		case "fraudcheck":
+			g.Go(func() error {
+				return fraudcheck.RunServer(ctx, config)
+			})
+		default:
+			return fmt.Errorf("unknown service: %s", service)
+		}
+	}
 
 	if err := g.Wait(); err != nil {
 		return err

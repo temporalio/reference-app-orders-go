@@ -13,7 +13,7 @@
 
 {#if !loading}
 	<svg width="400" height="150" viewBox="0 0 400 150">
-		<a href="/"><text fill={statusColor} x="120" y="100">Tora</text></a>
+		<a href="/"><text fill={statusColor} x="120" y="100">OMS</text></a>
 	</svg>
 {:else}
 	<svg width="400" height="150" viewBox="0 0 400 150">

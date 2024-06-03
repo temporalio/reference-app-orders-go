@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
+	"github.com/temporalio/orders-reference-app-go/app/config"
 	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/server"
@@ -106,16 +107,23 @@ func Test_Order(t *testing.T) {
 	shipmentAPI := httptest.NewServer(shipment.Router(c, db))
 	defer shipmentAPI.Close()
 
+	config := config.AppConfig{
+		BillingURL:  billingAPI.URL,
+		OrderURL:    orderAPI.URL,
+		ShipmentURL: shipmentAPI.URL,
+		FraudURL:    fraudAPI.URL,
+	}
+
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		return billing.RunWorker(ctx, c, billing.Config{FraudCheckURL: fraudAPI.URL})
+		return billing.RunWorker(ctx, config, c)
 	})
 	g.Go(func() error {
-		return shipment.RunWorker(ctx, c, shipment.Config{ShipmentURL: shipmentAPI.URL})
+		return shipment.RunWorker(ctx, config, c)
 	})
 	g.Go(func() error {
-		return order.RunWorker(ctx, c, order.Config{BillingURL: billingAPI.URL, OrderURL: orderAPI.URL})
+		return order.RunWorker(ctx, config, c)
 	})
 
 	res, err := postJSON(orderAPI.URL+"/orders", &order.OrderInput{

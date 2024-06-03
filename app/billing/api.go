@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/temporalio/orders-reference-app-go/app/config"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
 )
@@ -76,13 +77,14 @@ type handlers struct {
 }
 
 // RunServer runs a Billing API HTTP server on the given port.
-func RunServer(ctx context.Context, port int, client client.Client) error {
+func RunServer(ctx context.Context, config config.AppConfig, client client.Client) error {
+	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.BillingPort)
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("127.0.0.1:%d", port),
+		Addr:    hostPort,
 		Handler: Router(client),
 	}
 
-	fmt.Printf("Listening on http://127.0.0.1:%d\n", port)
+	fmt.Printf("Listening on http://%s\n", hostPort)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()

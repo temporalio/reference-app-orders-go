@@ -1,0 +1,5 @@
+.git
+.gitignore
+deployments
+web/.svelte-kit
+web/node_modules
