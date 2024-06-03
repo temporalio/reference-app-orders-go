@@ -21,10 +21,16 @@ export interface Order {
 	customerId: string;
 	items: OrderItem[];
 	fulfillments?: Fulfillment[];
-	status: OrderStatus;
+	status?: OrderStatus;
 }
 
-export type FulfillmentStatus = 'unavailable' | 'pending' | 'processing' | 'completed' | 'cancelled' | 'failed';
+export type FulfillmentStatus =
+	| 'unavailable'
+	| 'pending'
+	| 'processing'
+	| 'completed'
+	| 'cancelled'
+	| 'failed';
 
 export interface Fulfillment {
 	id: string;
