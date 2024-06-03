@@ -30,7 +30,7 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           target: oms-worker
-          tags: temporalio/reference-app-orders-go-worker:latest
+          tags: ghcr.io/temporalio/reference-app-orders-go-worker:latest
           push: ${{ github.event_name != 'pull_request' }}
 
       - name: Build and push oms-go-api Docker image
@@ -38,7 +38,7 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           target: oms-api
-          tags: temporalio/reference-app-orders-go-api:latest
+          tags: ghcr.io/temporalio/reference-app-orders-go-api:latest
           push: ${{ github.event_name != 'pull_request' }}
 
       - name: Build and push oms-web Docker image
@@ -46,5 +46,5 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           target: web
-          tags: temporalio/reference-app-orders-web:latest
+          tags: ghcr.io/temporalio/reference-app-orders-web:latest
           push: ${{ github.event_name != 'pull_request' }}
