@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
@@ -75,35 +76,83 @@ func SetupDB(db *sqlx.DB) error {
 	return nil
 }
 
-// RunServer runs all the workers and API servers for the Order/Shipment/Fraud/Billing system.
-func RunServer(ctx context.Context, config config.AppConfig, client client.Client, db *sqlx.DB) error {
+// RunWorkers runs workers for the requested services.
+func RunWorkers(ctx context.Context, config config.AppConfig, client client.Client, services []string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	g.Go(func() error {
-		return billing.RunServer(ctx, config, client)
-	})
-	g.Go(func() error {
-		return order.RunServer(ctx, config, client, db)
-	})
-	g.Go(func() error {
-		return shipment.RunServer(ctx, config, client, db)
-	})
-	g.Go(func() error {
-		return fraudcheck.RunServer(ctx, config)
-	})
+	for _, service := range services {
+		switch service {
+		case "billing":
+			g.Go(func() error {
+				return billing.RunWorker(ctx, config, client)
+			})
+		case "order":
+			g.Go(func() error {
+				return order.RunWorker(ctx, config, client)
+			})
+		case "shipment":
+			g.Go(func() error {
+				return shipment.RunWorker(ctx, config, client)
+			})
+		default:
+			return fmt.Errorf("unknown service: %s", service)
+		}
+	}
 
-	g.Go(func() error {
-		return billing.RunWorker(ctx, config, client)
-	})
-	g.Go(func() error {
-		return shipment.RunWorker(ctx, config, client)
-	})
-	g.Go(func() error {
-		return order.RunWorker(ctx, config, client)
-	})
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RunAPIServers runs API servers for the requested services.
+func RunAPIServers(ctx context.Context, config config.AppConfig, client client.Client, services []string) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	var db *sqlx.DB
+	var err error
+
+	if slices.Contains(services, "orders") || slices.Contains(services, "shipment") {
+		db, err = sqlx.Connect("sqlite", "./api-store.db")
+		db.SetMaxOpenConns(1) // SQLite does not support concurrent writes
+		if err != nil {
+			return fmt.Errorf("failed to open database: %w", err)
+		}
+
+		if err := SetupDB(db); err != nil {
+			return err
+		}
+	}
+
+	for _, service := range services {
+		switch service {
+		case "billing":
+			g.Go(func() error {
+				return billing.RunServer(ctx, config, client)
+			})
+		case "order":
+			g.Go(func() error {
+				return order.RunServer(ctx, config, client, db)
+			})
+		case "shipment":
+			g.Go(func() error {
+				return shipment.RunServer(ctx, config, client, db)
+			})
+		case "fraudcheck":
+			g.Go(func() error {
+				return fraudcheck.RunServer(ctx, config)
+			})
+		default:
+			return fmt.Errorf("unknown service: %s", service)
+		}
+	}
 
 	if err := g.Wait(); err != nil {
 		return err

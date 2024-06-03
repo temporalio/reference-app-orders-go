@@ -36,6 +36,10 @@ func AppConfigFromEnv() (AppConfig, error) {
 		conf.BindOnIP = ip
 	}
 
+	if p := os.Getenv("BILLING_API_URL"); p != "" {
+		conf.BillingURL = p
+	}
+
 	if p := os.Getenv("BILLING_API_PORT"); p != "" {
 		v, err := strconv.Atoi(p)
 		if err != nil {
@@ -44,7 +48,7 @@ func AppConfigFromEnv() (AppConfig, error) {
 		conf.BillingPort = int32(v)
 	}
 
-	if p := os.Getenv("ORDER_URL"); p != "" {
+	if p := os.Getenv("ORDER_API_URL"); p != "" {
 		conf.OrderURL = p
 	}
 
@@ -56,7 +60,7 @@ func AppConfigFromEnv() (AppConfig, error) {
 		conf.OrderPort = int32(v)
 	}
 
-	if p := os.Getenv("SHIPMENT_URL"); p != "" {
+	if p := os.Getenv("SHIPMENT_API_URL"); p != "" {
 		conf.ShipmentURL = p
 	}
 
@@ -68,7 +72,7 @@ func AppConfigFromEnv() (AppConfig, error) {
 		conf.ShipmentPort = int32(v)
 	}
 
-	if p := os.Getenv("FRAUD_URL"); p != "" {
+	if p := os.Getenv("FRAUD_API_URL"); p != "" {
 		conf.FraudURL = p
 	}
 

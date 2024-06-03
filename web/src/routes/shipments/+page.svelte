@@ -7,8 +7,8 @@
 </script>
 
 <svelte:head>
-	<title>Tora</title>
-	<meta name="description" content="Tora App" />
+	<title>OMS</title>
+	<meta name="description" content="OMS App" />
 </svelte:head>
 
 <section>
