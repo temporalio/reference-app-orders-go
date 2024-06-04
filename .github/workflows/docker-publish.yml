@@ -25,7 +25,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push worker Docker image
+      - name: Build and push oms-go-worker Docker image
         uses: docker/build-push-action@v5.3.0
         with:
           platforms: linux/amd64,linux/arm64
@@ -33,7 +33,7 @@ jobs:
           tags: ghcr.io/temporalio/reference-app-orders-go-worker:latest
           push: ${{ github.event_name != 'pull_request' }}
 
-      - name: Build and push api Docker image
+      - name: Build and push oms-go-api Docker image
         uses: docker/build-push-action@v5.3.0
         with:
           platforms: linux/amd64,linux/arm64
@@ -41,10 +41,10 @@ jobs:
           tags: ghcr.io/temporalio/reference-app-orders-go-api:latest
           push: ${{ github.event_name != 'pull_request' }}
 
-      - name: Build and push web Docker image
+      - name: Build and push oms-web Docker image
         uses: docker/build-push-action@v5.3.0
         with:
           platforms: linux/amd64,linux/arm64
           target: web
-          tags: ghcr.io/temporalio/reference-app-orders-go-web:latest
+          tags: ghcr.io/temporalio/reference-app-orders-web:latest
           push: ${{ github.event_name != 'pull_request' }}
