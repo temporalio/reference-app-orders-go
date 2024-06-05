@@ -40,11 +40,3 @@ jobs:
           target: oms-api
           tags: ghcr.io/temporalio/reference-app-orders-go-api:latest
           push: ${{ github.event_name != 'pull_request' }}
-
-      - name: Build and push oms-web Docker image
-        uses: docker/build-push-action@v5.3.0
-        with:
-          platforms: linux/amd64,linux/arm64
-          target: web
-          tags: ghcr.io/temporalio/reference-app-orders-web:latest
-          push: ${{ github.event_name != 'pull_request' }}
