@@ -1,6 +1,7 @@
 package shipment_test
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -26,7 +27,7 @@ func TestShipmentUpdate(t *testing.T) {
 	err = server.SetupDB(db)
 	require.NoError(t, err)
 
-	r := shipment.Router(c, db)
+	r := shipment.Router(c, db, slog.Default())
 	req, err := http.NewRequest("POST", "/shipments/test/status", strings.NewReader(`{"status":"dispatched"}`))
 	assert.NoError(t, err)
 

@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/temporalio/orders-reference-app-go/app/config"
+	"github.com/temporalio/orders-reference-app-go/app/instrumentation"
 )
 
 // FraudLimitInput is the input for the SetLimit API.
@@ -32,17 +33,20 @@ type handlers struct {
 	limit               int32
 	tallyLock           sync.Mutex
 	customerChargeTally map[string]int32
+	logger              *slog.Logger
 }
 
 // RunServer runs a FraudCheck API HTTP server on the given port.
 func RunServer(ctx context.Context, config config.AppConfig) error {
-	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.FraudPort)
+	logger := slog.Default().With("service", "fraudcheck")
+
+	handler := Router(logger)
+
+	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.FraudCheckPort)
 	srv := &http.Server{
 		Addr:    hostPort,
-		Handler: Router(),
+		Handler: handler,
 	}
-
-	fmt.Printf("Listening on http://%s\n", hostPort)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
@@ -58,13 +62,14 @@ func RunServer(ctx context.Context, config config.AppConfig) error {
 }
 
 // Router implements the http.Handler interface for the Billing API
-func Router() *mux.Router {
-	r := mux.NewRouter()
-	h := handlers{customerChargeTally: make(map[string]int32)}
+func Router(logger *slog.Logger) http.Handler {
+	r := chi.NewRouter()
+	h := handlers{customerChargeTally: make(map[string]int32), logger: logger}
 
-	r.HandleFunc("/limit", h.handleSetLimit).Methods("POST")
-	r.HandleFunc("/reset", h.handleReset).Methods("POST")
-	r.HandleFunc("/check", h.handleRunCheck).Methods("POST")
+	r.Use(instrumentation.Middleware(logger))
+	r.Post("/limit", h.handleSetLimit)
+	r.Post("/reset", h.handleReset)
+	r.Post("/check", h.handleRunCheck)
 
 	return r
 }
@@ -74,7 +79,7 @@ func (h *handlers) handleSetLimit(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		log.Printf("Failed to decode limit input: %v", err)
+		h.logger.Error("Failed to decode limit input", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -95,7 +100,7 @@ func (h *handlers) handleRunCheck(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		log.Printf("Failed to decode charge input: %v", err)
+		h.logger.Error("Failed to decode charge input", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -109,7 +114,7 @@ func (h *handlers) handleRunCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(result)
 	if err != nil {
-		log.Printf("Failed to encode charge result: %v", err)
+		h.logger.Error("Failed to encode charge result", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

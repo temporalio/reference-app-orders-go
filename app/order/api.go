@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/temporalio/orders-reference-app-go/app/config"
+	"github.com/temporalio/orders-reference-app-go/app/instrumentation"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
@@ -188,6 +189,7 @@ type OrderResult struct {
 type handlers struct {
 	temporal client.Client
 	db       *sqlx.DB
+	logger   *slog.Logger
 }
 
 // SetupDB creates the necessary tables in the database.
@@ -211,13 +213,13 @@ func SetupDB(db *sqlx.DB) error {
 
 // RunServer runs a Order API HTTP server on the given port.
 func RunServer(ctx context.Context, config config.AppConfig, client client.Client, db *sqlx.DB) error {
+	logger := slog.Default().With("service", "order")
+
 	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.OrderPort)
 	srv := &http.Server{
 		Addr:    hostPort,
-		Handler: Router(client, db),
+		Handler: Router(client, db, logger),
 	}
-
-	fmt.Printf("Listening on http://%s\n", hostPort)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
@@ -233,16 +235,17 @@ func RunServer(ctx context.Context, config config.AppConfig, client client.Clien
 }
 
 // Router implements the http.Handler interface for the Billing API
-func Router(client client.Client, db *sqlx.DB) *mux.Router {
-	r := mux.NewRouter()
+func Router(client client.Client, db *sqlx.DB, logger *slog.Logger) http.Handler {
+	r := chi.NewRouter()
 
-	h := handlers{temporal: client, db: db}
+	h := handlers{temporal: client, db: db, logger: logger}
 
-	r.HandleFunc("/orders", h.handleCreateOrder).Methods("POST")
-	r.HandleFunc("/orders", h.handleListOrders).Methods("GET")
-	r.HandleFunc("/orders/{id}", h.handleGetOrder).Methods("GET")
-	r.HandleFunc("/orders/{id}/status", h.handleUpdateOrderStatus).Methods("POST")
-	r.HandleFunc("/orders/{id}/action", h.handleCustomerAction).Methods("POST")
+	r.Use(instrumentation.Middleware(logger))
+	r.Post("/orders", h.handleCreateOrder)
+	r.Get("/orders", h.handleListOrders)
+	r.Get("/orders/{id}", h.handleGetOrder)
+	r.Post("/orders/{id}/status", h.handleUpdateOrderStatus)
+	r.Post("/orders/{id}/action", h.handleCustomerAction)
 
 	return r
 }
@@ -252,7 +255,7 @@ func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
 
 	err := h.db.Select(&orders, `SELECT id, status, received_at FROM orders ORDER BY received_at DESC`)
 	if err != nil {
-		log.Printf("Failed to list orders: %v", err)
+		h.logger.Error("Failed to list orders", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -261,7 +264,7 @@ func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
 
 	err = json.NewEncoder(w).Encode(orders)
 	if err != nil {
-		log.Printf("Failed to encode orders: %v", err)
+		h.logger.Error("Failed to encode orders", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -269,11 +272,9 @@ func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
 func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	var input OrderInput
 
-	fmt.Printf("Hit create order\n")
-
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		log.Printf("Failed to decode order input: %v", err)
+		h.logger.Error("Failed to decode order input", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -288,7 +289,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		&input,
 	)
 	if err != nil {
-		log.Printf("Failed to start order workflow: %v", err)
+		h.logger.Error("Failed to start order workflow", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -302,7 +303,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.db.NamedExec(`INSERT OR IGNORE INTO orders (id, customer_id, received_at, status) VALUES (:id, :customer_id, :received_at, :status)`, status)
 	if err != nil {
-		log.Printf("Failed to record workflow status: %v", err)
+		h.logger.Error("Failed to record workflow status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -312,26 +313,24 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handlers) handleGetOrder(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
 	var status OrderStatus
 
 	q, err := h.temporal.QueryWorkflow(r.Context(),
-		OrderWorkflowID(vars["id"]), "",
+		OrderWorkflowID(chi.URLParam(r, "id")), "",
 		StatusQuery,
 	)
 	if err != nil {
 		if _, ok := err.(*serviceerror.NotFound); ok {
 			http.Error(w, "Order not found", http.StatusNotFound)
 		} else {
-			log.Printf("Failed to query order workflow: %v", err)
+			h.logger.Error("Failed to query order workflow", "error", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
 
 	if err := q.Get(&status); err != nil {
-		log.Printf("Failed to get order query result: %v", err)
+		h.logger.Error("Failed to get order query result", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -339,7 +338,7 @@ func (h *handlers) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(status); err != nil {
-		log.Printf("Failed to encode order status: %v", err)
+		h.logger.Error("Failed to encode order status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -349,14 +348,14 @@ func (h *handlers) handleUpdateOrderStatus(w http.ResponseWriter, r *http.Reques
 
 	err := json.NewDecoder(r.Body).Decode(&status)
 	if err != nil {
-		log.Printf("Failed to decode order status: %v", err)
+		h.logger.Error("Failed to decode order status", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.db.NamedExec(`UPDATE orders SET status = :status WHERE id = :id`, status)
 	if err != nil {
-		log.Printf("Failed to update order status: %v", err)
+		h.logger.Error("Failed to update order status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -365,28 +364,26 @@ func (h *handlers) handleUpdateOrderStatus(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *handlers) handleCustomerAction(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
 	var signal CustomerActionSignal
 
 	err := json.NewDecoder(r.Body).Decode(&signal)
 	if err != nil {
-		log.Printf("Failed to decode customer action signal: %v", err)
+		h.logger.Error("Failed to decode customer action signal", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = h.temporal.SignalWorkflow(context.Background(),
-		OrderWorkflowID(vars["id"]), "",
+		OrderWorkflowID(chi.URLParam(r, "id")), "",
 		CustomerActionSignalName,
 		signal,
 	)
 	if err != nil {
 		if _, ok := err.(*serviceerror.NotFound); ok {
-			log.Printf("Failed to signal order workflow: %v", err)
+			h.logger.Error("Failed to signal order workflow", "error", err)
 			http.Error(w, "Order not found", http.StatusNotFound)
 		} else {
-			log.Printf("Failed to signal order workflow: %v", err)
+			h.logger.Error("Failed to signal order workflow", "error", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 		return

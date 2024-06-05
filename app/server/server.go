@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"fmt"
+	"log/slog"
 	"os"
 	"slices"
 
@@ -15,9 +16,15 @@ import (
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
 	"github.com/temporalio/orders-reference-app-go/app/temporalutil"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/contrib/opentelemetry"
+	tlog "go.temporal.io/sdk/log"
 	"golang.org/x/sync/errgroup"
 )
+
+const meterName = "github.com/temporalio/reference-app-orders-go"
 
 // CreateClientOptionsFromEnv creates a client.Options instance, configures
 // it based on environment variables, and returns that instance. It
@@ -41,12 +48,26 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 
 	if namespaceName == "" {
 		namespaceName = "default"
-		fmt.Printf("Namespace name unspecified; using value '%s'\n", namespaceName)
+		slog.Warn("Namespace name unspecified; using default", "namespace", namespaceName)
 	}
 
 	clientOpts := client.Options{
 		HostPort:  hostPort,
 		Namespace: namespaceName,
+		Logger:    tlog.NewStructuredLogger(slog.Default()),
+	}
+
+	if os.Getenv("PROMETHEUS_ENDPOINT") != "" {
+		exporter, err := prometheus.New()
+		if err != nil {
+			return client.Options{}, err
+		}
+		provider := metric.NewMeterProvider(metric.WithReader(exporter))
+		meter := provider.Meter(meterName)
+
+		clientOpts.MetricsHandler = opentelemetry.NewMetricsHandler(
+			opentelemetry.MetricsHandlerOptions{Meter: meter},
+		)
 	}
 
 	if certPath := os.Getenv("TEMPORAL_TLS_CERT"); certPath != "" {
@@ -87,14 +108,17 @@ func RunWorkers(ctx context.Context, config config.AppConfig, client client.Clie
 		switch service {
 		case "billing":
 			g.Go(func() error {
+				slog.Info("Starting worker", "service", "billing")
 				return billing.RunWorker(ctx, config, client)
 			})
 		case "order":
 			g.Go(func() error {
+				slog.Info("Starting worker", "service", "order")
 				return order.RunWorker(ctx, config, client)
 			})
 		case "shipment":
 			g.Go(func() error {
+				slog.Info("Starting worker", "service", "shipment")
 				return shipment.RunWorker(ctx, config, client)
 			})
 		default:
@@ -135,18 +159,22 @@ func RunAPIServers(ctx context.Context, config config.AppConfig, client client.C
 		switch service {
 		case "billing":
 			g.Go(func() error {
+				slog.Info("Starting API server", "service", "billing", "port", config.BillingPort)
 				return billing.RunServer(ctx, config, client)
 			})
 		case "order":
 			g.Go(func() error {
+				slog.Info("Starting API server", "service", "order", "port", config.OrderPort)
 				return order.RunServer(ctx, config, client, db)
 			})
 		case "shipment":
 			g.Go(func() error {
+				slog.Info("Starting API server", "service", "shipment", "port", config.ShipmentPort)
 				return shipment.RunServer(ctx, config, client, db)
 			})
 		case "fraudcheck":
 			g.Go(func() error {
+				slog.Info("Starting API server", "service", "fraudcheck", "port", config.FraudCheckPort)
 				return fraudcheck.RunServer(ctx, config)
 			})
 		default:

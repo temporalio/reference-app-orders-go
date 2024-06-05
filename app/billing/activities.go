@@ -21,6 +21,13 @@ type Activities struct {
 
 var a Activities
 
+const (
+	metricFraudcheck         = "fraudcheck"
+	metricFraudcheckDeclined = "fraudcheck_declined"
+	metricCharge             = "charge"
+	metricChargeDeclined     = "charge_declined"
+)
+
 // GenerateInvoice activity creates an invoice for a fulfillment.
 func (a *Activities) GenerateInvoice(_ context.Context, input *GenerateInvoiceInput) (*GenerateInvoiceResult, error) {
 	var result GenerateInvoiceResult
@@ -101,6 +108,14 @@ func (a *Activities) fraudCheck(ctx context.Context, input *ChargeCustomerInput)
 	var checkResult fraudcheck.FraudCheckResult
 
 	err = json.NewDecoder(res.Body).Decode(&checkResult)
+	if err == nil {
+		handler := activity.GetMetricsHandler(ctx)
+		handler.Counter(metricFraudcheck).Inc(1)
+		if checkResult.Declined {
+			handler.Counter(metricFraudcheckDeclined).Inc(1)
+		}
+	}
+
 	return &checkResult, err
 }
 
@@ -115,6 +130,12 @@ func (a *Activities) ChargeCustomer(ctx context.Context, input *ChargeCustomerIn
 
 	result.Success = !checkResult.Declined
 	result.AuthCode = "1234"
+
+	handler := activity.GetMetricsHandler(ctx)
+	handler.Counter(metricCharge).Inc(1)
+	if !result.Success {
+		handler.Counter(metricChargeDeclined).Inc(1)
+	}
 
 	activity.GetLogger(ctx).Info(
 		"Charge",

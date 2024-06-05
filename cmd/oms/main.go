@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/temporalio/orders-reference-app-go/app/config"
+	"github.com/temporalio/orders-reference-app-go/app/instrumentation"
 	"github.com/temporalio/orders-reference-app-go/app/server"
 	"github.com/temporalio/orders-reference-app-go/app/temporalutil"
 	"go.temporal.io/sdk/client"
@@ -55,8 +56,12 @@ var workerCmd = &cobra.Command{
 			return fmt.Errorf("failed to create client options: %w", err)
 		}
 
+		if prometheusEndpoint := os.Getenv("PROMETHEUS_ENDPOINT"); prometheusEndpoint != "" {
+			instrumentation.ServeMetrics(prometheusEndpoint)
+		}
+
 		if encryptionKeyID != "" {
-			log.Printf("Enabling encrypting Data Converter using key ID '%s'", encryptionKeyID)
+			slog.Info("Enabling encrypting Data Converter", "keyID", encryptionKeyID)
 			ddc := converter.GetDefaultDataConverter()
 			clientOptions.DataConverter = temporalutil.NewEncryptionDataConverter(ddc, encryptionKeyID)
 		}
@@ -69,7 +74,7 @@ var workerCmd = &cobra.Command{
 
 		go func() {
 			<-sigCh
-			log.Printf("Interrupt signal received, shutting down...")
+			slog.Info("Interrupt signal received, shutting down...")
 			cancel()
 		}()
 
@@ -102,8 +107,12 @@ var apiCmd = &cobra.Command{
 			return fmt.Errorf("failed to create client options: %w", err)
 		}
 
+		if prometheusEndpoint := os.Getenv("PROMETHEUS_ENDPOINT"); prometheusEndpoint != "" {
+			instrumentation.ServeMetrics(prometheusEndpoint)
+		}
+
 		if encryptionKeyID != "" {
-			log.Printf("Enabling encrypting Data Converter using key ID '%s'", encryptionKeyID)
+			slog.Info("Enabling encrypting Data Converter", "keyID", encryptionKeyID)
 			ddc := converter.GetDefaultDataConverter()
 			clientOptions.DataConverter = temporalutil.NewEncryptionDataConverter(ddc, encryptionKeyID)
 		}
@@ -116,7 +125,7 @@ var apiCmd = &cobra.Command{
 
 		go func() {
 			<-sigCh
-			log.Printf("Interrupt signal received, shutting down...")
+			slog.Info("Interrupt signal received, shutting down...")
 			cancel()
 		}()
 
@@ -133,7 +142,7 @@ var codecCmd = &cobra.Command{
 	Short: "Codec Server decrypts payloads for display by Temporal CLI and Web UI",
 	RunE: func(*cobra.Command, []string) error {
 		if codecCorsURL != "" {
-			log.Printf("Codec Server will allow requests from Temporal Web UI at: %s\n", codecCorsURL)
+			slog.Info("Enabling CORS", "origin", codecCorsURL)
 
 			if strings.HasSuffix(codecCorsURL, "/") {
 				// In my experience, a slash character at the end of the URL will
@@ -141,14 +150,12 @@ var codecCmd = &cobra.Command{
 				// the cause will not be obvious. I don't want to strip it off, in
 				// case there really is a valid reason to have one, but warning the
 				// user could help them to more quickly spot the problem otherwise.
-				log.Println("Warning: Temporal Web UI base URL ends with '/'")
+				slog.Warn("Temporal Web UI base URL ends with '/'")
 			}
 		}
 
-		log.Printf("Starting Codec Server on port %d\n", codecPort)
-		err := temporalutil.RunCodecServer(codecPort, codecCorsURL)
-
-		return err
+		slog.Info("Starting Codec Server", "port", codecPort)
+		return temporalutil.RunCodecServer(codecPort, codecCorsURL)
 	},
 }
 

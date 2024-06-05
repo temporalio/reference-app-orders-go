@@ -7,29 +7,29 @@ import (
 
 // AppConfig is a struct that holds the configuration for the Order/Shipment/Fraud/Billing system.
 type AppConfig struct {
-	BindOnIP     string
-	BillingPort  int32
-	BillingURL   string
-	OrderPort    int32
-	OrderURL     string
-	ShipmentPort int32
-	ShipmentURL  string
-	FraudPort    int32
-	FraudURL     string
+	BindOnIP       string
+	BillingPort    int32
+	BillingURL     string
+	OrderPort      int32
+	OrderURL       string
+	ShipmentPort   int32
+	ShipmentURL    string
+	FraudCheckPort int32
+	FraudURL       string
 }
 
 // AppConfigFromEnv creates an AppConfig from environment variables.
 func AppConfigFromEnv() (AppConfig, error) {
 	conf := AppConfig{
-		BindOnIP:     "127.0.0.1",
-		BillingPort:  8081,
-		BillingURL:   "http://127.0.0.1:8081",
-		OrderPort:    8082,
-		OrderURL:     "http://127.0.0.1:8082",
-		ShipmentPort: 8083,
-		ShipmentURL:  "http://127.0.0.1:8083",
-		FraudPort:    8084,
-		FraudURL:     "http://127.0.0.1:8084",
+		BindOnIP:       "127.0.0.1",
+		BillingPort:    8081,
+		BillingURL:     "http://127.0.0.1:8081",
+		OrderPort:      8082,
+		OrderURL:       "http://127.0.0.1:8082",
+		ShipmentPort:   8083,
+		ShipmentURL:    "http://127.0.0.1:8083",
+		FraudCheckPort: 8084,
+		FraudURL:       "http://127.0.0.1:8084",
 	}
 
 	if ip := os.Getenv("BIND_ON_IP"); ip != "" {
@@ -81,7 +81,7 @@ func AppConfigFromEnv() (AppConfig, error) {
 		if err != nil {
 			return conf, err
 		}
-		conf.FraudPort = int32(v)
+		conf.FraudCheckPort = int32(v)
 	}
 
 	return conf, nil

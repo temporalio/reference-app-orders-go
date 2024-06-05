@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -92,9 +93,9 @@ func Test_Order(t *testing.T) {
 	require.NoError(t, err)
 	defer c.Close()
 
-	fraudAPI := httptest.NewServer(fraudcheck.Router())
+	fraudAPI := httptest.NewServer(fraudcheck.Router(slog.Default()))
 	defer fraudAPI.Close()
-	billingAPI := httptest.NewServer(billing.Router(c))
+	billingAPI := httptest.NewServer(billing.Router(c, slog.Default()))
 	defer billingAPI.Close()
 
 	db, err := sqlx.Open("sqlite", ":memory:")
@@ -102,9 +103,9 @@ func Test_Order(t *testing.T) {
 	err = server.SetupDB(db)
 	require.NoError(t, err)
 
-	orderAPI := httptest.NewServer(order.Router(c, db))
+	orderAPI := httptest.NewServer(order.Router(c, db, slog.Default()))
 	defer orderAPI.Close()
-	shipmentAPI := httptest.NewServer(shipment.Router(c, db))
+	shipmentAPI := httptest.NewServer(shipment.Router(c, db, slog.Default()))
 	defer shipmentAPI.Close()
 
 	config := config.AppConfig{
