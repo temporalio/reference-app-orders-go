@@ -1,9 +1,0 @@
-.DS_Store
-node_modules
-/build
-/.svelte-kit
-/package
-.vercel
-.output
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
