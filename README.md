@@ -10,7 +10,6 @@ We'll be releasing soon, along with comprehensive documentation!
 * `cmd/` Command line tools for the application
 * `deployments/` Tools to deploy the application
 * `docs/` Documentation
-* `web/` Web interface and assets
 
 ### To run all Worker and API services
 
@@ -19,4 +18,4 @@ We'll be releasing soon, along with comprehensive documentation!
 
 ### To run web
 
-`cd web && pnpm i && pnpm dev`
+See: https://github.com/temporalio/reference-app-orders-web
