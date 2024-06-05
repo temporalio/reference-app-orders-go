@@ -33,9 +33,7 @@ services:
       - "8089:8089"
     restart: on-failure
   web:
-    build:
-      context: ../
-      target: web
+    image: ghcr.io/temporalio/reference-app-orders-web:latest
     depends_on:
       - api
     environment:
