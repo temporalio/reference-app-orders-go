@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/temporalio/orders-reference-app-go/app/order"
+	"github.com/temporalio/reference-app-orders-go/app/order"
 	"go.temporal.io/sdk/testsuite"
 )
 

@@ -1,4 +1,4 @@
-module github.com/temporalio/orders-reference-app-go
+module github.com/temporalio/reference-app-orders-go
 
 go 1.22.0
 

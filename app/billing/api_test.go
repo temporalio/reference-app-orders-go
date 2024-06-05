@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/temporalio/orders-reference-app-go/app/billing"
+	"github.com/temporalio/reference-app-orders-go/app/billing"
 )
 
 func TestChargeWorkflowID(t *testing.T) {

@@ -11,8 +11,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
-	"github.com/temporalio/orders-reference-app-go/app/config"
-	"github.com/temporalio/orders-reference-app-go/app/instrumentation"
+	"github.com/temporalio/reference-app-orders-go/app/config"
+	"github.com/temporalio/reference-app-orders-go/app/instrumentation"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 )

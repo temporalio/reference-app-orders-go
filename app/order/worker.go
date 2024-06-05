@@ -3,8 +3,8 @@ package order
 import (
 	"context"
 
-	"github.com/temporalio/orders-reference-app-go/app/config"
-	"github.com/temporalio/orders-reference-app-go/app/temporalutil"
+	"github.com/temporalio/reference-app-orders-go/app/config"
+	"github.com/temporalio/reference-app-orders-go/app/temporalutil"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 )

@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/temporalio/orders-reference-app-go/app/config"
-	"github.com/temporalio/orders-reference-app-go/app/instrumentation"
+	"github.com/temporalio/reference-app-orders-go/app/config"
+	"github.com/temporalio/reference-app-orders-go/app/instrumentation"
 )
 
 // FraudLimitInput is the input for the SetLimit API.
