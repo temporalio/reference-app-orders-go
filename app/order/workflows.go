@@ -191,7 +191,13 @@ func (wf *orderImpl) waitForCustomer(ctx workflow.Context) (string, error) {
 	timerCtx, cancelTimer := workflow.WithCancel(ctx)
 	t := workflow.NewTimer(timerCtx, customerActionTimeout)
 
-	s.AddFuture(t, func(_ workflow.Future) {
+	var err error
+
+	s.AddFuture(t, func(f workflow.Future) {
+		if err = f.Get(timerCtx, nil); err != nil {
+			return
+		}
+
 		signal.Action = CustomerActionTimedOut
 	})
 
@@ -202,13 +208,16 @@ func (wf *orderImpl) waitForCustomer(ctx workflow.Context) (string, error) {
 	})
 	s.Select(ctx)
 
+	if err != nil {
+		return "", err
+	}
+
 	switch signal.Action {
 	case CustomerActionAmend:
 	case CustomerActionCancel:
 	case CustomerActionTimedOut:
 	default:
-		err := fmt.Errorf("invalid customer action %q", signal.Action)
-		return "", err
+		return "", fmt.Errorf("invalid customer action %q", signal.Action)
 	}
 
 	return signal.Action, nil
