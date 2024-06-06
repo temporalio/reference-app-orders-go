@@ -231,3 +231,34 @@ func TestOrderCancelWithUnavailableItems(t *testing.T) {
 	err := env.GetWorkflowResult(&result)
 	assert.NoError(t, err)
 }
+
+func TestOrderCancelAfterTimeout(t *testing.T) {
+	s := testsuite.WorkflowTestSuite{}
+	env := s.NewTestWorkflowEnvironment()
+	var a *order.Activities
+
+	env.RegisterActivity(a.ReserveItems)
+	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusUpdate) error {
+		return nil
+	})
+
+	orderInput := order.OrderInput{
+		ID:         "1234",
+		CustomerID: "1234",
+		Items: []*order.Item{
+			{SKU: "Adidas", Quantity: 1},
+			{SKU: "test2", Quantity: 3},
+		},
+	}
+
+	env.ExecuteWorkflow(
+		order.Order,
+		&orderInput,
+	)
+
+	var result order.OrderResult
+	err := env.GetWorkflowResult(&result)
+	assert.NoError(t, err)
+
+	assert.Equal(t, order.OrderStatusTimedOut, result.Status)
+}

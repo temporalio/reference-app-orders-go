@@ -79,6 +79,9 @@ const (
 
 	// OrderStatusCancelled is the status of a cancelled Order.
 	OrderStatusCancelled = "cancelled"
+
+	// OrderStatusTimedOut is the status of a timed out Order.
+	OrderStatusTimedOut = "timedOut"
 )
 
 // ListOrderEntry is an entry in the Order list.
@@ -178,6 +181,9 @@ const (
 
 	// CustomerActionAmend is the action to amend a Fulfillment.
 	CustomerActionAmend = "amend"
+
+	// CustomerActionTimedOut represents customer failing to take action in time.
+	CustomerActionTimedOut = "timedOut"
 )
 
 // OrderResult is the result of an Order workflow.
