@@ -17,6 +17,9 @@ type orderImpl struct {
 	fulfillments []*Fulfillment
 }
 
+// Aggressively low for demo purposes.
+const customerActionTimeout = 30 * time.Second
+
 // Order Workflow process an order from a customer.
 func Order(ctx workflow.Context, input *OrderInput) (*OrderResult, error) {
 	wf := new(orderImpl)
@@ -74,6 +77,9 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 		switch action {
 		case CustomerActionCancel:
 			err := wf.updateStatus(ctx, OrderStatusCancelled)
+			return &OrderResult{Status: wf.status}, err
+		case CustomerActionTimedOut:
+			err := wf.updateStatus(ctx, OrderStatusTimedOut)
 			return &OrderResult{Status: wf.status}, err
 		case CustomerActionAmend:
 			wf.cancelUnavailableFulfillments()
@@ -178,13 +184,38 @@ func (wf *orderImpl) cancelUnavailableFulfillments() {
 }
 
 func (wf *orderImpl) waitForCustomer(ctx workflow.Context) (string, error) {
-	ch := workflow.GetSignalChannel(ctx, CustomerActionSignalName)
-
 	var signal CustomerActionSignal
-	ch.Receive(ctx, &signal)
+
+	s := workflow.NewSelector(ctx)
+
+	timerCtx, cancelTimer := workflow.WithCancel(ctx)
+	t := workflow.NewTimer(timerCtx, customerActionTimeout)
+
+	var err error
+
+	s.AddFuture(t, func(f workflow.Future) {
+		if err = f.Get(timerCtx, nil); err != nil {
+			return
+		}
+
+		signal.Action = CustomerActionTimedOut
+	})
+
+	ch := workflow.GetSignalChannel(ctx, CustomerActionSignalName)
+	s.AddReceive(ch, func(c workflow.ReceiveChannel, _ bool) {
+		c.Receive(ctx, &signal)
+		cancelTimer()
+	})
+	s.Select(ctx)
+
+	if err != nil {
+		return "", err
+	}
+
 	switch signal.Action {
 	case CustomerActionAmend:
 	case CustomerActionCancel:
+	case CustomerActionTimedOut:
 	default:
 		return "", fmt.Errorf("invalid customer action %q", signal.Action)
 	}
