@@ -62,11 +62,22 @@ func Router() *mux.Router {
 	r := mux.NewRouter()
 	h := handlers{customerChargeTally: make(map[string]int32)}
 
+	r.HandleFunc("/limit", h.handleGetLimit).Methods("GET")
 	r.HandleFunc("/limit", h.handleSetLimit).Methods("POST")
 	r.HandleFunc("/reset", h.handleReset).Methods("POST")
 	r.HandleFunc("/check", h.handleRunCheck).Methods("POST")
 
 	return r
+}
+
+func (h *handlers) handleGetLimit(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	err := json.NewEncoder(w).Encode(FraudLimitInput{Limit: h.limit})
+	if err != nil {
+		log.Printf("Failed to encode limit: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (h *handlers) handleSetLimit(w http.ResponseWriter, r *http.Request) {
