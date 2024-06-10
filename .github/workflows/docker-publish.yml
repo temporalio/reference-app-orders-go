@@ -40,3 +40,11 @@ jobs:
           target: oms-api
           tags: ghcr.io/temporalio/reference-app-orders-go-api:latest
           push: ${{ github.event_name != 'pull_request' }}
+
+      - name: Build and push oms-go-codec-server Docker image
+        uses: docker/build-push-action@v5.3.0
+        with:
+          platforms: linux/amd64,linux/arm64
+          target: oms-codec-server
+          tags: ghcr.io/temporalio/reference-app-orders-go-codec-server:latest
+          push: ${{ github.event_name != 'pull_request' }}
