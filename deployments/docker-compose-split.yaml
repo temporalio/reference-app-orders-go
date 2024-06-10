@@ -18,6 +18,9 @@ services:
       - BILLING_API_PORT=8081
       - FRAUD_API_PORT=8084
     command: ["api", "-k", "supersecretkey", "-s", "billing,fraudcheck"]
+    ports:
+      - "8081:8081"
+      - "8084:8084"
     restart: on-failure
   main-worker:
     build:
@@ -40,6 +43,9 @@ services:
       - ORDER_API_PORT=8082
       - SHIPMENT_API_PORT=8083
     command: ["api", "-k", "supersecretkey", "-s", "order,shipment,fraudcheck"]
+    ports:
+      - "8082:8082"
+      - "8083:8083"
     restart: on-failure
   codec-server:
     build:
