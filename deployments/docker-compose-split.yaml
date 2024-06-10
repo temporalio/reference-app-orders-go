@@ -1,0 +1,73 @@
+services:
+  billing-worker:
+    build:
+      context: ../
+      target: oms-worker
+    environment:
+      - TEMPORAL_ADDRESS=host.docker.internal:7233
+      - FRAUD_API_URL=http://billing-api:8084
+    command: ["worker", "-k", "supersecretkey", "-s", "billing"]
+    restart: on-failure
+  billing-api:
+    build:
+      context: ../
+      target: oms-api
+    environment:
+      - TEMPORAL_ADDRESS=host.docker.internal:7233
+      - BIND_ON_IP=0.0.0.0
+      - BILLING_API_PORT=8081
+      - FRAUD_API_PORT=8084
+    command: ["api", "-k", "supersecretkey", "-s", "billing,fraudcheck"]
+    ports:
+      - "8081:8081"
+      - "8084:8084"
+    restart: on-failure
+  main-worker:
+    build:
+      context: ../
+      target: oms-worker
+    environment:
+      - TEMPORAL_ADDRESS=host.docker.internal:7233
+      - BILLING_API_URL=http://billing-api:8081
+      - ORDER_API_URL=http://main-api:8082
+      - SHIPMENT_API_URL=http://main-api:8083
+    command: ["worker", "-k", "supersecretkey", "-s", "order,shipment"]
+    restart: on-failure
+  main-api:
+    build:
+      context: ../
+      target: oms-api
+    environment:
+      - TEMPORAL_ADDRESS=host.docker.internal:7233
+      - BIND_ON_IP=0.0.0.0
+      - ORDER_API_PORT=8082
+      - SHIPMENT_API_PORT=8083
+    command: ["api", "-k", "supersecretkey", "-s", "order,shipment"]
+    ports:
+      - "8082:8082"
+      - "8083:8083"
+    restart: on-failure
+  codec-server:
+    build:
+      context: ../
+      target: oms-codec-server
+    # Adjust the web server URL to point to your Temporal Web instance.
+    command: ["codec-server", "-p", "8089", "-u", "http://localhost:8080"]
+    # If you are using a Temporal CLI's start-dev you can use this:
+    # command: ["codec-server", "-p", "8089", "-u", "http://localhost:8233"]
+    ports:
+      - "8089:8089"
+    restart: on-failure
+  web:
+    image: ghcr.io/temporalio/reference-app-orders-web:latest
+    depends_on:
+      - main-api
+    environment:
+      - ORIGIN=http://localhost:3000
+      - BILLING_API_URL=http://billing-api:8081
+      - FRAUD_API_URL=http://billing-api:8084
+      - ORDER_API_URL=http://main-api:8082
+      - SHIPMENT_API_URL=http://main-api:8083
+    ports:
+      - "3000:3000"
+    restart: on-failure

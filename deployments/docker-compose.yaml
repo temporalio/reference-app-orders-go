@@ -28,7 +28,10 @@ services:
     build:
       context: ../
       target: oms-codec-server
-    command: ["codec-server", "-p", "8089", "-u", "http://localhost:8233"]
+    # Adjust the web server URL to point to your Temporal Web instance.
+    command: ["codec-server", "-p", "8089", "-u", "http://localhost:8080"]
+    # If you are using a Temporal CLI's start-dev you can use this:
+    # command: ["codec-server", "-p", "8089", "-u", "http://localhost:8233"]
     ports:
       - "8089:8089"
     restart: on-failure
