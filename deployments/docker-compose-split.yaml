@@ -42,7 +42,7 @@ services:
       - BIND_ON_IP=0.0.0.0
       - ORDER_API_PORT=8082
       - SHIPMENT_API_PORT=8083
-    command: ["api", "-k", "supersecretkey", "-s", "order,shipment,fraudcheck"]
+    command: ["api", "-k", "supersecretkey", "-s", "order,shipment"]
     ports:
       - "8082:8082"
       - "8083:8083"
