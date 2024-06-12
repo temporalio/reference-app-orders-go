@@ -24,7 +24,7 @@ spec:
             - -k
             - supersecretkey
             - -s
-            - billing,fraudcheck
+            - billing,fraud
           env:
             - name: BILLING_API_PORT
               value: "8081"

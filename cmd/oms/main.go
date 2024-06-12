@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
@@ -11,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/temporalio/orders-reference-app-go/app/config"
 	"github.com/temporalio/orders-reference-app-go/app/server"
-	"github.com/temporalio/orders-reference-app-go/app/temporalutil"
+	"github.com/temporalio/orders-reference-app-go/app/util"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/converter"
 	_ "modernc.org/sqlite"
@@ -32,6 +33,16 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "oms",
 	Short: "Order Management System",
+	PersistentPreRun: func(*cobra.Command, []string) {
+		level := slog.LevelInfo
+		if os.Getenv("DEBUG") != "" {
+			level = slog.LevelDebug
+		}
+		logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: level,
+		}))
+		slog.SetDefault(logger)
+	},
 }
 
 var workerCmd = &cobra.Command{
@@ -58,7 +69,7 @@ var workerCmd = &cobra.Command{
 		if encryptionKeyID != "" {
 			log.Printf("Enabling encrypting Data Converter using key ID '%s'", encryptionKeyID)
 			ddc := converter.GetDefaultDataConverter()
-			clientOptions.DataConverter = temporalutil.NewEncryptionDataConverter(ddc, encryptionKeyID)
+			clientOptions.DataConverter = util.NewEncryptionDataConverter(ddc, encryptionKeyID)
 		}
 
 		client, err := client.Dial(clientOptions)
@@ -105,7 +116,7 @@ var apiCmd = &cobra.Command{
 		if encryptionKeyID != "" {
 			log.Printf("Enabling encrypting Data Converter using key ID '%s'", encryptionKeyID)
 			ddc := converter.GetDefaultDataConverter()
-			clientOptions.DataConverter = temporalutil.NewEncryptionDataConverter(ddc, encryptionKeyID)
+			clientOptions.DataConverter = util.NewEncryptionDataConverter(ddc, encryptionKeyID)
 		}
 
 		client, err := client.Dial(clientOptions)
@@ -146,7 +157,7 @@ var codecCmd = &cobra.Command{
 		}
 
 		log.Printf("Starting Codec Server on port %d\n", codecPort)
-		err := temporalutil.RunCodecServer(codecPort, codecCorsURL)
+		err := util.RunCodecServer(codecPort, codecCorsURL)
 
 		return err
 	},
@@ -166,7 +177,7 @@ func init() {
 		"ID of key used to encrypt payload data (optional)")
 
 	workerCmd.PersistentFlags().StringSliceVarP(&workers, "services", "s", []string{"order", "shipment", "billing"}, "Workers to run")
-	apiCmd.PersistentFlags().StringSliceVarP(&apis, "services", "s", []string{"order", "shipment", "billing", "fraudcheck"}, "API Servers to run")
+	apiCmd.PersistentFlags().StringSliceVarP(&apis, "services", "s", []string{"order", "shipment", "billing", "fraud"}, "API Servers to run")
 
 	codecCmd.PersistentFlags().IntVarP(&codecPort, "port", "p", defaultCodecPort,
 		"Port number on which the Codec Server will listen for requests")

@@ -17,7 +17,7 @@ services:
       - BIND_ON_IP=0.0.0.0
       - BILLING_API_PORT=8081
       - FRAUD_API_PORT=8084
-    command: ["-k", "supersecretkey", "-s", "billing,fraudcheck"]
+    command: ["-k", "supersecretkey", "-s", "billing,fraud"]
     ports:
       - "8081:8081"
       - "8084:8084"

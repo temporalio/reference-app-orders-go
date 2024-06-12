@@ -1,4 +1,4 @@
-package temporalutil
+package util
 
 import (
 	"testing"

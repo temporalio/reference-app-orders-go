@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/temporalio/orders-reference-app-go/app/config"
-	"github.com/temporalio/orders-reference-app-go/app/temporalutil"
+	"github.com/temporalio/orders-reference-app-go/app/util"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 )
@@ -16,5 +16,5 @@ func RunWorker(ctx context.Context, config config.AppConfig, client client.Clien
 	w.RegisterWorkflow(Order)
 	w.RegisterActivity(&Activities{BillingURL: config.BillingURL, OrderURL: config.OrderURL})
 
-	return w.Run(temporalutil.WorkerInterruptFromContext(ctx))
+	return w.Run(util.WorkerInterruptFromContext(ctx))
 }

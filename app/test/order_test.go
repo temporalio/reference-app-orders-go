@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/config"
-	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
+	"github.com/temporalio/orders-reference-app-go/app/fraud"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/server"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
@@ -92,9 +93,11 @@ func Test_Order(t *testing.T) {
 	require.NoError(t, err)
 	defer c.Close()
 
-	fraudAPI := httptest.NewServer(fraudcheck.Router())
+	logger := slog.Default()
+
+	fraudAPI := httptest.NewServer(fraud.Router(logger))
 	defer fraudAPI.Close()
-	billingAPI := httptest.NewServer(billing.Router(c))
+	billingAPI := httptest.NewServer(billing.Router(c, logger))
 	defer billingAPI.Close()
 
 	db, err := sqlx.Open("sqlite", ":memory:")
@@ -102,9 +105,9 @@ func Test_Order(t *testing.T) {
 	err = server.SetupDB(db)
 	require.NoError(t, err)
 
-	orderAPI := httptest.NewServer(order.Router(c, db))
+	orderAPI := httptest.NewServer(order.Router(c, db, logger))
 	defer orderAPI.Close()
-	shipmentAPI := httptest.NewServer(shipment.Router(c, db))
+	shipmentAPI := httptest.NewServer(shipment.Router(c, db, logger))
 	defer shipmentAPI.Close()
 
 	config := config.AppConfig{
