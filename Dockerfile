@@ -18,8 +18,7 @@ FROM scratch AS oms-worker
 
 COPY --from=oms-builder /usr/local/bin/oms /usr/local/bin/oms
 
-ENTRYPOINT ["/usr/local/bin/oms"]
-CMD ["worker"]
+ENTRYPOINT ["/usr/local/bin/oms", "worker"]
 
 FROM scratch as oms-api
 
@@ -27,11 +26,12 @@ EXPOSE 8081
 EXPOSE 8082
 EXPOSE 8083
 EXPOSE 8084
+VOLUME /data
+ENV DATA_DIR=/data
 
 COPY --from=oms-builder /usr/local/bin/oms /usr/local/bin/oms
 
-ENTRYPOINT ["/usr/local/bin/oms"]
-CMD ["api"]
+ENTRYPOINT ["/usr/local/bin/oms", "api"]
 
 FROM scratch as oms-codec-server
 
@@ -39,5 +39,4 @@ EXPOSE 8089
 
 COPY --from=oms-builder /usr/local/bin/oms /usr/local/bin/oms
 
-ENTRYPOINT ["/usr/local/bin/oms"]
-CMD ["codec-server"]
+ENTRYPOINT ["/usr/local/bin/oms", "codec-server"]
