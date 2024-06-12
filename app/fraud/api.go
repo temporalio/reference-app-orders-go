@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/temporalio/orders-reference-app-go/app/config"
-	"github.com/temporalio/orders-reference-app-go/app/util"
+	"github.com/temporalio/reference-app-orders-go/app/config"
+	"github.com/temporalio/reference-app-orders-go/app/util"
 )
 
 // FraudLimitInput is the input for the SetLimit API.

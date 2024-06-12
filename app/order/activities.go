@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/temporalio/orders-reference-app-go/app/billing"
+	"github.com/temporalio/reference-app-orders-go/app/billing"
 )
 
 // Activities implements the order package's Activities.

@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/temporalio/orders-reference-app-go/app/config"
-	"github.com/temporalio/orders-reference-app-go/app/server"
-	"github.com/temporalio/orders-reference-app-go/app/util"
+	"github.com/temporalio/reference-app-orders-go/app/config"
+	"github.com/temporalio/reference-app-orders-go/app/server"
+	"github.com/temporalio/reference-app-orders-go/app/util"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/converter"
 	_ "modernc.org/sqlite"

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/temporalio/orders-reference-app-go/app/billing"
-	"github.com/temporalio/orders-reference-app-go/app/shipment"
+	"github.com/temporalio/reference-app-orders-go/app/billing"
+	"github.com/temporalio/reference-app-orders-go/app/shipment"
 	"go.temporal.io/sdk/workflow"
 )
 

@@ -9,7 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/temporalio/orders-reference-app-go/app/fraud"
+	"github.com/temporalio/reference-app-orders-go/app/fraud"
 	"go.temporal.io/sdk/activity"
 )
 

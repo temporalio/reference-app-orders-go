@@ -3,8 +3,8 @@ package shipment
 import (
 	"context"
 
-	"github.com/temporalio/orders-reference-app-go/app/config"
-	"github.com/temporalio/orders-reference-app-go/app/util"
+	"github.com/temporalio/reference-app-orders-go/app/config"
+	"github.com/temporalio/reference-app-orders-go/app/util"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 )

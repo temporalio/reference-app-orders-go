@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/temporalio/orders-reference-app-go/app/order"
-	"github.com/temporalio/orders-reference-app-go/app/shipment"
+	"github.com/temporalio/reference-app-orders-go/app/order"
+	"github.com/temporalio/reference-app-orders-go/app/shipment"
 	"go.temporal.io/sdk/testsuite"
 	"go.temporal.io/sdk/workflow"
 )
