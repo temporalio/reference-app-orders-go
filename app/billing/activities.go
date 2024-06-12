@@ -9,7 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
+	"github.com/temporalio/orders-reference-app-go/app/fraud"
 	"go.temporal.io/sdk/activity"
 )
 
@@ -65,12 +65,12 @@ func calculateShippingCost(item Item) int32 {
 	return costPerUnit * int32(item.Quantity)
 }
 
-func (a *Activities) fraudCheck(ctx context.Context, input *ChargeCustomerInput) (*fraudcheck.FraudCheckResult, error) {
+func (a *Activities) fraudCheck(ctx context.Context, input *ChargeCustomerInput) (*fraud.FraudCheckResult, error) {
 	if a.FraudCheckURL == "" {
-		return &fraudcheck.FraudCheckResult{Declined: false}, nil
+		return &fraud.FraudCheckResult{Declined: false}, nil
 	}
 
-	checkInput := fraudcheck.FraudCheckInput{
+	checkInput := fraud.FraudCheckInput{
 		CustomerID: input.CustomerID,
 		Charge:     input.Charge,
 	}
@@ -98,7 +98,7 @@ func (a *Activities) fraudCheck(ctx context.Context, input *ChargeCustomerInput)
 		return nil, fmt.Errorf("fraud check request failed: %s: %s", http.StatusText(res.StatusCode), body)
 	}
 
-	var checkResult fraudcheck.FraudCheckResult
+	var checkResult fraud.FraudCheckResult
 
 	err = json.NewDecoder(res.Body).Decode(&checkResult)
 	return &checkResult, err

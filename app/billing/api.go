@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/temporalio/orders-reference-app-go/app/config"
+	"github.com/temporalio/orders-reference-app-go/app/util"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
 )
@@ -74,17 +74,20 @@ type ChargeCustomerResult struct {
 
 type handlers struct {
 	temporal client.Client
+	logger   *slog.Logger
 }
 
 // RunServer runs a Billing API HTTP server on the given port.
 func RunServer(ctx context.Context, config config.AppConfig, client client.Client) error {
+	logger := slog.Default().With("service", "billing")
+
 	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.BillingPort)
 	srv := &http.Server{
 		Addr:    hostPort,
-		Handler: Router(client),
+		Handler: util.LoggingMiddleware(logger, Router(client, logger)),
 	}
 
-	fmt.Printf("Listening on http://%s\n", hostPort)
+	logger.Info("Listening", "endpoint", "http://"+hostPort)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
@@ -100,11 +103,11 @@ func RunServer(ctx context.Context, config config.AppConfig, client client.Clien
 }
 
 // Router implements the http.Handler interface for the Billing API
-func Router(c client.Client) *mux.Router {
-	r := mux.NewRouter()
-	h := handlers{temporal: c}
+func Router(c client.Client, logger *slog.Logger) http.Handler {
+	r := http.NewServeMux()
+	h := handlers{temporal: c, logger: logger}
 
-	r.HandleFunc("/charge", h.handleCharge)
+	r.HandleFunc("POST /charge", h.handleCharge)
 
 	return r
 }
@@ -128,7 +131,7 @@ func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		log.Printf("Failed to decode charge input: %v", err)
+		h.logger.Error("Failed to decode charge input", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -146,7 +149,7 @@ func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 		&input,
 	)
 	if err != nil {
-		log.Printf("Failed to start charge workflow: %v", err)
+		h.logger.Error("Failed to start charge workflow", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -154,14 +157,14 @@ func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 	var result ChargeResult
 	err = wf.Get(r.Context(), &result)
 	if err != nil {
-		log.Printf("Failed to get charge result: %v", err)
+		h.logger.Error("Failed to get charge result", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(result)
 	if err != nil {
-		log.Printf("Failed to encode charge result: %v", err)
+		h.logger.Error("Failed to encode charge result", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

@@ -5,17 +5,19 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"fmt"
+	"log/slog"
 	"os"
 	"slices"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/temporalio/orders-reference-app-go/app/billing"
 	"github.com/temporalio/orders-reference-app-go/app/config"
-	"github.com/temporalio/orders-reference-app-go/app/fraudcheck"
+	"github.com/temporalio/orders-reference-app-go/app/fraud"
 	"github.com/temporalio/orders-reference-app-go/app/order"
 	"github.com/temporalio/orders-reference-app-go/app/shipment"
-	"github.com/temporalio/orders-reference-app-go/app/temporalutil"
+	"github.com/temporalio/orders-reference-app-go/app/util"
 	"go.temporal.io/sdk/client"
+	sdklog "go.temporal.io/sdk/log"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -35,7 +37,7 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	namespaceName := os.Getenv("TEMPORAL_NAMESPACE")
 
 	// Must explicitly set the Namepace for non-cloud use.
-	if temporalutil.IsTemporalCloud(hostPort) && namespaceName == "" {
+	if util.IsTemporalCloud(hostPort) && namespaceName == "" {
 		return client.Options{}, fmt.Errorf("Namespace name unspecified; required for Temporal Cloud")
 	}
 
@@ -47,6 +49,7 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	clientOpts := client.Options{
 		HostPort:  hostPort,
 		Namespace: namespaceName,
+		Logger:    sdklog.NewStructuredLogger(slog.Default()),
 	}
 
 	if certPath := os.Getenv("TEMPORAL_TLS_CERT"); certPath != "" {
@@ -145,9 +148,9 @@ func RunAPIServers(ctx context.Context, config config.AppConfig, client client.C
 			g.Go(func() error {
 				return shipment.RunServer(ctx, config, client, db)
 			})
-		case "fraudcheck":
+		case "fraud":
 			g.Go(func() error {
-				return fraudcheck.RunServer(ctx, config)
+				return fraud.RunServer(ctx, config)
 			})
 		default:
 			return fmt.Errorf("unknown service: %s", service)
