@@ -9,7 +9,7 @@ services:
       - ORDER_API_URL=http://api:8082
       - SHIPMENT_API_URL=http://api:8083
       - FRAUD_API_URL=http://api:8084
-    command: ["worker", "-k", "supersecretkey"]
+    command: ["-k", "supersecretkey"]
     restart: on-failure
   api:
     build:
@@ -22,14 +22,16 @@ services:
       - ORDER_API_PORT=8082
       - SHIPMENT_API_PORT=8083
       - FRAUD_API_PORT=8084
-    command: ["api", "-k", "supersecretkey"]
+    command: ["-k", "supersecretkey"]
+    volumes:
+      - api-data:/data
     restart: on-failure
   codec-server:
     build:
       context: ../
       target: oms-codec-server
     # Adjust the web server URL to point to your Temporal Web instance.
-    command: ["codec-server", "-p", "8089", "-u", "http://localhost:8080"]
+    command: ["-p", "8089", "-u", "http://localhost:8080"]
     # If you are using a Temporal CLI's start-dev you can use this:
     # command: ["codec-server", "-p", "8089", "-u", "http://localhost:8233"]
     ports:
@@ -48,3 +50,5 @@ services:
     ports:
       - "3000:3000"
     restart: on-failure
+volumes:
+  api-data:
