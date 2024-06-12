@@ -6,7 +6,7 @@ services:
     environment:
       - TEMPORAL_ADDRESS=host.docker.internal:7233
       - FRAUD_API_URL=http://billing-api:8084
-    command: ["worker", "-k", "supersecretkey", "-s", "billing"]
+    command: ["-k", "supersecretkey", "-s", "billing"]
     restart: on-failure
   billing-api:
     build:
@@ -17,7 +17,7 @@ services:
       - BIND_ON_IP=0.0.0.0
       - BILLING_API_PORT=8081
       - FRAUD_API_PORT=8084
-    command: ["api", "-k", "supersecretkey", "-s", "billing,fraudcheck"]
+    command: ["-k", "supersecretkey", "-s", "billing,fraudcheck"]
     ports:
       - "8081:8081"
       - "8084:8084"
@@ -31,7 +31,7 @@ services:
       - BILLING_API_URL=http://billing-api:8081
       - ORDER_API_URL=http://main-api:8082
       - SHIPMENT_API_URL=http://main-api:8083
-    command: ["worker", "-k", "supersecretkey", "-s", "order,shipment"]
+    command: ["-k", "supersecretkey", "-s", "order,shipment"]
     restart: on-failure
   main-api:
     build:
@@ -42,17 +42,19 @@ services:
       - BIND_ON_IP=0.0.0.0
       - ORDER_API_PORT=8082
       - SHIPMENT_API_PORT=8083
-    command: ["api", "-k", "supersecretkey", "-s", "order,shipment"]
+    command: ["-k", "supersecretkey", "-s", "order,shipment"]
     ports:
       - "8082:8082"
       - "8083:8083"
+    volumes:
+      - main-api-data:/data
     restart: on-failure
   codec-server:
     build:
       context: ../
       target: oms-codec-server
     # Adjust the web server URL to point to your Temporal Web instance.
-    command: ["codec-server", "-p", "8089", "-u", "http://localhost:8080"]
+    command: ["-p", "8089", "-u", "http://localhost:8080"]
     # If you are using a Temporal CLI's start-dev you can use this:
     # command: ["codec-server", "-p", "8089", "-u", "http://localhost:8233"]
     ports:
@@ -71,3 +73,5 @@ services:
     ports:
       - "3000:3000"
     restart: on-failure
+volumes:
+  main-api-data:

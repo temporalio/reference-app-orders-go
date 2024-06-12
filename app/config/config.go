@@ -8,6 +8,7 @@ import (
 // AppConfig is a struct that holds the configuration for the Order/Shipment/Fraud/Billing system.
 type AppConfig struct {
 	BindOnIP     string
+	DataDir      string
 	BillingPort  int32
 	BillingURL   string
 	OrderPort    int32
@@ -22,6 +23,7 @@ type AppConfig struct {
 func AppConfigFromEnv() (AppConfig, error) {
 	conf := AppConfig{
 		BindOnIP:     "127.0.0.1",
+		DataDir:      "./",
 		BillingPort:  8081,
 		BillingURL:   "http://127.0.0.1:8081",
 		OrderPort:    8082,
@@ -34,6 +36,10 @@ func AppConfigFromEnv() (AppConfig, error) {
 
 	if ip := os.Getenv("BIND_ON_IP"); ip != "" {
 		conf.BindOnIP = ip
+	}
+
+	if p := os.Getenv("DATA_DIR"); p != "" {
+		conf.DataDir = p
 	}
 
 	if p := os.Getenv("BILLING_API_URL"); p != "" {

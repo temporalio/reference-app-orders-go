@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: codec-server
+    app.kubernetes.io/name: oms
+  name: codec-server
+  namespace: oms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: codec-server
+      app.kubernetes.io/name: oms
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: codec-server
+        app.kubernetes.io/name: oms
+    spec:
+      containers:
+        - args:
+            - -p
+            - "8089"
+            - -u
+            - http://localhost:8080
+          image: reference-app-orders-go-codec-server:latest
+          name: codec-server
+          ports:
+            - containerPort: 8089
+              protocol: TCP
+          imagePullPolicy: Never
+          env: []
+      enableServiceLinks: false

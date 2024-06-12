@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: web
+    app.kubernetes.io/name: oms
+  name: web
+  namespace: oms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: web
+      app.kubernetes.io/name: oms
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: web
+        app.kubernetes.io/name: oms
+    spec:
+      containers:
+        - env:
+            - name: BILLING_API_URL
+              value: http://billing-api:8081
+            - name: FRAUD_API_URL
+              value: http://billing-api:8084
+            - name: ORDER_API_URL
+              value: http://main-api:8082
+            - name: ORIGIN
+              value: http://localhost:3000
+            - name: SHIPMENT_API_URL
+              value: http://main-api:8083
+          image: ghcr.io/temporalio/reference-app-orders-web:latest
+          name: web
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+      enableServiceLinks: false

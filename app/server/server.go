@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"path"
 	"slices"
 
 	"github.com/jmoiron/sqlx"
@@ -120,7 +121,8 @@ func RunAPIServers(ctx context.Context, config config.AppConfig, client client.C
 	var err error
 
 	if slices.Contains(services, "orders") || slices.Contains(services, "shipment") {
-		db, err = sqlx.Connect("sqlite", "./api-store.db")
+		dbPath := path.Join(config.DataDir, "api-store.db")
+		db, err = sqlx.Connect("sqlite", dbPath)
 		db.SetMaxOpenConns(1) // SQLite does not support concurrent writes
 		if err != nil {
 			return fmt.Errorf("failed to open database: %w", err)

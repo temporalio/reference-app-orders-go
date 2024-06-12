@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: billing-worker
+    app.kubernetes.io/name: oms
+  name: billing-worker
+  namespace: oms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: billing-worker
+      app.kubernetes.io/name: oms
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: billing-worker
+        app.kubernetes.io/name: oms
+    spec:
+      containers:
+        - args:
+            - -k
+            - supersecretkey
+            - -s
+            - billing
+          env:
+            - name: FRAUD_API_URL
+              value: http://billing-api:8084
+            - name: TEMPORAL_ADDRESS
+              value: temporal-frontend.temporal:7233
+          image: reference-app-orders-go-worker:latest
+          name: billing-worker
+          imagePullPolicy: Never
+      enableServiceLinks: false
