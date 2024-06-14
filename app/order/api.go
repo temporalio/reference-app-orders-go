@@ -77,6 +77,9 @@ const (
 	// OrderStatusCompleted is the status of a completed Order.
 	OrderStatusCompleted = "completed"
 
+	// OrderStatusFailed is the status of a failed Order.
+	OrderStatusFailed = "failed"
+
 	// OrderStatusCancelled is the status of a cancelled Order.
 	OrderStatusCancelled = "cancelled"
 

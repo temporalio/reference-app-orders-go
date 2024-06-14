@@ -105,7 +105,11 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 
 	workflow.Await(ctx, func() bool { return completed == len(wf.fulfillments) })
 
-	if err := wf.updateStatus(ctx, OrderStatusCompleted); err != nil {
+	status := OrderStatusCompleted
+	if wf.allFulfillmentsFailed() {
+		status = OrderStatusFailed
+	}
+	if err := wf.updateStatus(ctx, status); err != nil {
 		return nil, err
 	}
 
@@ -181,6 +185,17 @@ func (wf *orderImpl) cancelUnavailableFulfillments() {
 			f.Status = FulfillmentStatusCancelled
 		}
 	}
+}
+
+func (wf *orderImpl) allFulfillmentsFailed() bool {
+	failures := 0
+	for _, f := range wf.fulfillments {
+		if f.Status == FulfillmentStatusFailed {
+			failures++
+		}
+	}
+
+	return failures >= 1 && failures == len(wf.fulfillments)
 }
 
 func (wf *orderImpl) waitForCustomer(ctx workflow.Context) (string, error) {
