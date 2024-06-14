@@ -1,15 +1,10 @@
 package fraud
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"sync"
-
-	"github.com/temporalio/reference-app-orders-go/app/config"
-	"github.com/temporalio/reference-app-orders-go/app/util"
 )
 
 // FraudLimitInput is the input for the SetLimit API.
@@ -38,31 +33,6 @@ type handlers struct {
 	tallyLock           sync.Mutex
 	customerChargeTally map[string]int32
 	logger              *slog.Logger
-}
-
-// RunServer runs a FraudCheck API HTTP server on the given port.
-func RunServer(ctx context.Context, config config.AppConfig) error {
-	logger := slog.Default().With("service", "fraud")
-
-	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.FraudPort)
-	srv := &http.Server{
-		Addr:    hostPort,
-		Handler: util.LoggingMiddleware(logger, Router(logger)),
-	}
-
-	logger.Info("Listening", "endpoint", "http://"+hostPort)
-
-	errCh := make(chan error, 1)
-	go func() { errCh <- srv.ListenAndServe() }()
-
-	select {
-	case <-ctx.Done():
-		srv.Close()
-	case err := <-errCh:
-		return err
-	}
-
-	return nil
 }
 
 // Router implements the http.Handler interface for the Billing API

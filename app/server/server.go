@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path"
 	"slices"
@@ -16,7 +17,7 @@ import (
 	"github.com/temporalio/reference-app-orders-go/app/fraud"
 	"github.com/temporalio/reference-app-orders-go/app/order"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
-	"github.com/temporalio/reference-app-orders-go/app/util"
+	"github.com/temporalio/reference-app-orders-go/app/temporalutil"
 	"go.temporal.io/sdk/client"
 	sdklog "go.temporal.io/sdk/log"
 	"golang.org/x/sync/errgroup"
@@ -38,7 +39,7 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	namespaceName := os.Getenv("TEMPORAL_NAMESPACE")
 
 	// Must explicitly set the Namepace for non-cloud use.
-	if util.IsTemporalCloud(hostPort) && namespaceName == "" {
+	if temporalutil.IsTemporalCloud(hostPort) && namespaceName == "" {
 		return client.Options{}, fmt.Errorf("Namespace name unspecified; required for Temporal Cloud")
 	}
 
@@ -113,6 +114,61 @@ func RunWorkers(ctx context.Context, config config.AppConfig, client client.Clie
 	return nil
 }
 
+type instrumentedResponseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *instrumentedResponseWriter) WriteHeader(code int) {
+	r.status = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
+func loggingMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		iw := instrumentedResponseWriter{w, http.StatusOK}
+
+		next.ServeHTTP(&iw, r)
+
+		level := slog.LevelDebug
+		if iw.status >= 500 {
+			level = slog.LevelError
+		}
+
+		logger.Log(
+			context.Background(), level,
+			fmt.Sprintf("%d %s %s", iw.status, r.Method, r.URL.Path),
+			"method", r.Method, "status", iw.status, "path", r.URL.Path,
+		)
+	})
+}
+
+// RunAPIServer runs a API HTTP server for the given service.
+func runAPIServer(ctx context.Context, hostPort string, router http.Handler, logger *slog.Logger) error {
+	srv := &http.Server{
+		Addr:    hostPort,
+		Handler: loggingMiddleware(logger, router),
+	}
+
+	logger.Info("Listening", "endpoint", "http://"+hostPort)
+
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.ListenAndServe() }()
+
+	select {
+	case <-ctx.Done():
+		srv.Close()
+	case err := <-errCh:
+		return err
+	}
+
+	return nil
+}
+
+func serverHostPort(config config.AppConfig, port int32) string {
+	return fmt.Sprintf("%s:%d", config.BindOnIP, port)
+}
+
 // RunAPIServers runs API servers for the requested services.
 func RunAPIServers(ctx context.Context, config config.AppConfig, client client.Client, services []string) error {
 	ctx, cancel := context.WithCancel(ctx)
@@ -137,22 +193,28 @@ func RunAPIServers(ctx context.Context, config config.AppConfig, client client.C
 	}
 
 	for _, service := range services {
+		logger := slog.Default().With("service", service)
+		port, err := config.ServiceHostPort(service)
+		if err != nil {
+			return err
+		}
+
 		switch service {
 		case "billing":
 			g.Go(func() error {
-				return billing.RunServer(ctx, config, client)
-			})
-		case "order":
-			g.Go(func() error {
-				return order.RunServer(ctx, config, client, db)
-			})
-		case "shipment":
-			g.Go(func() error {
-				return shipment.RunServer(ctx, config, client, db)
+				return runAPIServer(ctx, port, billing.Router(client, logger), logger)
 			})
 		case "fraud":
 			g.Go(func() error {
-				return fraud.RunServer(ctx, config)
+				return runAPIServer(ctx, port, fraud.Router(logger), logger)
+			})
+		case "order":
+			g.Go(func() error {
+				return runAPIServer(ctx, port, order.Router(client, db, logger), logger)
+			})
+		case "shipment":
+			g.Go(func() error {
+				return runAPIServer(ctx, port, shipment.Router(client, db, logger), logger)
 			})
 		default:
 			return fmt.Errorf("unknown service: %s", service)

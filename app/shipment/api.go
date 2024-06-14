@@ -3,15 +3,12 @@ package shipment
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/temporalio/reference-app-orders-go/app/config"
-	"github.com/temporalio/reference-app-orders-go/app/util"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 )
@@ -56,31 +53,6 @@ type ShipmentStatusUpdate struct {
 type ListShipmentEntry struct {
 	ID     string `json:"id"`
 	Status string `json:"status"`
-}
-
-// RunServer runs a Shipment API HTTP server on the given port.
-func RunServer(ctx context.Context, config config.AppConfig, client client.Client, db *sqlx.DB) error {
-	logger := slog.Default().With("service", "shipment")
-
-	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.ShipmentPort)
-	srv := &http.Server{
-		Addr:    hostPort,
-		Handler: util.LoggingMiddleware(logger, Router(client, db, logger)),
-	}
-
-	logger.Info("Listening", "endpoint", "http://"+hostPort)
-
-	errCh := make(chan error, 1)
-	go func() { errCh <- srv.ListenAndServe() }()
-
-	select {
-	case <-ctx.Done():
-		srv.Close()
-	case err := <-errCh:
-		return err
-	}
-
-	return nil
 }
 
 // Router implements the http.Handler interface for the Shipment API
