@@ -35,6 +35,7 @@ type FraudCheckResult struct {
 
 type handlers struct {
 	limit               int32
+	maintenanceMode     bool
 	tallyLock           sync.Mutex
 	customerChargeTally map[string]int32
 	logger              *slog.Logger
@@ -72,6 +73,7 @@ func Router(logger *slog.Logger) http.Handler {
 
 	r.HandleFunc("GET /limit", h.handleGetLimit)
 	r.HandleFunc("POST /limit", h.handleSetLimit)
+	r.HandleFunc("POST /maintenance", h.handleSetMaintenanceMode)
 	r.HandleFunc("POST /reset", h.handleReset)
 	r.HandleFunc("POST /check", h.handleRunCheck)
 
@@ -107,10 +109,22 @@ func (h *handlers) handleReset(http.ResponseWriter, *http.Request) {
 	h.tallyLock.Unlock()
 
 	h.limit = 0
+	h.maintenanceMode = false
+}
+
+func (h *handlers) handleSetMaintenanceMode(w http.ResponseWriter, _ *http.Request) {
+	h.maintenanceMode = true
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *handlers) handleRunCheck(w http.ResponseWriter, r *http.Request) {
 	var input FraudCheckInput
+
+	if h.maintenanceMode {
+		http.Error(w, "Fraud service is in maintenance mode", http.StatusServiceUnavailable)
+		return
+	}
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
