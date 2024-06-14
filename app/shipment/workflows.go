@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	sdklog "go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -61,6 +62,8 @@ type shipmentImpl struct {
 	id        string
 	status    string
 	updatedAt time.Time
+
+	logger sdklog.Logger
 }
 
 // Shipment implements the Shipment workflow.
@@ -78,6 +81,11 @@ func (s *shipmentImpl) setup(ctx workflow.Context, input *ShipmentInput) error {
 	s.requestorWID = input.RequestorWID
 	s.id = input.ID
 	s.status = ShipmentStatusPending
+
+	s.logger = sdklog.With(
+		workflow.GetLogger(ctx),
+		"shipmentId", s.id,
+	)
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*ShipmentStatus, error) {
 		return &ShipmentStatus{
@@ -125,6 +133,9 @@ func (s *shipmentImpl) handleCarrierUpdates(ctx workflow.Context) error {
 
 	for s.status != ShipmentStatusDelivered {
 		ch.Receive(ctx, &signal)
+
+		s.logger.Info("Received carrier update", "status", signal.Status)
+
 		s.updateStatus(ctx, signal.Status)
 	}
 

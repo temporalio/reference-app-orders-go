@@ -7,6 +7,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/temporalio/reference-app-orders-go/app/billing"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
+	"go.temporal.io/sdk/log"
+	sdklog "go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -15,6 +17,7 @@ type orderImpl struct {
 	customerID   string
 	status       string
 	fulfillments []*Fulfillment
+	logger       sdklog.Logger
 }
 
 // Aggressively low for demo purposes.
@@ -46,6 +49,12 @@ func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 
 	wf.id = input.ID
 	wf.customerID = input.CustomerID
+
+	wf.logger = sdklog.With(
+		workflow.GetLogger(ctx),
+		"orderID", wf.id,
+		"customerId", wf.customerID,
+	)
 
 	return workflow.SetQueryHandler(ctx, StatusQuery, func() (*OrderStatus, error) {
 		return &OrderStatus{
@@ -147,11 +156,14 @@ func (wf *orderImpl) buildFulfillments(ctx workflow.Context, items []*Item) erro
 	}
 
 	for i, r := range result.Reservations {
+		id := fmt.Sprintf("%s:%d", wf.id, i+1)
+		logger := log.With(wf.logger, "fulfillment", id)
 		f := &Fulfillment{
 			orderID:    wf.id,
 			customerID: wf.customerID,
+			logger:     logger,
 
-			ID:       fmt.Sprintf("%s:%d", wf.id, i+1),
+			ID:       id,
 			Items:    r.Items,
 			Location: r.Location,
 			Status:   FulfillmentStatusPending,
@@ -176,6 +188,8 @@ func (wf *orderImpl) customerActionRequired() bool {
 }
 
 func (wf *orderImpl) cancelUnavailableFulfillments() {
+	wf.logger.Info("Cancelling unavailable fulfillments")
+
 	for _, f := range wf.fulfillments {
 		if f.Status == FulfillmentStatusUnavailable {
 			f.Status = FulfillmentStatusCancelled
@@ -198,14 +212,22 @@ func (wf *orderImpl) waitForCustomer(ctx workflow.Context) (string, error) {
 			return
 		}
 
+		wf.logger.Info("Timed out waiting for customer action", "timeout", customerActionTimeout)
+
 		signal.Action = CustomerActionTimedOut
 	})
 
 	ch := workflow.GetSignalChannel(ctx, CustomerActionSignalName)
 	s.AddReceive(ch, func(c workflow.ReceiveChannel, _ bool) {
 		c.Receive(ctx, &signal)
+
+		wf.logger.Info("Received customer action", "action", signal.Action)
+
 		cancelTimer()
 	})
+
+	wf.logger.Info("Waiting for customer action")
+
 	s.Select(ctx)
 
 	if err != nil {
@@ -233,6 +255,9 @@ func (wf *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
 			if f.ID == signal.ShipmentID {
 				f.Shipment.Status = signal.Status
 				f.Shipment.UpdatedAt = signal.UpdatedAt
+
+				wf.logger.Info("Shipment status updated", "shipmentID", signal.ShipmentID, "status", signal.Status)
+
 				break
 			}
 		}
@@ -240,6 +265,10 @@ func (wf *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
 }
 
 func (f *Fulfillment) process(ctx workflow.Context) error {
+	defer func() {
+		f.logger.Info("Fulfillment processed", "status", f.Status)
+	}()
+
 	if f.Status == FulfillmentStatusCancelled {
 		return nil
 	}
@@ -313,6 +342,8 @@ func (f *Fulfillment) processPayment(ctx workflow.Context) error {
 		p.Status = PaymentStatusFailed
 	}
 
+	f.logger.Info("Payment processed", "total", p.Total, "status", p.Status)
+
 	return nil
 }
 
@@ -344,6 +375,8 @@ func (f *Fulfillment) processShipment(ctx workflow.Context) error {
 			Items: shippingItems,
 		},
 	).Get(ctx, nil)
+
+	f.logger.Info("Shipment processed", "status", f.Shipment.Status)
 
 	return err
 }
