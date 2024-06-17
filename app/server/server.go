@@ -18,7 +18,7 @@ import (
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
 	"github.com/temporalio/reference-app-orders-go/app/util"
 	"go.temporal.io/sdk/client"
-	sdklog "go.temporal.io/sdk/log"
+	"go.temporal.io/sdk/log"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -50,7 +50,7 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	clientOpts := client.Options{
 		HostPort:  hostPort,
 		Namespace: namespaceName,
-		Logger:    sdklog.NewStructuredLogger(slog.Default()),
+		Logger:    log.NewStructuredLogger(slog.Default()),
 	}
 
 	if certPath := os.Getenv("TEMPORAL_TLS_CERT"); certPath != "" {

@@ -15,7 +15,7 @@ import (
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
-	sdklog "go.temporal.io/sdk/log"
+	"go.temporal.io/sdk/log"
 )
 
 // TaskQueue is the default task queue for the Order system.
@@ -147,7 +147,7 @@ type Fulfillment struct {
 	// ShipmentStatus is the status of the shipment for this fulfillment.
 	Shipment *ShipmentStatus `json:"shipment,omitempty"`
 
-	logger sdklog.Logger
+	logger log.Logger
 }
 
 const (

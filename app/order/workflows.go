@@ -8,7 +8,6 @@ import (
 	"github.com/temporalio/reference-app-orders-go/app/billing"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
 	"go.temporal.io/sdk/log"
-	sdklog "go.temporal.io/sdk/log"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -17,7 +16,7 @@ type orderImpl struct {
 	customerID   string
 	status       string
 	fulfillments []*Fulfillment
-	logger       sdklog.Logger
+	logger       log.Logger
 }
 
 // Aggressively low for demo purposes.
@@ -50,7 +49,7 @@ func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 	wf.id = input.ID
 	wf.customerID = input.CustomerID
 
-	wf.logger = sdklog.With(
+	wf.logger = log.With(
 		workflow.GetLogger(ctx),
 		"orderID", wf.id,
 		"customerId", wf.customerID,
