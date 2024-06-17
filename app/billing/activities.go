@@ -22,7 +22,7 @@ type Activities struct {
 var a Activities
 
 // GenerateInvoice activity creates an invoice for a fulfillment.
-func (a *Activities) GenerateInvoice(_ context.Context, input *GenerateInvoiceInput) (*GenerateInvoiceResult, error) {
+func (a *Activities) GenerateInvoice(ctx context.Context, input *GenerateInvoiceInput) (*GenerateInvoiceResult, error) {
 	var result GenerateInvoiceResult
 
 	if input.CustomerID == "" {
@@ -44,6 +44,13 @@ func (a *Activities) GenerateInvoice(_ context.Context, input *GenerateInvoiceIn
 		result.Shipping += calculateShippingCost(item)
 		result.Total += result.SubTotal + result.Tax + result.Shipping
 	}
+
+	activity.GetLogger(ctx).Info(
+		"Invoice",
+		"Customer", input.CustomerID,
+		"Total", result.Total,
+		"Reference", result.InvoiceReference,
+	)
 
 	return &result, nil
 }
