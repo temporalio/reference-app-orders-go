@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/temporalio/reference-app-orders-go/app/config"
 	"github.com/temporalio/reference-app-orders-go/app/server"
-	"github.com/temporalio/reference-app-orders-go/app/util"
+	"github.com/temporalio/reference-app-orders-go/app/temporalutil"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/converter"
 	_ "modernc.org/sqlite"
@@ -69,7 +69,7 @@ var workerCmd = &cobra.Command{
 		if encryptionKeyID != "" {
 			log.Printf("Enabling encrypting Data Converter using key ID '%s'", encryptionKeyID)
 			ddc := converter.GetDefaultDataConverter()
-			clientOptions.DataConverter = util.NewEncryptionDataConverter(ddc, encryptionKeyID)
+			clientOptions.DataConverter = temporalutil.NewEncryptionDataConverter(ddc, encryptionKeyID)
 		}
 
 		client, err := client.Dial(clientOptions)
@@ -116,7 +116,7 @@ var apiCmd = &cobra.Command{
 		if encryptionKeyID != "" {
 			log.Printf("Enabling encrypting Data Converter using key ID '%s'", encryptionKeyID)
 			ddc := converter.GetDefaultDataConverter()
-			clientOptions.DataConverter = util.NewEncryptionDataConverter(ddc, encryptionKeyID)
+			clientOptions.DataConverter = temporalutil.NewEncryptionDataConverter(ddc, encryptionKeyID)
 		}
 
 		client, err := client.Dial(clientOptions)
@@ -157,7 +157,7 @@ var codecCmd = &cobra.Command{
 		}
 
 		log.Printf("Starting Codec Server on port %d\n", codecPort)
-		err := util.RunCodecServer(codecPort, codecCorsURL)
+		err := temporalutil.RunCodecServer(codecPort, codecCorsURL)
 
 		return err
 	},

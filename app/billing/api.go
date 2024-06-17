@@ -8,8 +8,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/temporalio/reference-app-orders-go/app/config"
-	"github.com/temporalio/reference-app-orders-go/app/util"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
 )
@@ -75,31 +73,6 @@ type ChargeCustomerResult struct {
 type handlers struct {
 	temporal client.Client
 	logger   *slog.Logger
-}
-
-// RunServer runs a Billing API HTTP server on the given port.
-func RunServer(ctx context.Context, config config.AppConfig, client client.Client) error {
-	logger := slog.Default().With("service", "billing")
-
-	hostPort := fmt.Sprintf("%s:%d", config.BindOnIP, config.BillingPort)
-	srv := &http.Server{
-		Addr:    hostPort,
-		Handler: util.LoggingMiddleware(logger, Router(client, logger)),
-	}
-
-	logger.Info("Listening", "endpoint", "http://"+hostPort)
-
-	errCh := make(chan error, 1)
-	go func() { errCh <- srv.ListenAndServe() }()
-
-	select {
-	case <-ctx.Done():
-		srv.Close()
-	case err := <-errCh:
-		return err
-	}
-
-	return nil
 }
 
 // Router implements the http.Handler interface for the Billing API

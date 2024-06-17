@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -17,6 +18,26 @@ type AppConfig struct {
 	ShipmentURL  string
 	FraudPort    int32
 	FraudURL     string
+}
+
+// ServiceHostPort returns the host:port for a given service.
+func (c *AppConfig) ServiceHostPort(service string) (string, error) {
+	var port int32
+
+	switch service {
+	case "billing":
+		port = c.BillingPort
+	case "fraud":
+		port = c.FraudPort
+	case "order":
+		port = c.OrderPort
+	case "shipment":
+		port = c.ShipmentPort
+	default:
+		return "", fmt.Errorf("unknown service: %s", service)
+	}
+
+	return fmt.Sprintf("%s:%d", c.BindOnIP, port), nil
 }
 
 // AppConfigFromEnv creates an AppConfig from environment variables.
