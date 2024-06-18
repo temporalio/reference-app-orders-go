@@ -8,6 +8,9 @@
 *.so
 *.dylib
 
+# Executable created by running `go build ./cmd/oms` on macOS or Linux
+/oms
+
 # Test binary, built with `go test -c`
 *.test
 
