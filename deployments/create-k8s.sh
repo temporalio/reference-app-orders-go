@@ -11,14 +11,18 @@ mkdir -p ./k8s
 yq \
     '(del(.services[].restart)) |
      ((.services | (.billing-api, .main-api)).labels += {"kompose.controller.type":"statefulset"}) |
-     (.services.web.labels += {"kompose.service.type":"loadbalancer"})
+     (.services.web.labels += {"kompose.service.type":"loadbalancer"}) |
+     (.services.codec-server.labels += {"kompose.service.type":"loadbalancer"})
      ' \
     docker-compose-split.yaml | \
     kompose -f - -o k8s convert -n oms --with-kompose-annotation=false
 
-# Kompose renames the web service to web-tcp because it's a loadbalancer, undo that.
+# Rename the web and codec-server service to remove the -tcp suffix that Kompse adds because it's a loadbalancer.
 mv ./k8s/web-tcp-service.yaml ./k8s/web-service.yaml
 yq '(.metadata.name, .metadata.labels.["io.kompose.service"]) |= "web"' -i ./k8s/web-service.yaml
+
+mv ./k8s/codec-server-tcp-service.yaml ./k8s/codec-server-service.yaml
+yq '(.metadata.name, .metadata.labels.["io.kompose.service"]) |= "codec-server"' -i ./k8s/codec-server-service.yaml
 
 # Translate kompose labels to more standard kubernetes labels
 for f in ./k8s/*.yaml; do
