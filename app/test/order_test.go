@@ -75,7 +75,7 @@ func Test_Order(t *testing.T) {
 
 	s, err := testsuite.StartDevServer(ctx, testsuite.DevServerOptions{
 		ClientOptions: &client.Options{},
-		EnableUI:      true,
+		EnableUI:      false,
 		ExtraArgs:     []string{"--dynamic-config-value", "system.forceSearchAttributesCacheRefreshOnRead=true"},
 	})
 	require.NoError(t, err)
