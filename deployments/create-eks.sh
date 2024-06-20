@@ -31,7 +31,6 @@ helm install \
     --set elasticsearch.replicas=1 \
     --set prometheus.enabled=false \
     --set grafana.enabled=false \
-    --set web.service.type=loadbalancer \
     --repo https://go.temporal.io/helm-charts \
     temporal temporal --timeout 15m
 
