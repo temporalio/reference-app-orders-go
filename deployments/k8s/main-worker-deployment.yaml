@@ -33,7 +33,7 @@ spec:
               value: http://main-api:8083
             - name: TEMPORAL_ADDRESS
               value: temporal-frontend.temporal:7233
-          image: reference-app-orders-go-worker:latest
+          image: ghcr.io/temporalio/reference-app-orders-go-worker:latest
           name: main-worker
-          imagePullPolicy: Never
+          imagePullPolicy: Always
       enableServiceLinks: false

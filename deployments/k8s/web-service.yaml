@@ -14,4 +14,3 @@ spec:
   selector:
     app.kubernetes.io/component: web
     app.kubernetes.io/name: oms
-  type: LoadBalancer

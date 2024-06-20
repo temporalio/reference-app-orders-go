@@ -7,18 +7,11 @@ mkdir -p ./k8s
 
 # Remove restart policy from all services, it defaults to always in k8s.
 # Set controller type to statefulset for apis, which maintain a cache on disk
-# Set service type to loadbalancer for web service, which should be exposed outside the cluster
 yq \
     '(del(.services[].restart)) |
-     ((.services | (.billing-api, .main-api)).labels += {"kompose.controller.type":"statefulset"}) |
-     (.services.web.labels += {"kompose.service.type":"loadbalancer"})
-     ' \
+     ((.services | (.billing-api, .main-api)).labels += {"kompose.controller.type":"statefulset"})' \
     docker-compose-split.yaml | \
     kompose -f - -o k8s convert -n oms --with-kompose-annotation=false
-
-# Kompose renames the web service to web-tcp because it's a loadbalancer, undo that.
-mv ./k8s/web-tcp-service.yaml ./k8s/web-service.yaml
-yq '(.metadata.name, .metadata.labels.["io.kompose.service"]) |= "web"' -i ./k8s/web-service.yaml
 
 # Translate kompose labels to more standard kubernetes labels
 for f in ./k8s/*.yaml; do

@@ -24,11 +24,11 @@ spec:
             - "8089"
             - -u
             - http://localhost:8080
-          image: reference-app-orders-go-codec-server:latest
+          image: ghcr.io/temporalio/reference-app-orders-go-codec-server:latest
           name: codec-server
           ports:
             - containerPort: 8089
               protocol: TCP
-          imagePullPolicy: Never
+          imagePullPolicy: Always
           env: []
       enableServiceLinks: false
