@@ -88,6 +88,7 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 			return &OrderResult{Status: wf.status}, err
 		case CustomerActionTimedOut:
 			err := wf.updateStatus(ctx, OrderStatusTimedOut)
+			wf.cancelAllFulfillments()
 			return &OrderResult{Status: wf.status}, err
 		case CustomerActionAmend:
 			wf.cancelUnavailableFulfillments()
@@ -197,6 +198,14 @@ func (wf *orderImpl) cancelUnavailableFulfillments() {
 		if f.Status == FulfillmentStatusUnavailable {
 			f.Status = FulfillmentStatusCancelled
 		}
+	}
+}
+
+func (wf *orderImpl) cancelAllFulfillments() {
+	wf.logger.Info("Cancelling all fulfillments")
+
+	for _, f := range wf.fulfillments {
+		f.Status = FulfillmentStatusCancelled
 	}
 }
 
