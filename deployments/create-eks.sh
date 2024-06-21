@@ -2,7 +2,11 @@
 
 CLUSTER_NAME=temporal-oms
 
+echo "Creating cluster: '$CLUSTER_NAME'..."
+
 eksctl create cluster --name $CLUSTER_NAME
+
+echo "Configuring ebs-csi-driver for volume storage..."
 
 eksctl utils associate-iam-oidc-provider --region=us-west-2 --cluster=$CLUSTER_NAME --approve
 
@@ -23,16 +27,4 @@ eksctl create addon \
 
 kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
-helm install \
-    --namespace temporal \
-    --create-namespace \
-    --set server.replicaCount=1 \
-    --set cassandra.config.cluster_size=1 \
-    --set elasticsearch.replicas=1 \
-    --set prometheus.enabled=false \
-    --set grafana.enabled=false \
-    --repo https://go.temporal.io/helm-charts \
-    temporal temporal --timeout 15m
-
-kubectl exec -ti -n temporal deployment/temporal-admintools -- \
-	temporal operator namespace create -n default
+echo "Done."
