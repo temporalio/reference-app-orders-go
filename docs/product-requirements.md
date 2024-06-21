@@ -1,6 +1,6 @@
 # Order Management System (Go) - Product Requirements
 
-![OMS logo](docs/images/oms-logo.png)
+![OMS logo](images/oms-logo.png)
 
 
 ## Vision
