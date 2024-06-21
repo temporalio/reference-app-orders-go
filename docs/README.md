@@ -1,6 +1,6 @@
 # Order Management System (Go) Documentation
 
-![OMS logo](docs/images/oms-logo.png)
+![OMS logo](images/oms-logo.png)
 
 The documentation for the Order Management System reference application 
 is split up into multiple sections:
