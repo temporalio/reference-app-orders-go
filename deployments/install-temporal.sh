@@ -15,7 +15,7 @@ helm install \
 
 echo "Waiting for Temporal admintools to be ready..."
 
-kubectl rollout status -n temporal deployment/temporal-admintools                                                                                                                                                            git:(rh-aws-eks) ✗
+kubectl rollout status -n temporal deployment/temporal-admintools
 
 echo "Creating default namespace..."
 
