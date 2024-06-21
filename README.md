@@ -64,6 +64,7 @@ maintained in the [reference-app-orders-web](https://github.com/temporalio/refer
 repository:
 
 ```command
+cd ..
 git clone https://github.com/temporalio/reference-app-orders-web.git
 ```
 
