@@ -20,6 +20,10 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# File path (relative to project) passed to the --db-filename option
+# when starting the local development server, as per the docs
+/temporal-persistence.db
+
 # Go workspace file
 go.work
 
