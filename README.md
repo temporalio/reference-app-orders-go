@@ -77,8 +77,8 @@ pnpm dev
 ```
 
 You will then be able to access the OMS web application at 
-[http://localhost:5173/] and the Temporal Web UI at 
-[http://localhost:8080/]. In the OMS web application, select 
+<http://localhost:5173/> and the Temporal Web UI at 
+<http://localhost:8080/>. In the OMS web application, select 
 the **User** role, submit an order (we recommend order #1 to 
 start), and then return to select the **Courier** role and 
 process. As you proceed with each of these steps, be sure to 
