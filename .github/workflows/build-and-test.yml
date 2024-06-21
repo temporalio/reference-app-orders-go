@@ -1,0 +1,40 @@
+name: CI - Build and Test Application
+on:
+  pull_request:
+  
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-intel, macos-arm, windows-latest]
+        include:
+          - os: ubuntu-latest
+            # No need to upload coverage reports for multiple platforms
+            uploadCoverage: true
+          - os: macos-intel
+            runsOn: macos-12
+          - os: macos-arm
+            runsOn: macos-14
+    runs-on: ${{ matrix.runsOn || matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+
+      - name: Build
+        run: go build ./cmd/oms
+  
+      - name: Test
+        run: go test ./...
+
+      - name: Coverage
+        run: make unit-test-coverage functional-test-coverage coverage-report

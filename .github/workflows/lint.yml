@@ -1,0 +1,20 @@
+name: CI - Run Linter
+on:
+  pull_request:
+  
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    # No need to run the linter on multiple platforms
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Lint
+        uses: docker://morphy/revive-action:v2
+        with:
+          config: revive.toml
