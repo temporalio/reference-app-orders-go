@@ -46,7 +46,7 @@ Once the Temporal cluster is up, the script creates the Temporal namespace "defa
 
 ## Installing the application into Kubernetes
 
-Once you have the Kubernetes cluster and Temporal is installed, it's time to install the application. We have created some manifests that will take care of installing the application for you. As is best practise, the OMS application will live in it's own Kubernetes namespace "oms". To ensure this namespace is present before we try and install anything into it, create the namespace using `kubectl`:
+Once you have the Kubernetes cluster and Temporal is installed, it's time to install the application. We have created some manifests that will take care of installing the application for you. As is best practice, the OMS application will live in its own Kubernetes namespace `oms`. To ensure this namespace is present before we try and install anything into it, create the namespace using `kubectl`:
 
 ```sh
 kubectl apply -f ./deployments/oms-namespace.yaml
