@@ -104,7 +104,7 @@ We also provide two other port forwarding scripts. The first is to give you acce
 
 While this command is running you will be able to see the Temporal Web UI at: http://localhost:8080. Try placing an order with the application's Web UI and then looking at the Temporal Web UI to see which workflows were created.
 
-You may notice on the Temporal Web UI that the inputs and results for the Workflows and Activities are encrypted, due to the application's use of an encrypting data converter. In order to decrypt those on the Web UI so that you can see what the inptus and results were, you can use a codec server which we deployed alongside the app.
+You may notice on the Temporal Web UI that the inputs and results for the Workflows and Activities are encrypted, due to the application's use of an encrypting data converter. In order to decrypt those on the Web UI so that you can see what the inputs and results were, you can use a codec server which we deployed alongside the app.
 
 The last of our port-forwarding commands is to allow you access to the codec server:
 
