@@ -15,14 +15,14 @@ before we encourage widespread use. Please check back regularly.
 
 ## Quickstart
 We recommend that you begin by reading the [documentation](docs/README.md), 
-which will explain the features of the application as well as aspects 
+which will explain the features of the application and aspects 
 of its design. It also provides instructions for deploying and 
 running the application in various environments, including in 
 Kubernetes and with Temporal Cloud.
 
 If you'd prefer to jump right in and run it locally, follow these steps. 
-All commands should be executed from the root directory of this project, 
-unless otherwise noted. 
+Unless otherwise noted, you should execute the commands from the root
+directory of the project.
 
 ### Start the Temporal Service
 Run the following command in your terminal:
@@ -36,17 +36,18 @@ server will persist its data to a file instead of memory, thus making
 it available during later sessions. The file will be created if it
 does not already exist.
 
-### Start the Worker(s)
+### Start the Worker
 Run the following command in another terminal:
 
 ```command
 go run ./cmd/oms worker
 ```
 
-Although one Worker is sufficient for local development, we recommend 
-running multiple Workers in production since this can improve both the 
-scalability and availability of an application. You can repeat this 
-step to launch as many additional Workers as you like.
+Although one Worker is sufficient for local development, Temporal 
+recommends running multiple Workers in production since this can 
+improve both the scalability and availability of an application. 
+You can repeat this step to launch as many additional Workers as 
+you like.
 
 ### Start the API Servers
 Run the following command in another terminal:
@@ -79,14 +80,17 @@ pnpm dev
 You will then be able to access the OMS web application at 
 <http://localhost:5173/> and the Temporal Web UI at 
 <http://localhost:8080/>. In the OMS web application, select 
-the **User** role, submit an order (we recommend order #1 to 
-start), and then return to select the **Courier** role and 
-process. As you proceed with each of these steps, be sure to 
-refresh the Temporal Web UI so that you can see the Workflows 
-created and updated as a result. 
+the **User** role, and then submit an order (we recommend 
+choosing order #1 to start). Next, return the main page of  
+the web application, select the **Courier** role, locate
+the shipments corresponding to your order, and then click 
+the **Dispatch** and **Deliver** buttons to complete the 
+process. As you proceed with each of these steps, be sure 
+to refresh the Temporal Web UI so that you can see the 
+Workflows created and updated as a result. 
 
 
-## Finding Your Way Around
+## Find Your Way Around
 This repository provides four subdirectories of interest:
 
 | Directory                                             | Description                                                       |
