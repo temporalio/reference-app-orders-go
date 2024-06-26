@@ -42,7 +42,7 @@ To install Temporal:
 
 This may take a while, as the Temporal cluster relies on Cassandra and Elasticsearch, which can both take a while to boot up.
 
-Once the Temporal cluster is up, the script creates the Temporal namespace "default" for you. This is Temporal namespace the OMS application expects to use, unless configured otherwise.
+Once the Temporal cluster is up, the script creates the Temporal namespace `default` for you. This is the Temporal namespace the OMS application expects to use, unless configured otherwise.
 
 ## Installing the application into Kubernetes
 
