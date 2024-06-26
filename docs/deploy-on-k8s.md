@@ -82,7 +82,7 @@ Please note that while in most regards the deployment is a standard Kubernetes s
 
 As this cache uses the disk, which is not easily shared amongst pods, this also means the API Statefulsets cannot be safely scaled. If there were to be more than one main-api pod, for example, each pod would see different order creations, and therefore have a different cache of orders. This would result in unpredictable behaviour.
 
-These are all limitations of our deliberately naeive caching mechanism, and would not occur should the APIs use a shared database such as MySQL or Postgres.
+These are all limitations of our deliberately naive caching mechanism, and would not occur should the APIs use a shared database such as MySQL or PostgreSQL.
 
 ## Using the application
 
