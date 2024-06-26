@@ -34,7 +34,7 @@ spec:
               value: "8083"
             - name: TEMPORAL_ADDRESS
               value: temporal-frontend.temporal:7233
-          image: reference-app-orders-go-api:latest
+          image: ghcr.io/temporalio/reference-app-orders-go-api:latest
           name: main-api
           ports:
             - containerPort: 8082
@@ -44,7 +44,7 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: main-api-data
-          imagePullPolicy: Never
+          imagePullPolicy: Always
       volumes:
         - name: main-api-data
           persistentVolumeClaim:
