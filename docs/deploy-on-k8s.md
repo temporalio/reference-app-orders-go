@@ -32,7 +32,7 @@ And see the message `No resources found in default namespace.`
 
 ## Installing Temporal into Kubernetes
 
-To install a basic Temporal cluster into Kubernetes we can use the Temporal Helm Charts.
+You can use the Temporal Helm Charts to install a basic Temporal cluster into Kubernetes.
 
 To install Temporal:
 
