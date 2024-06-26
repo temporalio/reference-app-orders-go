@@ -94,7 +94,7 @@ To see the application's Web UI you can run the script:
 ./deployments/port-forward-web.sh
 ```
 
-That command will continue to run until you kill it (with Ctrl+C) for example. While the command is running it will forward any traffic from your localmachine on port 3000 to the application's Web UI in the cluster. You should now be able to see the application at: http://localhost:3000/
+That command will continue to run until you terminate it (with Ctrl+C) for example. While the command is running it will forward any traffic from your local machine on port 3000 to the application's Web UI in the cluster. You should now be able to see the application at: http://localhost:3000/
 
 We also provide two other port forwarding scripts. The first is to give you access to the web UI for the Temporal cluster running in your cluster:
 
