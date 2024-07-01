@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/temporalio/reference-app-orders-go/app/billing"
@@ -17,7 +18,6 @@ import (
 	"github.com/temporalio/reference-app-orders-go/app/fraud"
 	"github.com/temporalio/reference-app-orders-go/app/order"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
-	"github.com/temporalio/reference-app-orders-go/app/temporalutil"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/log"
 	"golang.org/x/sync/errgroup"
@@ -39,7 +39,7 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	namespaceName := os.Getenv("TEMPORAL_NAMESPACE")
 
 	// Must explicitly set the Namepace for non-cloud use.
-	if temporalutil.IsTemporalCloud(hostPort) && namespaceName == "" {
+	if strings.Contains(hostPort, ".tmprl.cloud:") && namespaceName == "" {
 		return client.Options{}, fmt.Errorf("Namespace name unspecified; required for Temporal Cloud")
 	}
 
