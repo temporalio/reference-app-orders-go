@@ -9,9 +9,8 @@ system with Temporal. You can run this application locally
 the Temporal Service can be local, a remote self-hosted deployment, 
 or Temporal Cloud. 
 
-NOTE: This application is under active development and we're
-working to expand the documentation and finish up a few features 
-before we encourage widespread use. Please check back regularly.
+NOTE: This application is under development and we're working to 
+expand the documentation before we officially announce it. 
 
 ## Quickstart
 We recommend that you begin by reading the [documentation](docs/README.md), 
