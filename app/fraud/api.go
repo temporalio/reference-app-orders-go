@@ -108,8 +108,10 @@ func (h *handlers) handleRunCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.tallyLock.Lock()
-	h.customerChargeTally[input.CustomerID] += input.Charge
-	declined := h.limit > 0 && h.customerChargeTally[input.CustomerID] > h.limit
+	declined := h.limit > 0 && input.Charge+h.customerChargeTally[input.CustomerID] > h.limit
+	if !declined {
+		h.customerChargeTally[input.CustomerID] += input.Charge
+	}
 	h.tallyLock.Unlock()
 	result := FraudCheckResult{Declined: declined}
 
