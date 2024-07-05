@@ -12,9 +12,10 @@ type FraudLimitInput struct {
 	Limit int32 `json:"limit"`
 }
 
-// FraudLimitResult is the result for the GetLimit API.
-type FraudLimitResult struct {
-	Limit int32 `json:"limit"`
+// FraudSettingsResult is the result for the GetSettings API.
+type FraudSettingsResult struct {
+	Limit           int32 `json:"limit"`
+	MaintenanceMode bool  `json:"maintenanceMode"`
 }
 
 // FraudCheckInput is the input for the check endpoint.
@@ -41,7 +42,7 @@ func Router(logger *slog.Logger) http.Handler {
 	r := http.NewServeMux()
 	h := handlers{customerChargeTally: make(map[string]int32), logger: logger}
 
-	r.HandleFunc("GET /limit", h.handleGetLimit)
+	r.HandleFunc("GET /settings", h.handleGetSettings)
 	r.HandleFunc("POST /limit", h.handleSetLimit)
 	r.HandleFunc("POST /maintenance", h.handleSetMaintenanceMode)
 	r.HandleFunc("POST /reset", h.handleReset)
@@ -50,10 +51,13 @@ func Router(logger *slog.Logger) http.Handler {
 	return r
 }
 
-func (h *handlers) handleGetLimit(w http.ResponseWriter, _ *http.Request) {
+func (h *handlers) handleGetSettings(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	err := json.NewEncoder(w).Encode(FraudLimitResult{Limit: h.limit})
+	err := json.NewEncoder(w).Encode(FraudSettingsResult{
+		Limit:           h.limit,
+		MaintenanceMode: h.maintenanceMode,
+	})
 	if err != nil {
 		h.logger.Error("Failed to encode limit result", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

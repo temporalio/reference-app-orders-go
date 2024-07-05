@@ -5,6 +5,7 @@ services:
       target: oms-worker
     environment:
       - TEMPORAL_ADDRESS=host.docker.internal:7233
+      - DEBUG=true
       - BILLING_API_URL=http://api:8081
       - ORDER_API_URL=http://api:8082
       - SHIPMENT_API_URL=http://api:8083
@@ -18,6 +19,7 @@ services:
     environment:
       - TEMPORAL_ADDRESS=host.docker.internal:7233
       - BIND_ON_IP=0.0.0.0
+      - DEBUG=true
       - BILLING_API_PORT=8081
       - ORDER_API_PORT=8082
       - SHIPMENT_API_PORT=8083

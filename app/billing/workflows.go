@@ -8,9 +8,10 @@ import (
 
 // Charge Workflow invoices and processes payment for a fulfillment.
 func Charge(ctx workflow.Context, input *ChargeInput) (*ChargeResult, error) {
+	logger := workflow.GetLogger(ctx)
 	ctx = workflow.WithActivityOptions(ctx,
 		workflow.ActivityOptions{
-			StartToCloseTimeout: 30 * time.Second,
+			ScheduleToCloseTimeout: 30 * time.Second,
 		},
 	)
 
@@ -40,7 +41,8 @@ func Charge(ctx workflow.Context, input *ChargeInput) (*ChargeResult, error) {
 		},
 	)
 	if err := cwf.Get(ctx, &charge); err != nil {
-		return nil, err
+		logger.Warn("Charge failed", "customer_id", input.CustomerID, "error", err)
+		charge.Success = false
 	}
 
 	return &ChargeResult{
