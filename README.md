@@ -9,9 +9,6 @@ system with Temporal. You can run this application locally
 the Temporal Service can be local, a remote self-hosted deployment, 
 or Temporal Cloud. 
 
-NOTE: This application is under development and we're working to 
-expand the documentation before we officially announce it. 
-
 ## Quickstart
 We recommend that you begin by reading the [documentation](docs/README.md), 
 which will explain the features of the application and aspects 
@@ -30,23 +27,21 @@ Run the following command in your terminal:
 temporal server start-dev --ui-port 8080 --db-filename temporal-persistence.db
 ```
 
-This command uses the `--db-filename` option so that the development 
-server will persist its data to a file instead of memory, thus making 
-it available during later sessions. The file will be created if it
-does not already exist.
+The Temporal Service manages application state by assigning tasks
+related to each execution and tracking the completion of those tasks.
+The detailed history it maintains for each execution enables the 
+application to recover from a crash by reconstructing its pre-crash 
+state and resuming the execution.
 
-### Start the Worker
+### Start the Workers
 Run the following command in another terminal:
 
 ```command
 go run ./cmd/oms worker
 ```
 
-Although one Worker is sufficient for local development, Temporal 
-recommends running multiple Workers in production since this can 
-improve both the scalability and availability of an application. 
-You can repeat this step to launch as many additional Workers as 
-you like.
+The Workers run the Workflow and Activity functions that handle
+various aspects of order processing.
 
 ### Start the API Servers
 Run the following command in another terminal:
