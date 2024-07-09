@@ -75,8 +75,8 @@ You will then be able to access the OMS web application at
 <http://localhost:5173/> and the Temporal Web UI at 
 <http://localhost:8080/>. In the OMS web application, select 
 the **User** role, and then submit an order (we recommend 
-choosing order #1 to start). Next, return to the main page of  
-the web application, select the **Courier** role, locate
+choosing order #1 to start). Next, return to the main page
+of the web application, select the **Courier** role, locate
 the shipments corresponding to your order, and then click 
 the **Dispatch** and **Deliver** buttons to complete the 
 process. As you proceed with each of these steps, be sure 
