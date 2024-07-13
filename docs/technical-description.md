@@ -77,7 +77,7 @@ shopping cart, which allows one to create a list of items to purchase
 by choosing individual products.
 
 Instead, the web application creates a set of 20 orders, each of which
-is essentially a pre-filled shopping cart. Order #1 always constains a
+is essentially a pre-filled shopping cart. Order #1 always contains a
 single in-stock item, while the other orders are randomly generated.
 Submitting one of them is equivalent to completing the checkout process
 in a typical e-commerce website; this step supplies the order to the
@@ -160,7 +160,7 @@ The reason that the Activity code makes a request to the API endpoint,
 rather than starting the Charge Workflow directly, is because we wanted
 the ability to run the Billing subsystem in a separate Namespace to
 illustrate a service managed by a different team. Temporal does not
-currently support cross-Namepace calls, and while the [Nexus
+currently support cross-Namespace calls, and while the [Nexus
 project](https://github.com/temporalio/proposals/blob/master/nexus/problem-statements.md)
 will provide a solution for this in the future, this code demonstrates
 an approach that a developer can use in the meantime.
@@ -168,7 +168,7 @@ an approach that a developer can use in the meantime.
 The Charge Workflow executes an Activity to [generate an
 invoice](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/billing/activities.go#L24-L56)
 for the fulfillment, which is shown on the detail page for the order in
-the web application. Since the implemnentation of a product database is
+the web application. Since the implementation of a product database is
 outside the scope of the OMS, this Activity simulates that integration
 by generating random prices (within a realistic range) for each SKU as
 well as the fulfillment's shipping cost. Next, the Charge Workflow
@@ -190,7 +190,7 @@ remaining fulfillments in the order.
 If the payment was approved, processing will continue by [creating a
 shipment](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/order/workflows.go#L307-L310)
 for the fulfillment. This is done by [executing a Child
-Workflow](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/order/workflows.go#L392-L400)
+Workflow](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/order/workflows.go#L392-L400) 
 that will orchestrate the steps required to [book a
 courier](https://github.com/temporalio/reference-app-orders-go/blob/4546fb2a41cacd84bd4158728808aa74cd188e8f/app/shipment/workflows.go#L101-L110)
 and update the status following each interaction with them. As with the
@@ -210,7 +210,7 @@ to the web application.
 In addition to [receiving
 Signals](https://github.com/temporalio/reference-app-orders-go/blob/4546fb2a41cacd84bd4158728808aa74cd188e8f/app/shipment/api.go#L173-L198)
 from the API server when the courier is dispatched or delivers a
-shipment, the Shipment Worklow also [sends status update Signals](https://github.com/temporalio/reference-app-orders-go/blob/4546fb2a41cacd84bd4158728808aa74cd188e8f/app/shipment/workflows.go#L153-L163)
+shipment, the Shipment Workflow also [sends status update Signals](https://github.com/temporalio/reference-app-orders-go/blob/4546fb2a41cacd84bd4158728808aa74cd188e8f/app/shipment/workflows.go#L153-L163)
 to the Order Workflow.
 
 The Shipment Workflow ends when the courier delivers the package to the
@@ -245,7 +245,7 @@ protocols, as illustrated in the following diagram:
 
 ![Diagram showing communication paths in the OMS](images/communication-1020w.png "Diagram showing communication paths in the OMS")
 
-The user's browser communciates with the web application over HTTP. The
+The user's browser communicates with the web application over HTTP. The
 web application also uses HTTP to access the API server. Data passing
 through these links could be protected from eavesdroppers through the
 use of TLS.
