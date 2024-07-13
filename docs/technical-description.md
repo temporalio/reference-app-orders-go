@@ -322,7 +322,7 @@ generate a coverage report.
 
 
 ### CI/CD 
-The `reference-app-orders-go` repository provides [configuration files 
+This repository provides [configuration files 
 that enable CI/CD automation](https://github.com/temporalio/reference-app-orders-go/tree/main/.github/workflows)
 through GitHub Actions:
 
