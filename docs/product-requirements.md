@@ -4,7 +4,7 @@
 
 
 ## Vision
-The Order Management System (OMS) is a mission-critical system for 
+An Order Management System (OMS) is a mission-critical system for 
 processing product orders.
 
 Reliability is essential, since failure to process individual orders
