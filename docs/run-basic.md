@@ -1,4 +1,4 @@
-# Running the OMS Locally (Basic)
+# Running the OMS Locally
 
 Follow these instructions to run the OMS locally, using the 
 Temporal Service provided that the `temporal` command. This 
