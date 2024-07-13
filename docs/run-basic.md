@@ -14,7 +14,7 @@ Service:
 ```command
 temporal server start-dev \
     --ui-port 8080 \
-	--db-filename temporal-persistence.db
+    --db-filename temporal-persistence.db
 ```
 
 The `temporal` CLI provides a convenient way of running a 
