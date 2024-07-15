@@ -43,7 +43,8 @@ used to implement the OMS. Although one Worker Process is sufficient for
 local development, you will want to run multiple Workers in production 
 since this can improve both the scalability and availability of an 
 application. You can repeat this step to launch as many additional 
-Workers as you like.
+Workers as you like. Temporal's SDK will automatically distribute 
+processing load among all running Workers.
 
 
 ### Start the API Servers
