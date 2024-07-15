@@ -8,8 +8,8 @@ in the _Quickstart_ section of the top-level README file.
 
 ### Start the Temporal Service
 
-Run the following command in your terminal to start the Temporal 
-Service:
+Run the following command in your terminal (from the root
+directory of your repo clone) to start the Temporal Service:
 
 ```command
 temporal server start-dev \
