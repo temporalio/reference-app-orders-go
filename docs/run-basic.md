@@ -1,9 +1,9 @@
 # Running the OMS Locally
 
 Follow these instructions to run the OMS locally, using the 
-Temporal Service provided that the `temporal` command. This 
-is an expanded version of the instructions found in the 
-_Quickstart_ section of the top-level README file.
+Temporal Service provided by the `temporal server start-dev` 
+command. This is an expanded version of the instructions found 
+in the _Quickstart_ section of the top-level README file.
 
 
 ### Start the Temporal Service
