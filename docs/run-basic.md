@@ -38,11 +38,12 @@ Run the following command in another terminal to start the Workers:
 go run ./cmd/oms worker
 ```
 
-The Workers run the Workflow and Activity code used to implement the
-OMS. Although one Worker Process is sufficient for local development, you 
-will want to run multiple Workers in production since this can improve
-both the scalability and availability of an application. You can repeat
-this step to launch as many additional Workers as you like.
+The Workers started by this command run the Workflow and Activity code 
+used to implement the OMS. Although one Worker Process is sufficient for 
+local development, you will want to run multiple Workers in production 
+since this can improve both the scalability and availability of an 
+application. You can repeat this step to launch as many additional 
+Workers as you like.
 
 
 ### Start the API Servers
