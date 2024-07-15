@@ -72,19 +72,19 @@ purposes, the application is agnostic to the details of the products
 being ordered.
 
 #### Shopping Cart
-Relatedly, the web application does not provide a traditional e-commerce
-shopping cart, which allows one to create a list of items to purchase 
-by choosing individual products.
+The OMS web application does not provide a typical e-commerce shopping 
+cart for creating a list of items to purchase by choosing individual 
+products. This is considered external to the OMS.
 
-Instead, the web application creates a set of 20 orders, each of which
-is essentially a pre-filled shopping cart. Order #1 always contains a
-single in-stock item, while the other orders are randomly generated.
-Submitting one of them is equivalent to completing the checkout process
-in a typical e-commerce website; this step supplies the order to the
-OMS, which begins processing it.
+For demonstration purposes, the web application populates a set of 20 
+orders, each of which is essentially a pre-filled shopping cart. Order 
+#1 always contains a single in-stock item, while the other orders are 
+randomly generated. Submitting one of them is equivalent to completing 
+the checkout process in a typical e-commerce website; this step supplies 
+the order to the OMS, which begins processing it.
 
 #### Product Inventory 
-Finally, the OMS does not implement or integrate with a system for 
+Finally, the OMS does not implement or integrate with a real system for 
 managing product inventory. The aforementioned `ReserveItems` Activity 
 serves to illustrate where the OMS would connect to such a system, but 
 this application simulates its behavior with logic that determines 
@@ -140,8 +140,8 @@ Attributes](https://docs.temporal.io/visibility#custom-search-attributes)
 is not appropriate for this due to their eventual consistency). This
 cache is implemented using a SQLite database for the sake of simplicity,
 but we recognize that it's a likely bottleneck. For a production system,
-you should replace this SQLite-based implementation with something that
-can support your expected load.
+you would likely replace this SQLite-based implementation with something 
+that can support your expected load.
 
 As it [processes each
 fulfillment](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/order/workflows.go#L333-L350),
