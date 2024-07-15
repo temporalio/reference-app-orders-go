@@ -2,23 +2,24 @@
 
 ![OMS logo](docs/images/oms-logo.png)
 
-The Order Management System (OMS) is a reference application 
-that demonstrates how to design and implement an order processing 
-system with Temporal. You can run this application locally 
-(directly on a laptop) or in a Kubernetes cluster. In either case, 
-the Temporal Service can be local, a remote self-hosted deployment, 
-or Temporal Cloud. 
+The Order Management System (OMS) is a reference application that 
+demonstrates one way to approach the design and implementation of 
+an order processing system based on Temporal Workflows. You can run 
+this application locally (directly on a laptop) or in a Kubernetes 
+cluster. In addition, the required Temporal Service can be run locally, 
+or be provided by a remote self-hosted deployment, or be provided by 
+Temporal Cloud. 
 
 ## Quickstart
 We recommend that you begin by reading the [documentation](docs/README.md), 
 which will explain the features of the application and aspects 
 of its design. It also provides instructions for deploying and 
-running the application in various environments, including in 
-Kubernetes and with Temporal Cloud.
+running the application in various environments.
 
-If you'd prefer to jump right in and run it locally, follow these steps. 
-Unless otherwise noted, you should execute the commands from the root
-directory of the project.
+If you'd like to jump right in and run the OMS locally, clone this 
+repository to your machine and follow the steps below. Unless otherwise 
+noted, you should execute the commands from the root directory of your 
+clone.
 
 ### Start the Temporal Service
 Run the following command in your terminal:
@@ -28,10 +29,10 @@ temporal server start-dev --ui-port 8080 --db-filename temporal-persistence.db
 ```
 
 The Temporal Service manages application state by assigning tasks
-related to each execution and tracking the completion of those tasks.
-The detailed history it maintains for each execution enables the 
-application to recover from a crash by reconstructing its pre-crash 
-state and resuming the execution.
+related to each Workflow Execution and tracking the completion of 
+those tasks. The detailed history it maintains for each execution 
+enables the application to recover from a crash by reconstructing 
+its pre-crash state and resuming the execution.
 
 ### Start the Workers
 Run the following command in another terminal:
@@ -40,8 +41,9 @@ Run the following command in another terminal:
 go run ./cmd/oms worker
 ```
 
-The Workers run the Workflow and Activity functions that handle
-various aspects of order processing.
+This command actually starts both Workflow and Activity Workers in a 
+single process. The Workers run Workflow and Activity functions, which 
+carry out the various aspects of order processing.
 
 ### Start the API Servers
 Run the following command in another terminal:
@@ -55,7 +57,8 @@ interact with the OMS.
 
 ### Run the Web Application
 You will need to clone the code for the web application, which is 
-maintained in the [reference-app-orders-web](https://github.com/temporalio/reference-app-orders-web) 
+maintained separately in the 
+[reference-app-orders-web](https://github.com/temporalio/reference-app-orders-web) 
 repository:
 
 ```command
