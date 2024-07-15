@@ -26,6 +26,9 @@ Service to persist its data to a file so that it will be
 available in subsequent sessions. This file will be created 
 if it does not exist.
 
+You can verify that this is running by using your browser to 
+access the Temporal Web UI at <http://localhost:8080/>.
+
 
 ### Start the Worker
 
