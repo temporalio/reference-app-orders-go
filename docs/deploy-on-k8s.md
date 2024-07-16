@@ -91,7 +91,7 @@ You'll know that the application is up when the READY column shows
 
 Please note that, while in most regards the deployment is a standard 
 Kubernetes setup, there is one thing which is a little unusual. The 
-OMS application's API servces make use of a cache to ensure that they 
+OMS application's API services make use of a cache to ensure that they 
 can quickly provide lists of all orders and shipments. This cache is
 implemented using a disk-based SQLite database, which makes these 
 API services stateful. If an API pod needs to be restarted (for example, 
