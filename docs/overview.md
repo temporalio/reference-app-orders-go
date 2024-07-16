@@ -93,7 +93,7 @@ and details of these Events, both for orders in progress as well as
 those that have already completed. The result is immediate insight 
 into the status of every order processed.
 
-![Screenshot of an Order Workflow in Temporal Web UI](images/web-ui-example-1020w.png "Screenshot of an Order Workflow in Temporal Web UI")
+![Screenshot of an Order Workflow in Temporal Web UI](images/web-ui-example.png "Screenshot of an Order Workflow in Temporal Web UI")
 
 In fact, a developer can download the Event History for any execution 
 and replay it in a debugger, making it possible to [reproduce and fix
