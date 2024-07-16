@@ -13,7 +13,7 @@ through the `temporal` command-line tool.
 The following diagram illustrates the high-level interaction that
 takes place when a user submits an order through the web application:
 
-![OMS high-level overview diagram](images/high-level-overview-diagram-900w.png "OMS high-level overview diagram")
+![OMS high-level overview diagram](images/high-level-overview-diagram.png "OMS high-level overview diagram")
 
 Notice that each item is only connected to the items adjacent to it.
 The user does not interact with either the OMS or the Temporal
