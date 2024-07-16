@@ -4,7 +4,7 @@
 
 
 ## Vision
-The Order Management System (OMS) is a mission-critical system for 
+An Order Management System (OMS) is a mission-critical system for 
 processing product orders.
 
 Reliability is essential, since failure to process individual orders
@@ -94,9 +94,14 @@ click the "Deliver" button. These interactions update the current status
 of each shipment and are immediately visible to customers and support 
 staff.
 
+
 ### Manager Interaction
 As previously described, the store manager has the ability to combat 
 fraud by setting a global limit on the total charges (expressed in 
 cents) that each customer is allowed. This is set to 0 by default, 
 meaning that there is no limit. The manager can increase, decrease, 
 or reset this limit at any time.
+
+Additionally, the manager can enable a maintenance mode in this
+fraud detection system. When this is enabled, no new charges are 
+allowed, regardless of amount.
