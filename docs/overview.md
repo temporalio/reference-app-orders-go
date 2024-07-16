@@ -19,14 +19,16 @@ Notice that each item is only connected to the items adjacent to it.
 The user does not interact with either the OMS or the Temporal
 Service. Likewise, the web application does not use any Temporal
 libraries or tools; it only calls APIs provided by the OMS. This
-design increases both security and flexibility.
+decoupled design increases debuggability, security, and flexibility.
 
 ## Order Processing Overview
-The input to the OMS is an order, which has a unique identifier, is 
-associated with a customer, and specifies a list of SKUs (products) 
-along with the quantities.
+A system external to the OMS, such as the web application we provide, 
+is responsible for creating the order and submitting it as input to 
+the OMS. This data must include a unique identifier for the order, a 
+customer identifier, and a list of SKUs (products) along with the 
+requested quantities of each. 
 
-Upon receiving an order, the OMS launches a Workflow to orchestrate 
+Upon receiving the order, the OMS launches a Workflow to orchestrate 
 all of the steps required to process it. This includes claiming the 
 items from inventory, generating invoices and charging the customer 
 for each shipment, and booking couriers who pick them up from the
@@ -41,7 +43,11 @@ customer.
 The application gains reliability from the support provided by the 
 Temporal Service, which automatically manages application state and 
 allows the system to withstand failure conditions. Once the OMS 
-receives an order, that order will be processed, no matter what.
+receives an order, that order will be processed, _no matter what_.
+This is the most fundamental value provided by Temporal. Your code 
+supplies the required business logic, and when combined with the 
+Temporal Platform, can achieve unparalleled reliability under 
+real-world conditions.
 
 If the application makes a call to a microservice that’s experiencing
 an outage, for example, that call will be retried according to a
@@ -52,12 +58,16 @@ follow.
 If the application terminates unexpectedly while processing is
 underway, the application can automatically reconstruct the
 pre-termination state and resume where it left off, as if the problem
-never happened at all. You can even resume that execution on another
-machine, which allows the application to overcome hardware failures.
+never happened at all. In the event of machine failure, that execution 
+can resume on another machine, which allows the application to overcome 
+even permanent hardware failures.
 
 ### Scalability
 You can increase throughput—enabling the system to handle more orders 
-concurrently—by running additional instances of the application. 
+concurrently—merely by running additional instances of the application. 
+In fact, testing on Temporal Cloud indicates that applications can
+scale linearly into the hundreds of thousands of Workflows per second.
+
 Although Temporal applications can run on bare metal or virtual 
 machines, many users deploy them in containers managed through 
 Kubernetes, and use metrics provided by the Temporal Service to 
@@ -68,9 +78,6 @@ Each additional instance contributes to the application's
 availability. If one of those instances crashes, another running
 instance will automatically take over processing from where the
 previous one left off.
-
-Any instance can automatically take over processing for one that fails
-(for example, due to a hardware crash).
 
 ### Developer Productivity
 Although often initially overlooked, developers who begin using 
