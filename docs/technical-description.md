@@ -266,7 +266,7 @@ Event History for the Workflow Execution and is transmitted to the
 Temporal Service, when then durably persists this information to its
 database.
 
-![Diagram illustrating communication between a Temporal Client and the Temporal Service](images/without-data-converter-650w.png "Diagram illustrating communication between a Temporal Client and the Temporal Service")
+![Diagram illustrating communication between a Temporal Client and the Temporal Service](images/without-data-converter.png "Diagram illustrating communication between a Temporal Client and the Temporal Service")
 
 TLS does not protect the confidentiality of this data at rest, so
 someone who can gain access to the database would have the ability to
@@ -276,7 +276,7 @@ Converter](https://docs.temporal.io/dataconversion#custom-data-converter),
 which transforms these payloads as they pass through a Client. Custom
 Data Converters are commonly used to implement encryption.
 
-![Diagram illustrating communication between Temporal Client (using a Custom Data Converter) and the Temporal Service](images/with-data-converter-650w.png "Diagram illustrating communication between a Temporal Client and the Temporal Service")
+![Diagram illustrating communication between Temporal Client (using a Custom Data Converter) and the Temporal Service](images/with-data-converter.png "Diagram illustrating communication between a Temporal Client and the Temporal Service")
 
 The OMS [implements a Custom Data
 Converter](https://github.com/temporalio/reference-app-orders-go/blob/4546fb2a41cacd84bd4158728808aa74cd188e8f/app/util/data_converter.go),
