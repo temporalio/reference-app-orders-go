@@ -113,7 +113,7 @@ MySQL or PostgreSQL.
 
 ## Using the Application
 
-Now that the application is succcessfully installed in Kubernetes, how 
+Now that the application is successfully installed in Kubernetes, how 
 can you use it? The standard practice for accessing a service inside a 
 Kubernetes cluster would be to create a Service with type LoadBalancer. 
 On AWS, for example, this would cause AWS to automatically provision an 
