@@ -105,7 +105,7 @@ As this cache uses the disk, which is not easily shared among pods,
 this also means the API Statefulsets cannot be safely scaled. If there 
 were to be more than one `main-api` pod, for example, each pod would 
 see different order creations, and therefore have a different cache 
-of orders. This would result in unpredictable behaviour.
+of orders. This would result in unpredictable behavior.
 
 These are all limitations of our deliberately naive caching mechanism, 
 and would not occur should the APIs use a shared database such as 
