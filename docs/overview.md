@@ -98,5 +98,5 @@ into the status of every order processed.
 In fact, a developer can download the Event History for any execution 
 and replay it in a debugger, making it possible to [reproduce and fix
 elusive bugs](https://www.youtube.com/watch?v=fN5bIL7wc5M) in your
-application code. And once it is fixed, you can use that history file 
+application code. And once a bug is fixed, you can use that history file 
 in an automated test and be confident that there are no regressions.
