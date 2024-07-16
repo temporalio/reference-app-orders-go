@@ -101,6 +101,7 @@ status of existing orders, and manage shipments related to those orders.
 ![OMS high-level overview diagram](images/oms-architecture-scaled-1200w.png "OMS high-level overview diagram")
 
 
+#### Order Processing
 The Order subsystem manages the overall processing of an order. When the
 web application posts to the Order API's [endpoint for creating an
 order](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/order/api.go#L209),
@@ -112,6 +113,7 @@ which in turn creates a set of fulfillments and calls the [ReserveItems
 Activity](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/order/activities.go#L70-L126)
 to claim the requested items from the warehouse.
 
+#### Customer Interaction
 If an item in one of those fulfillments is unavailable, the Workflow
 will wait for [customer
 interaction](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/order/workflows.go#L74-L98),
@@ -130,6 +132,7 @@ status](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43
 in a cache (the record was inserted earlier by the endpoint handler
 function that started the Order Workflow).
 
+#### Application Cache
 Although it's possible to [Query the Order
 Workflow](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/order/workflows.go#L58-L65)
 for the status of a _specific_ order, given its Workflow ID, the Order
@@ -143,6 +146,7 @@ but we recognize that it's a likely bottleneck. For a production system,
 you would likely replace this SQLite-based implementation with something 
 that can support your expected load.
 
+#### Billing System
 As it [processes each
 fulfillment](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/order/workflows.go#L333-L350),
 the system uses a [Side
@@ -176,6 +180,8 @@ executes an Activity to [charge the customer's payment
 card](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/billing/activities.go#L114-L135),
 which begins with a [call to the Fraud
 API](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/billing/activities.go#L75-L112).
+
+#### Fraud Detection
 The fraud detection service evaluates the charge based on the specific
 customer and purchase amount (as further described in the [OMS product
 requirements documentation](product-requirements.md)). The Activity
@@ -199,6 +205,7 @@ information about courier interactions are [delivered to the
 Workflow](https://github.com/temporalio/reference-app-orders-go/blob/4546fb2a41cacd84bd4158728808aa74cd188e8f/app/shipment/workflows.go#L121-L132)
 using Signals, a common way of handling human-in-the-loop scenarios.
 
+#### Shipment Processing
 Similar to the Order Workflow, the Shipment Workflow [defines a Query
 handler](https://github.com/temporalio/reference-app-orders-go/blob/4546fb2a41cacd84bd4158728808aa74cd188e8f/app/shipment/workflows.go#L82-L89),
 which allows on-demand access to the status of a Shipment, given the
