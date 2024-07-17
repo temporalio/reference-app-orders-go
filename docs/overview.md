@@ -86,7 +86,7 @@ spend less time writing code to handle failure scenarios, which
 frees them up to focus on the business logic and ship features 
 faster.
 
-The productivity boost is also evident in production. The Temporal  
+The productivity boost is also evident in production. The Temporal 
 Service maintains a complete Event History for every execution. Its 
 corresponding Web UI provides a convenient way to view the timeline 
 and details of these Events, both for orders in progress as well as 
