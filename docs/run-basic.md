@@ -1,4 +1,4 @@
-# Running the OMS Locally
+# Running Everything Locally
 
 Follow these instructions to run the OMS locally, using the 
 Temporal Service provided by the `temporal server start-dev` 
@@ -87,22 +87,13 @@ pnpm install
 pnpm dev
 ```
 
-<!--
-	TODO: expand this section to cover more advanced cases
-	      and then move it to a separate document (with a 
-		  demo video) that can be referenced by the other
-		  instructions for running it.
--->
+### Next Steps
 
-You will then be able to access the OMS web application at 
-<http://localhost:5173/> and the Temporal Web UI at 
-<http://localhost:8080/>. In the OMS web application, select 
-the **User** role, and then submit an order (we recommend 
-choosing order #1 to start). Next, return to the main page of 
-the web application, select the **Courier** role, locate
-the shipments corresponding to your order, and then click 
-the **Dispatch** and **Deliver** buttons to complete the 
-process. As you proceed with each of these steps, be sure 
-to refresh the Temporal Web UI so that you can see the 
-Workflows created and updated as a result. 
+Setup is now complete. You have started the Temporal Service, 
+the OMS Workers, the OMS API Services, and the web application 
+you'll use to interact with the OMS.
+
+Continue by following the instructions for [processing a basic 
+order](process-basic-order.md) or [processing a more complex 
+order](process-complex-order.md). 
 
