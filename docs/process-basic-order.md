@@ -35,7 +35,7 @@ the Temporal Service is running and how it was deployed.
    which indicates that the courier has delivered the shipment 
    to the customer.
 
-Since this order contained a single item, there is only one 
+Since this order contains a single item, there is only one 
 shipment. Now that the shipment has been delivered to the 
 customer, processing for both the order and the shipment is 
 complete. We recommend you continue exploring the OMS by 
