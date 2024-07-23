@@ -134,10 +134,10 @@ use your Codec Server:
    not have a trailing slash)
 3. Click the **Apply** button
 4. You should observe that the glasses icon now has one
-   purple lens and one green lens. 
-   * A red icon indicates that the Web UI can not communicate 
-     with your Codec Server. If you see this, verify that you 
-	 have correctly followed the steps above.
+   purple lens and one green lens. A red icon indicates 
+   that the Web UI can not communicate with your Codec 
+   Server; if you see this, verified that you correctly 
+   followed all of the previous steps.
 5. Refresh the page and view the details of the Workflow 
    Execution for your order. You should find that the 
    data has been decrypted for display.
