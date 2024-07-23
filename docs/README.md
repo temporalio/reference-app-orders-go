@@ -22,7 +22,7 @@ is organized into multiple sections:
       Provides step-by-step instructions for running the 
       application locally, with a Temporal Service provided 
 	  by Temporal Cloud
-* [Using Encryption](run-codec-server.md): 
+* [Using Encryption](run-local-codec-server.md): 
       Provides step-by-step instructions for running the 
 	  application with a Custom Data Converter that will 
 	  encrypt payload data and a Codec Server that enables 
