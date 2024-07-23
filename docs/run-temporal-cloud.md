@@ -106,7 +106,7 @@ pnpm dev
 ### Next Steps
 
 Setup is now complete. You have started the Temporal Service, 
-the OMS Workers, the OMS API Services, and the web application 
+the OMS Workers, the OMS API Servers, and the web application 
 you'll use to interact with the OMS.
 
 Continue by following the instructions for [processing a basic 
