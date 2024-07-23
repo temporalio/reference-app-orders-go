@@ -29,6 +29,15 @@ is organized into multiple sections:
       Codec Server that enables you to view decrypted data 
       in the Temporal Web UI.
 --> 
+## Processing Orders
+* [Processing a Basic (Single-Item) Order](process-basic-order.md): 
+      Describes how to use the web application to process a basic 
+	  order, which consists of a single item in a single shipment.
+* [Processing a Complex Order](process-complex-order.md): 
+      Describes how to use the web application to process a more 
+	  complex order, which involves multiple shipments and an 
+	  out-of-stock item that requires customer interaction for
+	  processing to continue.
 
 ## Deploying the OMS
 * [Deploying to Kubernetes](deploy-on-k8s.md) 
