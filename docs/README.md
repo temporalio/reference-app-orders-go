@@ -14,9 +14,10 @@ is organized into multiple sections:
       Describes the design and implementation of the OMS
 
 ## Running the OMS
-* [Run: Basic](run-basic.md): 
+* [Using a Local Temporal Service](run-local-cli-service.md): 
       Provides step-by-step instructions for running the 
-      application locally and using a local Temporal Service.
+      application locally, using the Temporal Service 
+	  provided by the `temporal` CLI.
 <!--
 * [Run: Temporal Cloud](run-temporal-cloud.md): 
       TODO Provides step-by-step instructions for running the 
