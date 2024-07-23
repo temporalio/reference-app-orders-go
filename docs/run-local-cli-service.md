@@ -35,7 +35,7 @@ You can verify that this is running by using your browser to
 access the Temporal Web UI at <http://localhost:8080/>.
 
 
-### Start the Worker
+### Start the Workers
 
 Run the following command in another terminal to start the Workers:
 
