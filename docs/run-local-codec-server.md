@@ -61,7 +61,7 @@ pnpm dev
 ### Process an Order
 
 Setup is now complete. The Temporal Client used by the OMS 
-Workers and API Servers are now encrypting payload data.
+Workers and API Servers will now encrypt payload data.
 
 The best way to observe this is by following the instructions 
 for [processing a basic order](process-basic-order.md).
