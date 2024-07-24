@@ -22,20 +22,23 @@ by setting environment variables. Therefore, moving from a local
 Temporal Service to one provided by Temporal Cloud requires no 
 change to application code.
 
-You must define four environment variables. We recommend that 
-you do so in a reusable script, since you'll need to set them 
+You must define four environment variables, which match those you'd 
+set when using the `temporal` command with Temporal Cloud. We recommend 
+defining them in a reusable script, since you'll need to set them 
 in multiple terminals:
 
-1. `TEMPORAL_NAMESPACE`: Set this to the name of your Namespace 
-    in the Temporal Cloud Account (example: `oms-demo.d6rd8`)
-2. `TEMPORAL_ADDRESS`: Set this to the gRPC Endpoint for your 
-    Namespace (example: `oms-demo.d6rd8.tmprl.cloud:7233`)
-3. `TEMPORAL_TLS_CERT`: Set this to the path of a TLS certificate 
+1. **`TEMPORAL_NAMESPACE`**: Set this to the name of your Namespace 
+    in the Temporal Cloud Account
+    * Example: `oms-demo.d6rd8`
+2. **`TEMPORAL_ADDRESS`**: Set this to the gRPC Endpoint for your 
+    Namespace
+    * Example: `oms-demo.d6rd8.tmprl.cloud:7233`
+4. **`TEMPORAL_TLS_CERT`**: Set this to the path of a TLS certificate 
     file associated with your Namespace
-	(example: `/Users/tomwheeler/private/tls/oms-demo.pem`)
-4. `TEMPORAL_TLS_KEY`: Set this to the path of the private key
+    * Example: `/Users/tomwheeler/private/tls/oms-demo.pem`
+5. **`TEMPORAL_TLS_KEY`**: Set this to the path of the private key
     for your TLS certificate
-    (example: `/Users/tomwheeler/private/tls/oms-demo.key`)
+    * Example: `/Users/tomwheeler/private/tls/oms-demo.key`
 
 Because you'll use Temporal Cloud, you won't need to run the 
 Temporal Service locally.
