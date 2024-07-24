@@ -114,7 +114,7 @@ in the following command:
 ```command
 temporal workflow show \
     --workflow-id Order:A1-1721418536920 \
-    --codec-endpoint http://localhost:8089/
+    --codec-endpoint http://localhost:8089
 ```
 
 You should then observe that data shown in the 
