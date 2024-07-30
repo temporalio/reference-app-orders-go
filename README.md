@@ -41,8 +41,8 @@ Run the following command in another terminal:
 go run ./cmd/oms worker
 ```
 
-This command actually starts both Workflow and Activity Workers in a 
-single process. The Workers run Workflow and Activity functions, which 
+This command starts both Workflow and Activity Workers in a single
+process. The Workers run Workflow and Activity functions, which 
 carry out the various aspects of order processing.
 
 ### Start the API Servers

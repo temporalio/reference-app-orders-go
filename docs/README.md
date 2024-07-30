@@ -14,22 +14,30 @@ is organized into multiple sections:
       Describes the design and implementation of the OMS
 
 ## Running the OMS
-* [Run: Basic](run-basic.md): 
+* [Using a Local Temporal Service](run-local-cli-service.md): 
       Provides step-by-step instructions for running the 
-      application locally and using a local Temporal Service.
-<!--
-* [Run: Temporal Cloud](run-temporal-cloud.md): 
-      TODO Provides step-by-step instructions for running the 
-      application locally and using the Temporal Service provided
-      by Temporal Cloud.
-* [Run: Codec Server](run-codec-server.md): 
-      TODO Provides step-by-step instructions for running the 
-      application and Temporal Service locally, with a Data
-      Converter to encrypt confidential information and a 
-      Codec Server that enables you to view decrypted data 
-      in the Temporal Web UI.
---> 
+      application locally, with a Temporal Service provided
+	  by the `temporal` CLI
+* [Using Temporal Cloud](run-temporal-cloud.md): 
+      Provides step-by-step instructions for running the 
+      application locally, with a Temporal Service provided 
+	  by Temporal Cloud
+* [Using Encryption](run-local-codec-server.md): 
+      Provides step-by-step instructions for running the 
+	  application with a Custom Data Converter that will 
+	  encrypt payload data and a Codec Server that enables 
+	  you to view decrypted data in the Temporal Web UI 
+	  and output of the `temporal` command
 
-## Deploying the OMS
+## Processing Orders
+* [Processing a Basic (Single-Item) Order](process-basic-order.md): 
+      Describes how to use the web application to process a basic 
+	  order, which consists of a single item in a single shipment
+* [Processing a Complex Order](process-complex-order.md): 
+      Describes how to use the web application to process a more 
+	  complex order, which involves multiple shipments and an 
+	  out-of-stock item that requires customer interaction for
+	  processing to continue
+
+## Deploying the OMS to Production
 * [Deploying to Kubernetes](deploy-on-k8s.md) 
-
