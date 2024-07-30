@@ -90,8 +90,8 @@ will end with an encrypted result, similar to this:
 This occurs because the data stored by the Temporal Service 
 is encrypted. Neither the Temporal CLI nor Web UI have the 
 inherent ability to decrypt it. However, you can run a Codec
-Server and configure both tools to use it, which enable them
-to display the decrypted data to you.
+Server and configure these tools to use it, which will enable 
+you to view the decrypted data.
 
 ### Run the Codec Server
 
@@ -150,4 +150,17 @@ The Temporal Cloud Web UI provides additional options. As
 Temporal Cloud is a multi-tenant system, this includes the 
 ability to configure a Codec Server on a per-Namespace 
 basis, as [described in the documentation](https://docs.temporal.io/production-deployment/data-encryption#web-ui).
+
+### Troubleshooting the Codec Server
+
+Check the following if you are unable to view decrypted data 
+after following the instructions above:
+
+1. Verify that the hostnames, ports, and URLs in your commands 
+   and configurations match those of your Codec Server and 
+   Temporal Web UI.
+2. The Web UI (and CLI) sends a POST to a `/decode` endpoint.
+   Consider using your browser's developer tools to see if it 
+   reports a problem accessing that endpoint. For more details, 
+   see the [API contract specifications](https://docs.temporal.io/production-deployment/data-encryption#api-contract-specifications) for Codec Servers in Temporal.
 
