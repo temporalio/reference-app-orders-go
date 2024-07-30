@@ -57,6 +57,9 @@ pnpm install
 pnpm dev
 ```
 
+You can verify that the web application is now running  
+by navigating to the URL shown in the terminal window, 
+which is typically <http://localhost:5173>.
 
 ### Process an Order
 
