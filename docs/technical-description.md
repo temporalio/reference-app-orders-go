@@ -133,10 +133,10 @@ in a cache (the record was inserted earlier by the endpoint handler
 function that started the Order Workflow).
 
 #### Application Cache
-Although it's possible to [Query the Order
+Although the Order API will [Query the Order
 Workflow](https://github.com/temporalio/reference-app-orders-go/blob/5e0e5bc56fe43862052a76316f8ee311badbe678/app/order/workflows.go#L58-L65)
-for the status of a _specific_ order, given its Workflow ID, the Order
-API must also provide a list of _all_ orders and their status to the web
+for the status of a _specific_ order based on its Workflow ID, it must
+also provide a list of _all_ orders and their status values to the web
 application. The cache used by the Order API provides that capability
 (using [Custom Search
 Attributes](https://docs.temporal.io/visibility#custom-search-attributes)
