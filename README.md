@@ -21,6 +21,14 @@ repository to your machine and follow the steps below. Unless otherwise
 noted, you should execute the commands from the root directory of your 
 clone.
 
+### Required Software
+You will need [Go](https://go.dev/) to run the core OMS application, 
+the [Temporal CLI](https://docs.temporal.io/cli#install) to run the 
+Temporal Service locally, plus [Node.js](https://nodejs.org/) and 
+the [pnpm package manager](https://pnpm.io/) to run the OMS web 
+application. 
+
+
 ### Start the Temporal Service
 Run the following command in your terminal:
 
