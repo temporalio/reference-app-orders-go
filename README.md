@@ -25,7 +25,7 @@ clone.
 You will need [Go](https://go.dev/) to run the core OMS application, 
 the [Temporal CLI](https://docs.temporal.io/cli#install) to run the 
 Temporal Service locally, plus [Node.js](https://nodejs.org/) and 
-the [pnpm package manager](https://pnpm.io/) to run the OMS web 
+the [pnpm](https://pnpm.io/) package manager to run the OMS web 
 application. 
 
 
