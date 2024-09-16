@@ -5,6 +5,13 @@ Temporal Service provided by the `temporal server start-dev`
 command. This is an expanded version of the instructions found 
 in the _Quickstart_ section of the top-level README file.
 
+### Required Software
+You will need [Go](https://go.dev/) to run the core OMS application,
+the [Temporal CLI](https://docs.temporal.io/cli#install) to run the
+Temporal Service locally, plus [Node.js](https://nodejs.org/) and
+the [pnpm](https://pnpm.io/) package manager to run the OMS web
+application.
+
 
 ### Start the Temporal Service
 
