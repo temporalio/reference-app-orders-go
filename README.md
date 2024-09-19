@@ -22,7 +22,7 @@ noted, you should execute the commands from the root directory of your
 clone. 
 
 You can also see a demonstration of these steps in the [Setting
-up and running the OMS video](https://www.youtube.com/watch?v=ltlC7kVdFEU&list=PLl9kRkvFJrlRNbBZYY9v1XaAjqb2oj8pv&index=2), part of a [four-part video series](https://www.youtube.com/watch?v=ltlC7kVdFEU&list=PLl9kRkvFJrlRNbBZYY9v1XaAjqb2oj8pv) that covers the OMS.
+up and running the OMS video](https://www.youtube.com/watch?v=ltlC7kVdFEU&list=PLl9kRkvFJrlRNbBZYY9v1XaAjqb2oj8pv&index=2), part of a [four-part video series](https://www.youtube.com/playlist?v=ltlC7kVdFEU&list=PLl9kRkvFJrlRNbBZYY9v1XaAjqb2oj8pv) that covers the OMS.
 
 ### Required Software
 You will need [Go](https://go.dev/) to run the core OMS application, 

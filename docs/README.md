@@ -4,7 +4,7 @@
 
 The documentation for the Order Management System reference application 
 is organized into multiple sections. You may also be interested in 
-watching our [four-part video series](https://www.youtube.com/watch?v=ltlC7kVdFEU&list=PLl9kRkvFJrlRNbBZYY9v1XaAjqb2oj8pv&index=2), which explains the OMS and demonstrates 
+watching our [four-part video series](https://www.youtube.com/playlist?list=PLl9kRkvFJrlRNbBZYY9v1XaAjqb2oj8pv&index=2), which explains the OMS and demonstrates 
 several ways of running it. 
 
 ## Understanding the OMS
