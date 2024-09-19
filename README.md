@@ -19,7 +19,10 @@ running the application in various environments.
 If you'd like to jump right in and run the OMS locally, clone this 
 repository to your machine and follow the steps below. Unless otherwise 
 noted, you should execute the commands from the root directory of your 
-clone.
+clone. 
+
+You can also see a demonstration of these steps in the _[Setting
+up and running the OMS](https://www.youtube.com/watch?v=ltlC7kVdFEU&list=PLl9kRkvFJrlRNbBZYY9v1XaAjqb2oj8pv&index=2)_ video, part of a [four-part video series](https://www.youtube.com/playlist?v=ltlC7kVdFEU&list=PLl9kRkvFJrlRNbBZYY9v1XaAjqb2oj8pv) that covers the OMS.
 
 ### Required Software
 You will need [Go](https://go.dev/) to run the core OMS application, 
