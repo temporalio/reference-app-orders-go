@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/temporalio/reference-app-orders-go/app/billing"
@@ -21,10 +20,12 @@ import (
 	"github.com/temporalio/reference-app-orders-go/app/order"
 	"github.com/temporalio/reference-app-orders-go/app/server"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
+	"github.com/testcontainers/testcontainers-go/modules/mongodb"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/testsuite"
 	"golang.org/x/sync/errgroup"
-	_ "modernc.org/sqlite"
 )
 
 func postJSON(url string, input interface{}) (*http.Response, error) {
@@ -84,12 +85,10 @@ func Test_Order(t *testing.T) {
 		c client.Client
 	)
 
-	options := client.Options{
+	c, err = client.Dial(client.Options{
 		HostPort:  s.FrontendHostPort(),
 		Namespace: "default",
-	}
-
-	c, err = client.Dial(options)
+	})
 	require.NoError(t, err)
 	defer c.Close()
 
@@ -100,8 +99,18 @@ func Test_Order(t *testing.T) {
 	billingAPI := httptest.NewServer(billing.Router(c, logger))
 	defer billingAPI.Close()
 
-	db, err := sqlx.Open("sqlite", ":memory:")
+	mongoDBContainer, err := mongodb.Run(ctx, "mongo:6")
 	require.NoError(t, err)
+	defer mongoDBContainer.Terminate(ctx)
+
+	port, err := mongoDBContainer.MappedPort(ctx, "27017/tcp")
+	require.NoError(t, err)
+
+	mc, err := mongo.Connect(ctx, options.Client().ApplyURI(fmt.Sprintf("mongodb://localhost:%s", port.Port())))
+	require.NoError(t, err)
+
+	db := mc.Database("testdb")
+
 	err = server.SetupDB(db)
 	require.NoError(t, err)
 

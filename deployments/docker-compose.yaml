@@ -1,11 +1,12 @@
 services:
+  mongo:
+    image: mongo:6
   worker:
     build:
       context: ../
       target: oms-worker
     environment:
       - TEMPORAL_ADDRESS=host.docker.internal:7233
-      - DEBUG=true
       - BILLING_API_URL=http://api:8081
       - ORDER_API_URL=http://api:8082
       - SHIPMENT_API_URL=http://api:8083
@@ -19,14 +20,11 @@ services:
     environment:
       - TEMPORAL_ADDRESS=host.docker.internal:7233
       - BIND_ON_IP=0.0.0.0
-      - DEBUG=true
       - BILLING_API_PORT=8081
       - ORDER_API_PORT=8082
       - SHIPMENT_API_PORT=8083
       - FRAUD_API_PORT=8084
     command: ["-k", "supersecretkey"]
-    volumes:
-      - api-data:/data
     restart: on-failure
   codec-server:
     build:
@@ -52,5 +50,3 @@ services:
     ports:
       - "3000:3000"
     restart: on-failure
-volumes:
-  api-data:

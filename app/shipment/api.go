@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 )
@@ -18,6 +20,9 @@ const TaskQueue = "shipments"
 
 // StatusQuery is the name of the query to use to fetch a Shipment's status.
 const StatusQuery = "status"
+
+// ShipmentCollection is the name of the MongoDB collection to use for Shipment data.
+const ShipmentCollection = "shipments"
 
 // ShipmentWorkflowID returns the workflow ID for a Shipment.
 func ShipmentWorkflowID(id string) string {
@@ -30,9 +35,9 @@ func ShipmentIDFromWorkflowID(id string) string {
 }
 
 type handlers struct {
-	temporal client.Client
-	db       *sqlx.DB
-	logger   *slog.Logger
+	temporal  client.Client
+	shipments *mongo.Collection
+	logger    *slog.Logger
 }
 
 // ShipmentStatus holds the status of a Shipment.
@@ -51,14 +56,17 @@ type ShipmentStatusUpdate struct {
 
 // ListShipmentEntry is an entry in the Shipment list.
 type ListShipmentEntry struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	ID     string `json:"id" bson:"id"`
+	Status string `json:"status" bson:"status"`
 }
 
 // Router implements the http.Handler interface for the Shipment API
-func Router(client client.Client, db *sqlx.DB, logger *slog.Logger) http.Handler {
+func Router(client client.Client, db *mongo.Database, logger *slog.Logger) http.Handler {
 	r := http.NewServeMux()
-	h := handlers{temporal: client, db: db, logger: logger}
+
+	shipments := db.Collection(ShipmentCollection)
+
+	h := handlers{temporal: client, shipments: shipments, logger: logger}
 
 	r.HandleFunc("GET /shipments", h.handleListShipments)
 	r.HandleFunc("GET /shipments/{id}", h.handleGetShipment)
@@ -69,9 +77,16 @@ func Router(client client.Client, db *sqlx.DB, logger *slog.Logger) http.Handler
 }
 
 func (h *handlers) handleListShipments(w http.ResponseWriter, _ *http.Request) {
-	orders := []ListShipmentEntry{}
+	shipments := []ListShipmentEntry{}
 
-	err := h.db.Select(&orders, `SELECT id, status FROM shipments ORDER BY booked_at DESC`)
+	res, err := h.shipments.Find(context.Background(), nil)
+	if err != nil {
+		h.logger.Error("Failed to list shipments: %v", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = res.All(context.TODO(), &shipments)
 	if err != nil {
 		h.logger.Error("Failed to list shipments: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -80,7 +95,7 @@ func (h *handlers) handleListShipments(w http.ResponseWriter, _ *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(orders); err != nil {
+	if err := json.NewEncoder(w).Encode(shipments); err != nil {
 		h.logger.Error("Failed to encode orders: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -128,11 +143,12 @@ func (h *handlers) handleUpdateShipmentStatus(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if status.Status == ShipmentStatusBooked {
-		_, err = h.db.NamedExec(`INSERT INTO shipments (id, status) VALUES(:id, :status)`, status)
-	} else {
-		_, err = h.db.NamedExec(`UPDATE shipments SET status = :status WHERE id = :id`, status)
-	}
+	_, err = h.shipments.UpdateOne(
+		context.Background(),
+		bson.M{"id": status.ID},
+		bson.M{"$set": bson.M{"status": status.Status}, "$setOnInsert": bson.M{"booked_at": time.Now().UTC()}},
+		options.Update().SetUpsert(true),
+	)
 	if err != nil {
 		h.logger.Error("Failed to update shipment status: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

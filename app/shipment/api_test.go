@@ -1,29 +1,43 @@
 package shipment_test
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/temporalio/reference-app-orders-go/app/server"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
+	"github.com/testcontainers/testcontainers-go/modules/mongodb"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.temporal.io/sdk/mocks"
-	_ "modernc.org/sqlite"
 )
 
 func TestShipmentUpdate(t *testing.T) {
+	ctx := context.Background()
 	c := mocks.NewClient(t)
 
 	c.On("SignalWorkflow", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
-	db, err := sqlx.Open("sqlite", ":memory:")
+	mongoDBContainer, err := mongodb.Run(ctx, "mongo:6")
 	require.NoError(t, err)
+	defer mongoDBContainer.Terminate(context.Background())
+
+	port, err := mongoDBContainer.MappedPort(context.Background(), "27017/tcp")
+	require.NoError(t, err)
+
+	mc, err := mongo.Connect(context.Background(), options.Client().ApplyURI(fmt.Sprintf("mongodb://localhost:%s", port.Port())))
+	require.NoError(t, err)
+
+	db := mc.Database("testdb")
+
 	err = server.SetupDB(db)
 	require.NoError(t, err)
 

@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
@@ -20,6 +22,9 @@ const TaskQueue = "orders"
 
 // StatusQuery is the name of the query to use to fetch an Order's status.
 const StatusQuery = "status"
+
+// OrdersCollection is the name of the MongoDB collection to use for Orders.
+const OrdersCollection = "orders"
 
 // OrderWorkflowID returns the workflow ID for an Order.
 func OrderWorkflowID(id string) string {
@@ -47,11 +52,11 @@ type OrderInput struct {
 
 // OrderStatus holds the status of an Order workflow.
 type OrderStatus struct {
-	ID         string    `json:"id"`
-	CustomerID string    `json:"customerId" db:"customer_id"`
-	ReceivedAt time.Time `json:"receivedAt" db:"received_at"`
+	ID         string    `json:"id" db:"id" bson:"id"`
+	CustomerID string    `json:"customerId" bson:"customer_id"`
+	ReceivedAt time.Time `json:"receivedAt" bson:"received_at"`
 
-	Status string `json:"status"`
+	Status string `json:"status" bson:"status"`
 
 	Fulfillments []*Fulfillment `json:"fulfillments"`
 }
@@ -196,15 +201,16 @@ type OrderResult struct {
 
 type handlers struct {
 	temporal client.Client
-	db       *sqlx.DB
+	orders   *mongo.Collection
 	logger   *slog.Logger
 }
 
 // Router implements the http.Handler interface for the Billing API
-func Router(client client.Client, db *sqlx.DB, logger *slog.Logger) http.Handler {
+func Router(client client.Client, db *mongo.Database, logger *slog.Logger) http.Handler {
 	r := http.NewServeMux()
 
-	h := handlers{temporal: client, db: db, logger: logger}
+	orders := db.Collection(OrdersCollection)
+	h := handlers{temporal: client, orders: orders, logger: logger}
 
 	r.HandleFunc("POST /orders", h.handleCreateOrder)
 	r.HandleFunc("GET /orders", h.handleListOrders)
@@ -216,9 +222,19 @@ func Router(client client.Client, db *sqlx.DB, logger *slog.Logger) http.Handler
 }
 
 func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
+	ctx := context.TODO()
 	orders := []ListOrderEntry{}
 
-	err := h.db.Select(&orders, `SELECT id, status, received_at FROM orders ORDER BY received_at DESC`)
+	res, err := h.orders.Find(ctx, bson.M{}, &options.FindOptions{
+		Sort: bson.M{"received_at": 1},
+	})
+	if err != nil {
+		h.logger.Error("Failed to list orders", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = res.All(ctx, &orders)
 	if err != nil {
 		h.logger.Error("Failed to list orders", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -266,7 +282,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		Status:     OrderStatusPending,
 	}
 
-	_, err = h.db.NamedExec(`INSERT OR IGNORE INTO orders (id, customer_id, received_at, status) VALUES (:id, :customer_id, :received_at, :status)`, status)
+	_, err = h.orders.InsertOne(context.Background(), status)
 	if err != nil {
 		h.logger.Error("Failed to record workflow status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -318,7 +334,7 @@ func (h *handlers) handleUpdateOrderStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_, err = h.db.NamedExec(`UPDATE orders SET status = :status WHERE id = :id`, status)
+	_, err = h.orders.UpdateOne(context.Background(), bson.M{"id": status.ID}, bson.M{"$set": bson.M{"status": status.Status}})
 	if err != nil {
 		h.logger.Error("Failed to update order status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

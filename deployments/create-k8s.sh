@@ -8,8 +8,7 @@ mkdir -p ./k8s
 # Remove restart policy from all services, it defaults to always in k8s.
 # Set controller type to statefulset for apis, which maintain a cache on disk
 yq \
-    '(del(.services[].restart)) |
-     ((.services | (.billing-api, .main-api)).labels += {"kompose.controller.type":"statefulset"})' \
+    '(del(.services[].restart))' \
     docker-compose-split.yaml | \
     kompose -f - -o k8s convert -n oms --with-kompose-annotation=false
 
@@ -34,7 +33,7 @@ yq -i '.spec.template.spec.containers[0].image |= "ghcr.io/temporalio/reference-
        .spec.template.spec.containers[0].imagePullPolicy = "Always"' k8s/codec-server-deployment.yaml
 
 # We don't rely on service links, so disable them to avoid collisions with our configuration environment variables.
-for f in ./k8s/*-{deployment,statefulset}.yaml; do
+for f in ./k8s/*-deployment.yaml; do
     yq -i '.spec.template.spec.enableServiceLinks = false' $f
 done
 
@@ -44,6 +43,6 @@ for f in ./k8s/*.yaml; do
 done
 
 # Update Temporal Address to assume Temporal is deployed in this Kubernetes cluster
-for f in ./k8s/*-{statefulset,deployment}.yaml; do
+for f in ./k8s/*-deployment.yaml; do
     yq -i '(.spec.template.spec.containers[0].env[] | select(.name == "TEMPORAL_ADDRESS").value) |= "temporal-frontend.temporal:7233"' $f
 done
