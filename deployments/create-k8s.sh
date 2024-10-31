@@ -8,7 +8,8 @@ mkdir -p ./k8s
 # Remove restart policy from all services, it defaults to always in k8s.
 # Set controller type to statefulset for apis, which maintain a cache on disk
 yq \
-    '(del(.services[].restart))' \
+    '(del(.services[].restart)) |
+     (.services.mongo.labels += {"kompose.controller.type":"statefulset"})' \
     docker-compose-split.yaml | \
     kompose -f - -o k8s convert -n oms --with-kompose-annotation=false
 
@@ -25,7 +26,7 @@ for f in ./k8s/*-worker-deployment.yaml; do
     yq -i '.spec.template.spec.containers[0].image |= "ghcr.io/temporalio/reference-app-orders-go-worker:latest" |
            .spec.template.spec.containers[0].imagePullPolicy = "Always"' $f
 done
-for f in ./k8s/*-api-statefulset.yaml; do
+for f in ./k8s/*-api-deployment.yaml; do
     yq -i '.spec.template.spec.containers[0].image |= "ghcr.io/temporalio/reference-app-orders-go-api:latest" |
            .spec.template.spec.containers[0].imagePullPolicy = "Always"' $f
 done

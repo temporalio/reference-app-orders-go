@@ -12,7 +12,6 @@ spec:
     matchLabels:
       app.kubernetes.io/component: billing-api
       app.kubernetes.io/name: oms
-  serviceName: billing-api
   template:
     metadata:
       labels:

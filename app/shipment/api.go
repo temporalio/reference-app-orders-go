@@ -79,7 +79,7 @@ func Router(client client.Client, db *mongo.Database, logger *slog.Logger) http.
 func (h *handlers) handleListShipments(w http.ResponseWriter, _ *http.Request) {
 	shipments := []ListShipmentEntry{}
 
-	res, err := h.shipments.Find(context.Background(), nil)
+	res, err := h.shipments.Find(context.Background(), bson.M{})
 	if err != nil {
 		h.logger.Error("Failed to list shipments: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

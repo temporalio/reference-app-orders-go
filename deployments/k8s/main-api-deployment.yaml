@@ -12,7 +12,6 @@ spec:
     matchLabels:
       app.kubernetes.io/component: main-api
       app.kubernetes.io/name: oms
-  serviceName: main-api
   template:
     metadata:
       labels:
@@ -41,24 +40,5 @@ spec:
               protocol: TCP
             - containerPort: 8083
               protocol: TCP
-          volumeMounts:
-            - mountPath: /data
-              name: main-api-data
           imagePullPolicy: Always
-      volumes:
-        - name: main-api-data
-          persistentVolumeClaim:
-            claimName: main-api-data
       enableServiceLinks: false
-  volumeClaimTemplates:
-    - metadata:
-        labels:
-          app.kubernetes.io/component: main-api-data
-          app.kubernetes.io/name: oms
-        name: main-api-data
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 100Mi
