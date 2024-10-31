@@ -28,7 +28,7 @@ unit-test-coverage: $(TEST_COVERAGE_OUTPUT_ROOT)
 
 functional-test-coverage: $(FUNCTIONAL_COVERAGE_OUTPUT_ROOT)
 	@echo Functional test coverage
-	go test -cover ./app/test -coverpkg ./... -args -test.gocoverdir=$(FUNCTIONAL_COVERAGE_OUTPUT_ROOT)
+	go test -tags integration -cover ./app/test -coverpkg ./... -args -test.gocoverdir=$(FUNCTIONAL_COVERAGE_OUTPUT_ROOT)
 
 coverage-report: $(TEST_COVERAGE_OUTPUT_ROOT) $(FUNCTIONAL_COVERAGE_OUTPUT_ROOT) $(SUMMARY_COVERAGE_OUTPUT_ROOT)
 	@echo Summary coverage report

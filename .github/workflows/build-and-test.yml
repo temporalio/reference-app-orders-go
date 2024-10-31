@@ -41,4 +41,5 @@ jobs:
         run: go test -tags=integration ./...
 
       - name: Coverage
+        if: matrix.os == 'ubuntu-latest'
         run: make unit-test-coverage functional-test-coverage coverage-report
