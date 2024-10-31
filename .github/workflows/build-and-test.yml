@@ -32,9 +32,13 @@ jobs:
 
       - name: Build
         run: go build ./cmd/oms
-  
-      - name: Test
+
+      - name: Unit Tests
         run: go test ./...
+
+      - name: Integration Tests
+        if: matrix.os == 'ubuntu-latest'
+        run: go test -tags=integration ./...
 
       - name: Coverage
         run: make unit-test-coverage functional-test-coverage coverage-report

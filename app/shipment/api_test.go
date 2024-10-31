@@ -1,3 +1,5 @@
+//go:build integration
+
 package shipment_test
 
 import (
