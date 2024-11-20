@@ -48,10 +48,10 @@ type OrderInput struct {
 // OrderStatus holds the status of an Order workflow.
 type OrderStatus struct {
 	ID         string    `json:"id" db:"id" bson:"id"`
-	CustomerID string    `json:"customerId" bson:"customer_id"`
-	ReceivedAt time.Time `json:"receivedAt" bson:"received_at"`
+	CustomerID string    `json:"customerId" db:"customer_id" bson:"customer_id"`
+	ReceivedAt time.Time `json:"receivedAt" db:"received_at" bson:"received_at"`
 
-	Status string `json:"status" bson:"status"`
+	Status string `json:"status" db:"status" bson:"status"`
 
 	Fulfillments []*Fulfillment `json:"fulfillments"`
 }
