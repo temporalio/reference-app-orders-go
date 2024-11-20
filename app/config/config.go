@@ -44,7 +44,7 @@ func (c *AppConfig) ServiceHostPort(service string) (string, error) {
 func AppConfigFromEnv() (AppConfig, error) {
 	conf := AppConfig{
 		BindOnIP:     "127.0.0.1",
-		MongoURL:     "mongodb://mongo:27017",
+		MongoURL:     "",
 		BillingPort:  8081,
 		BillingURL:   "http://127.0.0.1:8081",
 		OrderPort:    8082,

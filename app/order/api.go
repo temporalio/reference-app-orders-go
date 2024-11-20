@@ -216,10 +216,8 @@ func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 }
 
 func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
-	ctx := context.TODO()
-
-	var orders []ListOrderEntry
-	err := h.db.GetOrders(ctx, &orders)
+	orders := []ListOrderEntry{}
+	err := h.db.GetOrders(context.Background(), &orders)
 	if err != nil {
 		h.logger.Error("Failed to list orders", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

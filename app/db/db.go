@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	mongodb "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	_ "modernc.org/sqlite"
 )
 
 // OrdersCollection is the name of the MongoDB collection to use for Orders.
@@ -38,7 +39,7 @@ func CreateDB(config config.AppConfig) DB {
 		return &MongoDB{uri: config.MongoURL}
 	}
 
-	return &SQLiteDB{path: "./api-data.db"}
+	return &SQLiteDB{path: "./api-store.db"}
 }
 
 // MongoDB is a struct that implements the DB interface for MongoDB
@@ -113,6 +114,7 @@ func (m *MongoDB) UpdateShipmentStatus(ctx context.Context, id string, status st
 			"$set":         bson.M{"status": status},
 			"$setOnInsert": bson.M{"booked_at": time.Now().UTC()},
 		},
+		options.Update().SetUpsert(true),
 	)
 	return err
 }
@@ -145,7 +147,7 @@ var sqliteSchema string
 
 // Connect connects to a SQLite instance
 func (s *SQLiteDB) Connect(_ context.Context) error {
-	db, err := sqlx.Connect("sqlite3", s.path)
+	db, err := sqlx.Connect("sqlite", s.path)
 	if err != nil {
 		return err
 	}
@@ -167,7 +169,7 @@ func (s *SQLiteDB) Close() error {
 
 // InsertOrder inserts an Order into the SQLite instance
 func (s *SQLiteDB) InsertOrder(ctx context.Context, order interface{}) error {
-	_, err := s.db.NamedExecContext(ctx, "INSERT INTO orders (id, received_at, status) VALUES (:id, :received_at, :status)", order)
+	_, err := s.db.NamedExecContext(ctx, "INSERT OR IGNORE INTO orders (id, customer_id, received_at, status) VALUES (:id, :customer_id, :received_at, :status)", order)
 	return err
 }
 
@@ -179,7 +181,7 @@ func (s *SQLiteDB) UpdateOrderStatus(ctx context.Context, id string, status stri
 
 // GetOrders returns a list of Orders from the SQLite instance
 func (s *SQLiteDB) GetOrders(ctx context.Context, result interface{}) error {
-	return s.db.SelectContext(ctx, result, "SELECT * FROM orders ORDER BY received_at")
+	return s.db.SelectContext(ctx, result, "SELECT id, status, received_at FROM orders ORDER BY received_at DESC")
 }
 
 // UpdateShipmentStatus updates a Shipment in the SQLite instance
@@ -190,5 +192,5 @@ func (s *SQLiteDB) UpdateShipmentStatus(ctx context.Context, id string, status s
 
 // GetShipments returns a list of Shipments from the SQLite instance
 func (s *SQLiteDB) GetShipments(ctx context.Context, result interface{}) error {
-	return s.db.SelectContext(ctx, result, "SELECT * FROM shipments ORDER BY booked_at")
+	return s.db.SelectContext(ctx, result, "SELECT id, status FROM shipments ORDER BY booked_at DESC")
 }

@@ -52,7 +52,7 @@ type ShipmentStatusUpdate struct {
 // ListShipmentEntry is an entry in the Shipment list.
 type ListShipmentEntry struct {
 	ID     string `json:"id" db:"id" bson:"id"`
-	Status string `json:"status" db:"id" bson:"status"`
+	Status string `json:"status" db:"status" bson:"status"`
 }
 
 // Router implements the http.Handler interface for the Shipment API
