@@ -8,9 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/temporalio/reference-app-orders-go/app/db"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
@@ -22,9 +20,6 @@ const TaskQueue = "orders"
 
 // StatusQuery is the name of the query to use to fetch an Order's status.
 const StatusQuery = "status"
-
-// OrdersCollection is the name of the MongoDB collection to use for Orders.
-const OrdersCollection = "orders"
 
 // OrderWorkflowID returns the workflow ID for an Order.
 func OrderWorkflowID(id string) string {
@@ -201,16 +196,15 @@ type OrderResult struct {
 
 type handlers struct {
 	temporal client.Client
-	orders   *mongo.Collection
+	db       db.DB
 	logger   *slog.Logger
 }
 
 // Router implements the http.Handler interface for the Billing API
-func Router(client client.Client, db *mongo.Database, logger *slog.Logger) http.Handler {
+func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 	r := http.NewServeMux()
 
-	orders := db.Collection(OrdersCollection)
-	h := handlers{temporal: client, orders: orders, logger: logger}
+	h := handlers{temporal: client, db: db, logger: logger}
 
 	r.HandleFunc("POST /orders", h.handleCreateOrder)
 	r.HandleFunc("GET /orders", h.handleListOrders)
@@ -223,18 +217,9 @@ func Router(client client.Client, db *mongo.Database, logger *slog.Logger) http.
 
 func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
 	ctx := context.TODO()
-	orders := []ListOrderEntry{}
 
-	res, err := h.orders.Find(ctx, bson.M{}, &options.FindOptions{
-		Sort: bson.M{"received_at": 1},
-	})
-	if err != nil {
-		h.logger.Error("Failed to list orders", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = res.All(ctx, &orders)
+	var orders []ListOrderEntry
+	err := h.db.GetOrders(ctx, &orders)
 	if err != nil {
 		h.logger.Error("Failed to list orders", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -282,7 +267,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		Status:     OrderStatusPending,
 	}
 
-	_, err = h.orders.InsertOne(context.Background(), status)
+	err = h.db.InsertOrder(context.Background(), status)
 	if err != nil {
 		h.logger.Error("Failed to record workflow status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -334,7 +319,7 @@ func (h *handlers) handleUpdateOrderStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_, err = h.orders.UpdateOne(context.Background(), bson.M{"id": status.ID}, bson.M{"$set": bson.M{"status": status.Status}})
+	err = h.db.UpdateOrderStatus(context.Background(), status.ID, status.Status)
 	if err != nil {
 		h.logger.Error("Failed to update order status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

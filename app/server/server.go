@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"crypto/tls"
-	_ "embed"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -13,11 +12,10 @@ import (
 
 	"github.com/temporalio/reference-app-orders-go/app/billing"
 	"github.com/temporalio/reference-app-orders-go/app/config"
+	"github.com/temporalio/reference-app-orders-go/app/db"
 	"github.com/temporalio/reference-app-orders-go/app/fraud"
 	"github.com/temporalio/reference-app-orders-go/app/order"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
-	mongodb "go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/log"
 	"golang.org/x/sync/errgroup"
@@ -66,27 +64,6 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	}
 
 	return clientOpts, nil
-}
-
-// SetupDB creates indexes in the database.
-func SetupDB(db *mongodb.Database) error {
-	orders := db.Collection(order.OrdersCollection)
-	_, err := orders.Indexes().CreateOne(context.TODO(), mongodb.IndexModel{
-		Keys: map[string]interface{}{"received_at": 1},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create database index: %w", err)
-	}
-
-	shipments := db.Collection(shipment.ShipmentCollection)
-	_, err = shipments.Indexes().CreateOne(context.TODO(), mongodb.IndexModel{
-		Keys: map[string]interface{}{"booked_at": 1},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create database index: %w", err)
-	}
-
-	return nil
 }
 
 // RunWorkers runs workers for the requested services.
@@ -184,16 +161,15 @@ func RunAPIServers(ctx context.Context, config config.AppConfig, client client.C
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	var db *mongodb.Database
+	db := db.CreateDB(config)
 
 	if slices.Contains(services, "orders") || slices.Contains(services, "shipment") {
-		c, err := mongodb.Connect(context.TODO(), options.Client().ApplyURI(config.MongoURL))
-		db = c.Database("orders")
+		err := db.Connect(context.TODO())
 		if err != nil {
-			return fmt.Errorf("failed to open database: %w", err)
+			return fmt.Errorf("failed to connect to database: %w", err)
 		}
 
-		if err := SetupDB(db); err != nil {
+		if err := db.Setup(); err != nil {
 			return err
 		}
 	}

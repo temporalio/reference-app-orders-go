@@ -18,13 +18,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/temporalio/reference-app-orders-go/app/billing"
 	"github.com/temporalio/reference-app-orders-go/app/config"
+	"github.com/temporalio/reference-app-orders-go/app/db"
 	"github.com/temporalio/reference-app-orders-go/app/fraud"
 	"github.com/temporalio/reference-app-orders-go/app/order"
-	"github.com/temporalio/reference-app-orders-go/app/server"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/testsuite"
 	"golang.org/x/sync/errgroup"
@@ -108,25 +106,25 @@ func Test_Order(t *testing.T) {
 	port, err := mongoDBContainer.MappedPort(ctx, "27017/tcp")
 	require.NoError(t, err)
 
-	mc, err := mongo.Connect(ctx, options.Client().ApplyURI(fmt.Sprintf("mongodb://localhost:%s", port.Port())))
-	require.NoError(t, err)
+	uri := fmt.Sprintf("mongodb://localhost:%s", port.Port())
 
-	db := mc.Database("testdb")
+	config := config.AppConfig{
+		MongoURL:   uri,
+		BillingURL: billingAPI.URL,
+		FraudURL:   fraudAPI.URL,
+	}
 
-	err = server.SetupDB(db)
-	require.NoError(t, err)
+	db := db.CreateDB(config)
+	require.NoError(t, db.Connect(ctx))
+	require.NoError(t, db.Setup())
 
 	orderAPI := httptest.NewServer(order.Router(c, db, logger))
 	defer orderAPI.Close()
 	shipmentAPI := httptest.NewServer(shipment.Router(c, db, logger))
 	defer shipmentAPI.Close()
 
-	config := config.AppConfig{
-		BillingURL:  billingAPI.URL,
-		OrderURL:    orderAPI.URL,
-		ShipmentURL: shipmentAPI.URL,
-		FraudURL:    fraudAPI.URL,
-	}
+	config.OrderURL = orderAPI.URL
+	config.ShipmentURL = shipmentAPI.URL
 
 	g, ctx := errgroup.WithContext(ctx)
 

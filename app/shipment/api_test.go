@@ -14,11 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/temporalio/reference-app-orders-go/app/server"
+	"github.com/temporalio/reference-app-orders-go/app/config"
+	"github.com/temporalio/reference-app-orders-go/app/db"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.temporal.io/sdk/mocks"
 )
 
@@ -30,18 +29,18 @@ func TestShipmentUpdate(t *testing.T) {
 
 	mongoDBContainer, err := mongodb.Run(ctx, "mongo:6")
 	require.NoError(t, err)
-	defer mongoDBContainer.Terminate(context.Background())
+	defer mongoDBContainer.Terminate(ctx)
 
-	port, err := mongoDBContainer.MappedPort(context.Background(), "27017/tcp")
+	port, err := mongoDBContainer.MappedPort(ctx, "27017/tcp")
 	require.NoError(t, err)
 
-	mc, err := mongo.Connect(context.Background(), options.Client().ApplyURI(fmt.Sprintf("mongodb://localhost:%s", port.Port())))
-	require.NoError(t, err)
+	uri := fmt.Sprintf("mongodb://localhost:%s", port.Port())
 
-	db := mc.Database("testdb")
+	config := config.AppConfig{MongoURL: uri}
 
-	err = server.SetupDB(db)
-	require.NoError(t, err)
+	db := db.CreateDB(config)
+	require.NoError(t, db.Connect(ctx))
+	require.NoError(t, db.Setup())
 
 	logger := slog.Default()
 

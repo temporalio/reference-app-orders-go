@@ -8,9 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/temporalio/reference-app-orders-go/app/db"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 )
@@ -20,9 +18,6 @@ const TaskQueue = "shipments"
 
 // StatusQuery is the name of the query to use to fetch a Shipment's status.
 const StatusQuery = "status"
-
-// ShipmentCollection is the name of the MongoDB collection to use for Shipment data.
-const ShipmentCollection = "shipments"
 
 // ShipmentWorkflowID returns the workflow ID for a Shipment.
 func ShipmentWorkflowID(id string) string {
@@ -35,9 +30,9 @@ func ShipmentIDFromWorkflowID(id string) string {
 }
 
 type handlers struct {
-	temporal  client.Client
-	shipments *mongo.Collection
-	logger    *slog.Logger
+	temporal client.Client
+	db       db.DB
+	logger   *slog.Logger
 }
 
 // ShipmentStatus holds the status of a Shipment.
@@ -61,12 +56,10 @@ type ListShipmentEntry struct {
 }
 
 // Router implements the http.Handler interface for the Shipment API
-func Router(client client.Client, db *mongo.Database, logger *slog.Logger) http.Handler {
+func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 	r := http.NewServeMux()
 
-	shipments := db.Collection(ShipmentCollection)
-
-	h := handlers{temporal: client, shipments: shipments, logger: logger}
+	h := handlers{temporal: client, db: db, logger: logger}
 
 	r.HandleFunc("GET /shipments", h.handleListShipments)
 	r.HandleFunc("GET /shipments/{id}", h.handleGetShipment)
@@ -79,14 +72,7 @@ func Router(client client.Client, db *mongo.Database, logger *slog.Logger) http.
 func (h *handlers) handleListShipments(w http.ResponseWriter, _ *http.Request) {
 	shipments := []ListShipmentEntry{}
 
-	res, err := h.shipments.Find(context.Background(), bson.M{})
-	if err != nil {
-		h.logger.Error("Failed to list shipments: %v", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err = res.All(context.TODO(), &shipments)
+	err := h.db.GetShipments(context.Background(), &shipments)
 	if err != nil {
 		h.logger.Error("Failed to list shipments: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -143,12 +129,7 @@ func (h *handlers) handleUpdateShipmentStatus(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	_, err = h.shipments.UpdateOne(
-		context.Background(),
-		bson.M{"id": status.ID},
-		bson.M{"$set": bson.M{"status": status.Status}, "$setOnInsert": bson.M{"booked_at": time.Now().UTC()}},
-		options.Update().SetUpsert(true),
-	)
+	err = h.db.UpdateShipmentStatus(context.Background(), status.ID, status.Status)
 	if err != nil {
 		h.logger.Error("Failed to update shipment status: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
