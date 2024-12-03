@@ -42,4 +42,4 @@ jobs:
 
       - name: Coverage
         if: matrix.os == 'ubuntu-latest'
-        run: make unit-test-coverage functional-test-coverage coverage-report
+        run: make unit-test-coverage integration-test-coverage coverage-report
