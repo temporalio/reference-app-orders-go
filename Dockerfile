@@ -14,13 +14,13 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -v -o /usr/local/bin/oms ./cmd/oms
 
-FROM scratch AS oms-worker
+FROM busybox AS oms-worker
 
 COPY --from=oms-builder /usr/local/bin/oms /usr/local/bin/oms
 
 ENTRYPOINT ["/usr/local/bin/oms", "worker"]
 
-FROM scratch as oms-api
+FROM busybox as oms-api
 
 EXPOSE 8081
 EXPOSE 8082
@@ -33,7 +33,7 @@ COPY --from=oms-builder /usr/local/bin/oms /usr/local/bin/oms
 
 ENTRYPOINT ["/usr/local/bin/oms", "api"]
 
-FROM scratch as oms-codec-server
+FROM busybox as oms-codec-server
 
 EXPOSE 8089
 
