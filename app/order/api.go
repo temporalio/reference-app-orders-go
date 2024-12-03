@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/temporalio/reference-app-orders-go/app/db"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
@@ -47,11 +47,11 @@ type OrderInput struct {
 
 // OrderStatus holds the status of an Order workflow.
 type OrderStatus struct {
-	ID         string    `json:"id"`
-	CustomerID string    `json:"customerId" db:"customer_id"`
-	ReceivedAt time.Time `json:"receivedAt" db:"received_at"`
+	ID         string    `json:"id" db:"id" bson:"id"`
+	CustomerID string    `json:"customerId" db:"customer_id" bson:"customer_id"`
+	ReceivedAt time.Time `json:"receivedAt" db:"received_at" bson:"received_at"`
 
-	Status string `json:"status"`
+	Status string `json:"status" db:"status" bson:"status"`
 
 	Fulfillments []*Fulfillment `json:"fulfillments"`
 }
@@ -196,12 +196,12 @@ type OrderResult struct {
 
 type handlers struct {
 	temporal client.Client
-	db       *sqlx.DB
+	db       db.DB
 	logger   *slog.Logger
 }
 
 // Router implements the http.Handler interface for the Billing API
-func Router(client client.Client, db *sqlx.DB, logger *slog.Logger) http.Handler {
+func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 	r := http.NewServeMux()
 
 	h := handlers{temporal: client, db: db, logger: logger}
@@ -217,8 +217,7 @@ func Router(client client.Client, db *sqlx.DB, logger *slog.Logger) http.Handler
 
 func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
 	orders := []ListOrderEntry{}
-
-	err := h.db.Select(&orders, `SELECT id, status, received_at FROM orders ORDER BY received_at DESC`)
+	err := h.db.GetOrders(context.Background(), &orders)
 	if err != nil {
 		h.logger.Error("Failed to list orders", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -266,7 +265,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		Status:     OrderStatusPending,
 	}
 
-	_, err = h.db.NamedExec(`INSERT OR IGNORE INTO orders (id, customer_id, received_at, status) VALUES (:id, :customer_id, :received_at, :status)`, status)
+	err = h.db.InsertOrder(context.Background(), status)
 	if err != nil {
 		h.logger.Error("Failed to record workflow status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -318,7 +317,7 @@ func (h *handlers) handleUpdateOrderStatus(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	_, err = h.db.NamedExec(`UPDATE orders SET status = :status WHERE id = :id`, status)
+	err = h.db.UpdateOrderStatus(context.Background(), status.ID, status.Status)
 	if err != nil {
 		h.logger.Error("Failed to update order status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

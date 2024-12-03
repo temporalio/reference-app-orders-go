@@ -26,8 +26,6 @@ EXPOSE 8081
 EXPOSE 8082
 EXPOSE 8083
 EXPOSE 8084
-VOLUME /data
-ENV DATA_DIR=/data
 
 COPY --from=oms-builder /usr/local/bin/oms /usr/local/bin/oms
 

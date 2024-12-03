@@ -2,9 +2,9 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   labels:
-    app.kubernetes.io/component: main-api-data
+    app.kubernetes.io/component: mongo
     app.kubernetes.io/name: oms
-  name: main-api-data
+  name: mongo
   namespace: oms
 spec:
   accessModes:

@@ -3,18 +3,16 @@ package server
 import (
 	"context"
 	"crypto/tls"
-	_ "embed"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"path"
 	"slices"
 	"strings"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/temporalio/reference-app-orders-go/app/billing"
 	"github.com/temporalio/reference-app-orders-go/app/config"
+	"github.com/temporalio/reference-app-orders-go/app/db"
 	"github.com/temporalio/reference-app-orders-go/app/fraud"
 	"github.com/temporalio/reference-app-orders-go/app/order"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
@@ -66,19 +64,6 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	}
 
 	return clientOpts, nil
-}
-
-//go:embed schema.sql
-var schema string
-
-// SetupDB creates the necessary tables in the database.
-func SetupDB(db *sqlx.DB) error {
-	_, err := db.Exec(schema)
-	if err != nil {
-		return fmt.Errorf("failed to create the database schema: %w", err)
-	}
-
-	return nil
 }
 
 // RunWorkers runs workers for the requested services.
@@ -176,18 +161,15 @@ func RunAPIServers(ctx context.Context, config config.AppConfig, client client.C
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	var db *sqlx.DB
-	var err error
+	db := db.CreateDB(config)
 
 	if slices.Contains(services, "orders") || slices.Contains(services, "shipment") {
-		dbPath := path.Join(config.DataDir, "api-store.db")
-		db, err = sqlx.Connect("sqlite", dbPath)
-		db.SetMaxOpenConns(1) // SQLite does not support concurrent writes
+		err := db.Connect(context.TODO())
 		if err != nil {
-			return fmt.Errorf("failed to open database: %w", err)
+			return fmt.Errorf("failed to connect to database: %w", err)
 		}
 
-		if err := SetupDB(db); err != nil {
+		if err := db.Setup(); err != nil {
 			return err
 		}
 	}
