@@ -27,6 +27,8 @@ spec:
           env:
             - name: BIND_ON_IP
               value: 0.0.0.0
+            - name: MONGO_URL
+              value: mongodb://mongo:27017
             - name: ORDER_API_PORT
               value: "8082"
             - name: SHIPMENT_API_PORT
