@@ -47,11 +47,11 @@ type OrderInput struct {
 
 // OrderStatus holds the status of an Order workflow.
 type OrderStatus struct {
-	ID         string    `json:"id" db:"id" bson:"id"`
-	CustomerID string    `json:"customerId" db:"customer_id" bson:"customer_id"`
-	ReceivedAt time.Time `json:"receivedAt" db:"received_at" bson:"received_at"`
+	ID         string    `json:"id"`
+	CustomerID string    `json:"customerId"`
+	ReceivedAt time.Time `json:"receivedAt"`
 
-	Status string `json:"status" db:"status" bson:"status"`
+	Status string `json:"status"`
 
 	Fulfillments []*Fulfillment `json:"fulfillments"`
 }
@@ -216,7 +216,7 @@ func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 }
 
 func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
-	orders := []ListOrderEntry{}
+	orders := []db.OrderStatus{}
 	err := h.db.GetOrders(context.Background(), &orders)
 	if err != nil {
 		h.logger.Error("Failed to list orders", "error", err)
@@ -224,9 +224,18 @@ func (h *handlers) handleListOrders(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
+	list := make([]ListOrderEntry, len(orders))
+	for i, o := range orders {
+		list[i] = ListOrderEntry{
+			ID:         o.ID,
+			Status:     o.Status,
+			ReceivedAt: o.ReceivedAt,
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
-	err = json.NewEncoder(w).Encode(orders)
+	err = json.NewEncoder(w).Encode(list)
 	if err != nil {
 		h.logger.Error("Failed to encode orders", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -258,7 +267,7 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status := &OrderStatus{
+	status := &db.OrderStatus{
 		ID:         input.ID,
 		CustomerID: input.CustomerID,
 		ReceivedAt: time.Now().UTC(),

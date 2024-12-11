@@ -70,7 +70,7 @@ func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 }
 
 func (h *handlers) handleListShipments(w http.ResponseWriter, _ *http.Request) {
-	shipments := []ListShipmentEntry{}
+	shipments := []db.ShipmentStatus{}
 
 	err := h.db.GetShipments(context.Background(), &shipments)
 	if err != nil {
@@ -79,9 +79,17 @@ func (h *handlers) handleListShipments(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
+	list := make([]ListShipmentEntry, len(shipments))
+	for i, s := range shipments {
+		list[i] = ListShipmentEntry{
+			ID:     s.ID,
+			Status: s.Status,
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(shipments); err != nil {
+	if err := json.NewEncoder(w).Encode(list); err != nil {
 		h.logger.Error("Failed to encode orders: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

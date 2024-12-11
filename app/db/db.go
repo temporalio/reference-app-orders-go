@@ -12,11 +12,26 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	mongodb "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // SQLite driver
 )
 
 // OrdersCollection is the name of the MongoDB collection to use for Orders.
 const OrdersCollection = "orders"
+
+// OrderStatus is a struct that represents the status of an Order
+type OrderStatus struct {
+	ID         string `db:"id" bson:"id"`
+	CustomerID string `db:"customer_id" bson:"customer_id"`
+	Status     string `db:"status" bson:"status"`
+
+	ReceivedAt time.Time `db:"received_at" bson:"received_at"`
+}
+
+// ShipmentStatus is a struct that represents the status of a Shipment
+type ShipmentStatus struct {
+	ID     string `db:"id" bson:"id"`
+	Status string `db:"status" bson:"status"`
+}
 
 // ShipmentCollection is the name of the MongoDB collection to use for Shipment data.
 const ShipmentCollection = "shipments"
@@ -26,11 +41,11 @@ type DB interface {
 	Connect(ctx context.Context) error
 	Setup() error
 	Close() error
-	InsertOrder(context.Context, interface{}) error
+	InsertOrder(context.Context, *OrderStatus) error
 	UpdateOrderStatus(context.Context, string, string) error
-	GetOrders(context.Context, interface{}) error
+	GetOrders(context.Context, *[]OrderStatus) error
 	UpdateShipmentStatus(context.Context, string, string) error
-	GetShipments(context.Context, interface{}) error
+	GetShipments(context.Context, *[]ShipmentStatus) error
 }
 
 // CreateDB creates a new DB instance based on the configuration
@@ -82,7 +97,7 @@ func (m *MongoDB) Setup() error {
 }
 
 // InsertOrder inserts an Order into the MongoDB instance
-func (m *MongoDB) InsertOrder(ctx context.Context, order interface{}) error {
+func (m *MongoDB) InsertOrder(ctx context.Context, order *OrderStatus) error {
 	_, err := m.db.Collection(OrdersCollection).InsertOne(ctx, order)
 	return err
 }
@@ -94,7 +109,7 @@ func (m *MongoDB) UpdateOrderStatus(ctx context.Context, id string, status strin
 }
 
 // GetOrders returns a list of Orders from the MongoDB instance
-func (m *MongoDB) GetOrders(ctx context.Context, result interface{}) error {
+func (m *MongoDB) GetOrders(ctx context.Context, result *[]OrderStatus) error {
 	res, err := m.db.Collection(OrdersCollection).Find(ctx, bson.M{}, &options.FindOptions{
 		Sort: bson.M{"received_at": 1},
 	})
@@ -120,7 +135,7 @@ func (m *MongoDB) UpdateShipmentStatus(ctx context.Context, id string, status st
 }
 
 // GetShipments returns a list of Shipments from the MongoDB instance
-func (m *MongoDB) GetShipments(ctx context.Context, result interface{}) error {
+func (m *MongoDB) GetShipments(ctx context.Context, result *[]ShipmentStatus) error {
 	res, err := m.db.Collection(ShipmentCollection).Find(ctx, bson.M{}, &options.FindOptions{
 		Sort: bson.M{"booked_at": 1},
 	})
@@ -168,7 +183,7 @@ func (s *SQLiteDB) Close() error {
 }
 
 // InsertOrder inserts an Order into the SQLite instance
-func (s *SQLiteDB) InsertOrder(ctx context.Context, order interface{}) error {
+func (s *SQLiteDB) InsertOrder(ctx context.Context, order *OrderStatus) error {
 	_, err := s.db.NamedExecContext(ctx, "INSERT OR IGNORE INTO orders (id, customer_id, received_at, status) VALUES (:id, :customer_id, :received_at, :status)", order)
 	return err
 }
@@ -180,7 +195,7 @@ func (s *SQLiteDB) UpdateOrderStatus(ctx context.Context, id string, status stri
 }
 
 // GetOrders returns a list of Orders from the SQLite instance
-func (s *SQLiteDB) GetOrders(ctx context.Context, result interface{}) error {
+func (s *SQLiteDB) GetOrders(ctx context.Context, result *[]OrderStatus) error {
 	return s.db.SelectContext(ctx, result, "SELECT id, status, received_at FROM orders ORDER BY received_at DESC")
 }
 
@@ -191,6 +206,6 @@ func (s *SQLiteDB) UpdateShipmentStatus(ctx context.Context, id string, status s
 }
 
 // GetShipments returns a list of Shipments from the SQLite instance
-func (s *SQLiteDB) GetShipments(ctx context.Context, result interface{}) error {
+func (s *SQLiteDB) GetShipments(ctx context.Context, result *[]ShipmentStatus) error {
 	return s.db.SelectContext(ctx, result, "SELECT id, status FROM shipments ORDER BY booked_at DESC")
 }
