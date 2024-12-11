@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: mongo
+    app.kubernetes.io/name: oms
+  name: mongo
+  namespace: oms
+spec:
+  ports:
+    - name: "27017"
+      port: 27017
+      targetPort: 27017
+  selector:
+    app.kubernetes.io/component: mongo
+    app.kubernetes.io/name: oms

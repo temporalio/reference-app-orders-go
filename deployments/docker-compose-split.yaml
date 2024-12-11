@@ -1,4 +1,10 @@
 services:
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo:/data/db
   billing-worker:
     build:
       context: ../
@@ -15,6 +21,7 @@ services:
     environment:
       - TEMPORAL_ADDRESS=host.docker.internal:7233
       - BIND_ON_IP=0.0.0.0
+      - MONGO_URL=mongodb://mongo:27017
       - BILLING_API_PORT=8081
       - FRAUD_API_PORT=8084
     command: ["-k", "supersecretkey", "-s", "billing,fraud"]
@@ -40,23 +47,22 @@ services:
     environment:
       - TEMPORAL_ADDRESS=host.docker.internal:7233
       - BIND_ON_IP=0.0.0.0
+      - MONGO_URL=mongodb://mongo:27017
       - ORDER_API_PORT=8082
       - SHIPMENT_API_PORT=8083
     command: ["-k", "supersecretkey", "-s", "order,shipment"]
     ports:
       - "8082:8082"
       - "8083:8083"
-    volumes:
-      - main-api-data:/data
     restart: on-failure
   codec-server:
     build:
       context: ../
       target: oms-codec-server
     # Adjust the web server URL to point to your Temporal Web instance.
-    command: ["-p", "8089", "-u", "http://localhost:8080"]
+    # command: ["-p", "8089", "-u", "http://localhost:8080"]
     # If you are using a Temporal CLI's start-dev you can use this:
-    # command: ["codec-server", "-p", "8089", "-u", "http://localhost:8233"]
+    command: ["-p", "8089", "-u", "http://localhost:8233"]
     ports:
       - "8089:8089"
     restart: on-failure
@@ -74,4 +80,4 @@ services:
       - "3000:3000"
     restart: on-failure
 volumes:
-  main-api-data:
+  mongo:

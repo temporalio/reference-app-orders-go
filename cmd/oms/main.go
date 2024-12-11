@@ -15,7 +15,6 @@ import (
 	"github.com/temporalio/reference-app-orders-go/app/temporalutil"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/converter"
-	_ "modernc.org/sqlite"
 )
 
 const (
