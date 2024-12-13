@@ -90,27 +90,23 @@ mongo-0                           1/1     Running   0          24h
 You'll know that the application is up when the READY column shows
 "1/1" for every pod.
 
-Please note that, while in most regards the deployment is a standard 
-Kubernetes setup, there is one thing which is a little unusual. The 
-OMS application's API services make use of a cache to ensure that they 
-can quickly provide lists of all orders and shipments. This cache is
-implemented using a disk-based SQLite database, which makes these 
-API services stateful. If an API pod needs to be restarted (for example, 
-due to upgrade, node failure, etc.), then it must be brought back up 
-with the same disk as before to ensure it does not lose its cache. 
-For this reason, the API services use Statefulset instead of Deployment.
-The cache is mounted via a Kubernetes volume to ensure that the pod 
-will maintain its disk between runs.
+### Application cache
 
-As this cache uses the disk, which is not easily shared among pods, 
-this also means the API Statefulsets cannot be safely scaled. If there 
-were to be more than one `main-api` pod, for example, each pod would 
-see different order creations, and therefore have a different cache 
-of orders. This would result in unpredictable behavior.
-
-These are all limitations of our deliberately naive caching mechanism, 
-and would not occur should the APIs use a shared database such as 
-MySQL or PostgreSQL.
+There is a noteworthy configuration difference when deploying the 
+OMS to Kubernetes. As detailed in the 
+[technical description](../technical-description.md#application-cache), 
+the OMS application's API servers maintain a cache of all orders 
+and shipments. By default, this is backed by a file-based SQLite 
+database. While this choice of database inherently limits scalability 
+to a single node, we felt that adding a dependency on an external 
+database created an obstacle for developers who want to get the 
+OMS running with minimal effort. We have since updated the OMS to 
+add the option to use MongoDB for the application cache. Not only
+does this represent a more typical production deployment, given
+MongoDB's reputation for scalability, it also avoids the complexity 
+of using Statefulsets for the API servers. For those reasons, we 
+default to MongoDB for the API servers' cache when deploying the 
+OMS to Kubernetes. 
 
 ## Using the Application
 
