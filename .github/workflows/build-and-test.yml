@@ -17,7 +17,7 @@ jobs:
             # No need to upload coverage reports for multiple platforms
             uploadCoverage: true
           - os: macos-intel
-            runsOn: macos-12
+            runsOn: macos-13
           - os: macos-arm
             runsOn: macos-14
     runs-on: ${{ matrix.runsOn || matrix.os }}
