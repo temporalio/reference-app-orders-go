@@ -12,7 +12,7 @@ The scripts will help you:
 
 We have provided a script to create a new EKS cluster on AWS, but using EKS is not a requirement. If you already have a Kubernetes cluster you would like to use, from AWS or any other provider, please feel free to skip this step. Any Kubernetes cluster will work.
 
-In order to use the script please ensure you have valid credentials setup to use the AWS APIs. Setting up authentication is beyond the scope of this document, but you can find some details on what IAM policies you may need in the [`eksctl` documentation](https://eksctl.io/usage/minimum-iam-policies/).
+In order to use the script please ensure you have valid credentials set up to use the AWS APIs. Setting up authentication is beyond the scope of this document, but you can find some details on what IAM policies you may need in the [`eksctl` documentation](https://eksctl.io/usage/minimum-iam-policies/).
 
 To create the cluster (called "temporal-oms"):
 
