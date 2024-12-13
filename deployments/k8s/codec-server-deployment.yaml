@@ -23,7 +23,7 @@ spec:
             - -p
             - "8089"
             - -u
-            - http://localhost:8080
+            - http://localhost:8233
           image: ghcr.io/temporalio/reference-app-orders-go-codec-server:latest
           name: codec-server
           ports:

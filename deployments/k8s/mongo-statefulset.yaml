@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app.kubernetes.io/component: mongo
+    app.kubernetes.io/name: oms
+  name: mongo
+  namespace: oms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: mongo
+      app.kubernetes.io/name: oms
+  serviceName: mongo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: mongo
+        app.kubernetes.io/name: oms
+    spec:
+      containers:
+        - image: mongo:6
+          name: mongo
+          ports:
+            - containerPort: 27017
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /data/db
+              name: mongo
+      volumes:
+        - name: mongo
+          persistentVolumeClaim:
+            claimName: mongo
+  volumeClaimTemplates:
+    - metadata:
+        labels:
+          app.kubernetes.io/component: mongo
+          app.kubernetes.io/name: oms
+        name: mongo
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 100Mi

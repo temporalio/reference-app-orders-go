@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/temporalio/reference-app-orders-go/app/fraud"
-	_ "modernc.org/sqlite"
 )
 
 func TestMaintenanceMode(t *testing.T) {

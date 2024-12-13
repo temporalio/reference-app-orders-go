@@ -12,7 +12,7 @@ The scripts will help you:
 
 We have provided a script to create a new EKS cluster on AWS, but using EKS is not a requirement. If you already have a Kubernetes cluster you would like to use, from AWS or any other provider, please feel free to skip this step. Any Kubernetes cluster will work.
 
-In order to use the script please ensure you have valid credentials setup to use the AWS APIs. Setting up authentication is beyond the scope of this document, but you can find some details on what IAM policies you may need in the [`eksctl` documentation](https://eksctl.io/usage/minimum-iam-policies/).
+In order to use the script please ensure you have valid credentials set up to use the AWS APIs. Setting up authentication is beyond the scope of this document, but you can find some details on what IAM policies you may need in the [`eksctl` documentation](https://eksctl.io/usage/minimum-iam-policies/).
 
 To create the cluster (called "temporal-oms"):
 
@@ -59,13 +59,13 @@ installing anything into it, use the `kubectl` command to create
 the namespace:
 
 ```sh
-kubectl apply -f ./deployments/oms-namespace.yaml
+kubectl apply -f ./deployments/k8s/oms-namespace.yaml
 ```
 
 Once that has completed, you can then install all of the application:
 
 ```sh
-kubectl apply -f ./deployments/
+kubectl apply -f ./deployments/k8s
 ```
 
 You can check pod status to verify that the application is running:
@@ -78,12 +78,13 @@ You should see output similar to the following:
 
 ```
 NAME                              READY   STATUS    RESTARTS   AGE
-billing-api-0                     1/1     Running   0          24h
+billing-api-5fdc8b9d8f-tm2tl      1/1     Running   0          24h
 billing-worker-5498c6ffd4-klfwk   1/1     Running   0          24h
 codec-server-847b59b84f-9ct54     1/1     Running   0          24h
-main-api-0                        1/1     Running   0          24h
+main-api-777cd87b47-bsw6h         1/1     Running   0          24h
 main-worker-777c59ccdb-jx46w      1/1     Running   0          24h
 web-557c8dc97-p5fkq               1/1     Running   0          24h
+mongo-0                           1/1     Running   0          24h
 ```
 
 You'll know that the application is up when the READY column shows

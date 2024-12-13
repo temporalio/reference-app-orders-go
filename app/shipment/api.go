@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/temporalio/reference-app-orders-go/app/db"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 )
@@ -31,7 +31,7 @@ func ShipmentIDFromWorkflowID(id string) string {
 
 type handlers struct {
 	temporal client.Client
-	db       *sqlx.DB
+	db       db.DB
 	logger   *slog.Logger
 }
 
@@ -51,13 +51,14 @@ type ShipmentStatusUpdate struct {
 
 // ListShipmentEntry is an entry in the Shipment list.
 type ListShipmentEntry struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	ID     string `json:"id" db:"id" bson:"id"`
+	Status string `json:"status" db:"status" bson:"status"`
 }
 
 // Router implements the http.Handler interface for the Shipment API
-func Router(client client.Client, db *sqlx.DB, logger *slog.Logger) http.Handler {
+func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 	r := http.NewServeMux()
+
 	h := handlers{temporal: client, db: db, logger: logger}
 
 	r.HandleFunc("GET /shipments", h.handleListShipments)
@@ -69,18 +70,26 @@ func Router(client client.Client, db *sqlx.DB, logger *slog.Logger) http.Handler
 }
 
 func (h *handlers) handleListShipments(w http.ResponseWriter, _ *http.Request) {
-	orders := []ListShipmentEntry{}
+	shipments := []db.ShipmentStatus{}
 
-	err := h.db.Select(&orders, `SELECT id, status FROM shipments ORDER BY booked_at DESC`)
+	err := h.db.GetShipments(context.Background(), &shipments)
 	if err != nil {
 		h.logger.Error("Failed to list shipments: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	list := make([]ListShipmentEntry, len(shipments))
+	for i, s := range shipments {
+		list[i] = ListShipmentEntry{
+			ID:     s.ID,
+			Status: s.Status,
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(orders); err != nil {
+	if err := json.NewEncoder(w).Encode(list); err != nil {
 		h.logger.Error("Failed to encode orders: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -128,11 +137,7 @@ func (h *handlers) handleUpdateShipmentStatus(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if status.Status == ShipmentStatusBooked {
-		_, err = h.db.NamedExec(`INSERT INTO shipments (id, status) VALUES(:id, :status)`, status)
-	} else {
-		_, err = h.db.NamedExec(`UPDATE shipments SET status = :status WHERE id = :id`, status)
-	}
+	err = h.db.UpdateShipmentStatus(context.Background(), status.ID, status.Status)
 	if err != nil {
 		h.logger.Error("Failed to update shipment status: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

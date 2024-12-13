@@ -1,22 +1,21 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/component: billing-api
+    app.kubernetes.io/component: main-api
     app.kubernetes.io/name: oms
-  name: billing-api
+  name: main-api
   namespace: oms
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/component: billing-api
+      app.kubernetes.io/component: main-api
       app.kubernetes.io/name: oms
-  serviceName: billing-api
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: billing-api
+        app.kubernetes.io/component: main-api
         app.kubernetes.io/name: oms
     spec:
       containers:
@@ -24,22 +23,24 @@ spec:
             - -k
             - supersecretkey
             - -s
-            - billing,fraud
+            - order,shipment
           env:
-            - name: BILLING_API_PORT
-              value: "8081"
             - name: BIND_ON_IP
               value: 0.0.0.0
-            - name: FRAUD_API_PORT
-              value: "8084"
+            - name: MONGO_URL
+              value: mongodb://mongo:27017
+            - name: ORDER_API_PORT
+              value: "8082"
+            - name: SHIPMENT_API_PORT
+              value: "8083"
             - name: TEMPORAL_ADDRESS
               value: temporal-frontend.temporal:7233
           image: ghcr.io/temporalio/reference-app-orders-go-api:latest
-          name: billing-api
+          name: main-api
           ports:
-            - containerPort: 8081
+            - containerPort: 8082
               protocol: TCP
-            - containerPort: 8084
+            - containerPort: 8083
               protocol: TCP
           imagePullPolicy: Always
       enableServiceLinks: false
