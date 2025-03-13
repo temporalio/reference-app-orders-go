@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/temporalio/reference-app-orders-go/app/db"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
+	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/log"
 )
@@ -194,6 +196,14 @@ type OrderResult struct {
 	Status string `json:"status"`
 }
 
+const statsInterval = 30
+
+// OrderStatsResult is the result of the Order stats request.
+type OrderStatsResult struct {
+	CompleteRate float64 `json:"completeRate"`
+	Backlog      int64   `json:"backlog"`
+}
+
 type handlers struct {
 	temporal client.Client
 	db       db.DB
@@ -208,6 +218,7 @@ func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 
 	r.HandleFunc("POST /orders", h.handleCreateOrder)
 	r.HandleFunc("GET /orders", h.handleListOrders)
+	r.HandleFunc("GET /orders/stats", h.handleGetStats)
 	r.HandleFunc("GET /orders/{id}", h.handleGetOrder)
 	r.HandleFunc("POST /orders/{id}/status", h.handleUpdateOrderStatus)
 	r.HandleFunc("POST /orders/{id}/action", h.handleCustomerAction)
@@ -360,5 +371,51 @@ func (h *handlers) handleCustomerAction(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 		return
+	}
+}
+
+func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
+	resp, err := h.temporal.DescribeTaskQueueEnhanced(context.Background(), client.DescribeTaskQueueEnhancedOptions{
+		TaskQueue:   TaskQueue,
+		ReportStats: true,
+	})
+	if err != nil {
+		h.logger.Error("Failed to get task queue stats", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var backlog int64
+	for _, versionInfo := range resp.VersionsInfo {
+		for _, typeInfo := range versionInfo.TypesInfo {
+			if typeInfo.Stats != nil {
+				backlog += typeInfo.Stats.ApproximateBacklogCount
+			}
+		}
+	}
+
+	closedSince := time.Now().Add(-statsInterval * time.Second).Format(time.RFC3339)
+	countResp, err := h.temporal.CountWorkflow(context.Background(), &workflowservice.CountWorkflowExecutionsRequest{
+		Query: fmt.Sprintf("WorkflowType='Order' AND ExecutionStatus='Completed' AND CloseTime > %q", closedSince),
+	})
+	if err != nil {
+		h.logger.Error("Failed to count workflows", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var completeRate float64
+	if countResp.GetCount() > 0 {
+		completeRate = float64(countResp.GetCount()) / float64(statsInterval)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	err = json.NewEncoder(w).Encode(OrderStatsResult{
+		CompleteRate: completeRate,
+		Backlog:      backlog,
+	})
+	if err != nil {
+		h.logger.Error("Failed to encode backlog", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
