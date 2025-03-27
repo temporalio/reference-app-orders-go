@@ -46,6 +46,7 @@ type DB interface {
 	GetOrders(context.Context, *[]OrderStatus) error
 	UpdateShipmentStatus(context.Context, string, string) error
 	GetShipments(context.Context, *[]ShipmentStatus) error
+	GetPendingShipments(context.Context, *[]ShipmentStatus) error
 }
 
 // CreateDB creates a new DB instance based on the configuration
@@ -82,7 +83,7 @@ func (m *MongoDB) Setup() error {
 		Keys: map[string]interface{}{"received_at": 1},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create orders index: %w", err)
+		return fmt.Errorf("failed to create orders received_at index: %w", err)
 	}
 
 	shipments := m.db.Collection(ShipmentCollection)
@@ -90,7 +91,14 @@ func (m *MongoDB) Setup() error {
 		Keys: map[string]interface{}{"booked_at": 1},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create shipment index: %w", err)
+		return fmt.Errorf("failed to create shipment booked_at index: %w", err)
+	}
+
+	_, err = shipments.Indexes().CreateOne(context.TODO(), mongodb.IndexModel{
+		Keys: map[string]interface{}{"status": 1},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create shipment status index: %w", err)
 	}
 
 	return nil
@@ -139,6 +147,18 @@ func (m *MongoDB) GetShipments(ctx context.Context, result *[]ShipmentStatus) er
 	res, err := m.db.Collection(ShipmentCollection).Find(ctx, bson.M{}, &options.FindOptions{
 		Sort: bson.M{"booked_at": 1},
 	})
+	if err != nil {
+		return err
+	}
+
+	return res.All(ctx, result)
+}
+
+// GetPendingShipments returns a list of pending Shipments from the MongoDB instance
+func (m *MongoDB) GetPendingShipments(ctx context.Context, result *[]ShipmentStatus) error {
+	res, err := m.db.Collection(ShipmentCollection).Find(ctx, bson.M{
+		"status": bson.M{"$ne": "delivered"},
+	}, &options.FindOptions{})
 	if err != nil {
 		return err
 	}
@@ -208,4 +228,9 @@ func (s *SQLiteDB) UpdateShipmentStatus(ctx context.Context, id string, status s
 // GetShipments returns a list of Shipments from the SQLite instance
 func (s *SQLiteDB) GetShipments(ctx context.Context, result *[]ShipmentStatus) error {
 	return s.db.SelectContext(ctx, result, "SELECT id, status FROM shipments ORDER BY booked_at DESC")
+}
+
+// GetPendingShipments returns a list of pending Shipments from the SQLite instance
+func (s *SQLiteDB) GetPendingShipments(ctx context.Context, result *[]ShipmentStatus) error {
+	return s.db.SelectContext(ctx, result, "SELECT id, status FROM shipments WHERE status != 'delivered'")
 }

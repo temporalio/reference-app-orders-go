@@ -14,3 +14,4 @@ CREATE TABLE IF NOT EXISTS shipments (
 );
 
 CREATE INDEX IF NOT EXISTS shipments_booked_at ON shipments (booked_at DESC);
+CREATE INDEX IF NOT EXISTS shipments_pending ON shipments (status != 'delivered');
