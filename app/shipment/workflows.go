@@ -156,7 +156,7 @@ func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
 	}
 
 	ctx = workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
-		ScheduleToCloseTimeout: 5 * time.Second,
+		StartToCloseTimeout: 5 * time.Second,
 	})
 	return workflow.ExecuteLocalActivity(ctx, a.UpdateShipmentStatus, update).Get(ctx, nil)
 }

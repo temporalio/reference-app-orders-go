@@ -62,6 +62,7 @@ func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 	h := handlers{temporal: client, db: db, logger: logger}
 
 	r.HandleFunc("GET /shipments", h.handleListShipments)
+	r.HandleFunc("GET /shipments/pending", h.handleListPendingShipments)
 	r.HandleFunc("GET /shipments/{id}", h.handleGetShipment)
 	r.HandleFunc("POST /shipments/{id}", h.handleUpdateShipmentStatus)
 	r.HandleFunc("POST /shipments/{id}/status", h.handleUpdateShipmentCarrierStatus)
@@ -73,6 +74,32 @@ func (h *handlers) handleListShipments(w http.ResponseWriter, _ *http.Request) {
 	shipments := []db.ShipmentStatus{}
 
 	err := h.db.GetShipments(context.Background(), &shipments)
+	if err != nil {
+		h.logger.Error("Failed to list shipments: %v", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	list := make([]ListShipmentEntry, len(shipments))
+	for i, s := range shipments {
+		list[i] = ListShipmentEntry{
+			ID:     s.ID,
+			Status: s.Status,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(list); err != nil {
+		h.logger.Error("Failed to encode orders: %v", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (h *handlers) handleListPendingShipments(w http.ResponseWriter, _ *http.Request) {
+	shipments := []db.ShipmentStatus{}
+
+	err := h.db.GetPendingShipments(context.Background(), &shipments)
 	if err != nil {
 		h.logger.Error("Failed to list shipments: %v", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
