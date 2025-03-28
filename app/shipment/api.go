@@ -3,6 +3,7 @@ package shipment
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/temporalio/reference-app-orders-go/app/db"
 	"go.temporal.io/api/serviceerror"
+	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 )
 
@@ -55,6 +57,15 @@ type ListShipmentEntry struct {
 	Status string `json:"status" db:"status" bson:"status"`
 }
 
+const statsInterval = 30
+
+// ShipmentStatsResult holds the stats for the Shipment system.
+type ShipmentStatsResult struct {
+	WorkerCount  int64   `json:"workerCount"`
+	CompleteRate float64 `json:"completeRate"`
+	Backlog      int64   `json:"backlog"`
+}
+
 // Router implements the http.Handler interface for the Shipment API
 func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 	r := http.NewServeMux()
@@ -63,6 +74,7 @@ func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 
 	r.HandleFunc("GET /shipments", h.handleListShipments)
 	r.HandleFunc("GET /shipments/pending", h.handleListPendingShipments)
+	r.HandleFunc("GET /shipments/stats", h.handleGetStats)
 	r.HandleFunc("GET /shipments/{id}", h.handleGetShipment)
 	r.HandleFunc("POST /shipments/{id}", h.handleUpdateShipmentStatus)
 	r.HandleFunc("POST /shipments/{id}/status", h.handleUpdateShipmentCarrierStatus)
@@ -198,5 +210,61 @@ func (h *handlers) handleUpdateShipmentCarrierStatus(w http.ResponseWriter, r *h
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 		return
+	}
+}
+
+func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
+	resp, err := h.temporal.DescribeTaskQueueEnhanced(context.Background(), client.DescribeTaskQueueEnhancedOptions{
+		TaskQueue:     TaskQueue,
+		ReportStats:   true,
+		ReportPollers: true,
+	})
+	if err != nil {
+		h.logger.Error("Failed to get task queue stats", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	recentPollerWindow := time.Now().Add(-1 * time.Minute)
+
+	var backlog int64
+	var workerCount int
+	for _, versionInfo := range resp.VersionsInfo {
+		for _, typeInfo := range versionInfo.TypesInfo {
+			for _, pollerInfo := range typeInfo.Pollers {
+				if pollerInfo.LastAccessTime.After(recentPollerWindow) {
+					workerCount++
+				}
+			}
+			if typeInfo.Stats != nil {
+				backlog += typeInfo.Stats.ApproximateBacklogCount
+			}
+		}
+	}
+
+	closedSince := time.Now().Add(-statsInterval * time.Second).Format(time.RFC3339)
+	countResp, err := h.temporal.CountWorkflow(context.Background(), &workflowservice.CountWorkflowExecutionsRequest{
+		Query: fmt.Sprintf("WorkflowType='Shipment' AND ExecutionStatus='Completed' AND CloseTime > %q", closedSince),
+	})
+	if err != nil {
+		h.logger.Error("Failed to count workflows", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var completeRate float64
+	if countResp.GetCount() > 0 {
+		completeRate = float64(countResp.GetCount()) / float64(statsInterval)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	err = json.NewEncoder(w).Encode(ShipmentStatsResult{
+		WorkerCount:  int64(workerCount),
+		CompleteRate: completeRate,
+		Backlog:      backlog,
+	})
+	if err != nil {
+		h.logger.Error("Failed to encode backlog", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

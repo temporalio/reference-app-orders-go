@@ -198,8 +198,9 @@ type OrderResult struct {
 
 const statsInterval = 30
 
-// OrderStatsResult is the result of the Order stats request.
+// OrderStatsResult holds the stats for the Order system.
 type OrderStatsResult struct {
+	WorkerCount  int64   `json:"workerCount"`
 	CompleteRate float64 `json:"completeRate"`
 	Backlog      int64   `json:"backlog"`
 }
@@ -376,8 +377,9 @@ func (h *handlers) handleCustomerAction(w http.ResponseWriter, r *http.Request) 
 
 func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
 	resp, err := h.temporal.DescribeTaskQueueEnhanced(context.Background(), client.DescribeTaskQueueEnhancedOptions{
-		TaskQueue:   TaskQueue,
-		ReportStats: true,
+		TaskQueue:     TaskQueue,
+		ReportStats:   true,
+		ReportPollers: true,
 	})
 	if err != nil {
 		h.logger.Error("Failed to get task queue stats", "error", err)
@@ -385,9 +387,17 @@ func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
+	recentPollerWindow := time.Now().Add(-1 * time.Minute)
+
 	var backlog int64
+	var workerCount int
 	for _, versionInfo := range resp.VersionsInfo {
 		for _, typeInfo := range versionInfo.TypesInfo {
+			for _, pollerInfo := range typeInfo.Pollers {
+				if pollerInfo.LastAccessTime.After(recentPollerWindow) {
+					workerCount++
+				}
+			}
 			if typeInfo.Stats != nil {
 				backlog += typeInfo.Stats.ApproximateBacklogCount
 			}
@@ -411,6 +421,7 @@ func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	err = json.NewEncoder(w).Encode(OrderStatsResult{
+		WorkerCount:  int64(workerCount),
 		CompleteRate: completeRate,
 		Backlog:      backlog,
 	})
