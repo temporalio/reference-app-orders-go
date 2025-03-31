@@ -44,6 +44,7 @@ type DB interface {
 	InsertOrder(context.Context, *OrderStatus) error
 	UpdateOrderStatus(context.Context, string, string) error
 	GetOrders(context.Context, *[]OrderStatus) error
+	CountCompletedOrdersInRange(context.Context, time.Time, time.Time) (int, error)
 	UpdateShipmentStatus(context.Context, string, string) error
 	GetShipments(context.Context, *[]ShipmentStatus) error
 	GetPendingShipments(context.Context, *[]ShipmentStatus) error
@@ -86,6 +87,13 @@ func (m *MongoDB) Setup() error {
 		return fmt.Errorf("failed to create orders received_at index: %w", err)
 	}
 
+	_, err = orders.Indexes().CreateOne(context.TODO(), mongodb.IndexModel{
+		Keys: map[string]interface{}{"completed_at": 1},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create orders completed_at index: %w", err)
+	}
+
 	shipments := m.db.Collection(ShipmentCollection)
 	_, err = shipments.Indexes().CreateOne(context.TODO(), mongodb.IndexModel{
 		Keys: map[string]interface{}{"booked_at": 1},
@@ -112,7 +120,13 @@ func (m *MongoDB) InsertOrder(ctx context.Context, order *OrderStatus) error {
 
 // UpdateOrderStatus updates an Order in the MongoDB instance
 func (m *MongoDB) UpdateOrderStatus(ctx context.Context, id string, status string) error {
-	_, err := m.db.Collection(OrdersCollection).UpdateOne(ctx, bson.M{"id": id}, bson.M{"$set": bson.M{"status": status}})
+	var fields bson.M
+	if status == "completed" {
+		fields = bson.M{"status": status, "completed_at": time.Now().UTC()}
+	} else {
+		fields = bson.M{"status": status}
+	}
+	_, err := m.db.Collection(OrdersCollection).UpdateOne(ctx, bson.M{"id": id}, bson.M{"$set": fields})
 	return err
 }
 
@@ -126,6 +140,17 @@ func (m *MongoDB) GetOrders(ctx context.Context, result *[]OrderStatus) error {
 	}
 
 	return res.All(ctx, result)
+}
+
+// CountCompletedOrdersInRange counts completed Orders in a given time range
+func (m *MongoDB) CountCompletedOrdersInRange(ctx context.Context, start time.Time, end time.Time) (int, error) {
+	count, err := m.db.Collection(OrdersCollection).CountDocuments(ctx, bson.M{
+		"completed_at": bson.M{
+			"$gte": start.UTC(),
+			"$lte": end.UTC(),
+		},
+	})
+	return int(count), err
 }
 
 // UpdateShipmentStatus updates a Shipment in the MongoDB instance
@@ -210,13 +235,28 @@ func (s *SQLiteDB) InsertOrder(ctx context.Context, order *OrderStatus) error {
 
 // UpdateOrderStatus updates an Order in the SQLite instance
 func (s *SQLiteDB) UpdateOrderStatus(ctx context.Context, id string, status string) error {
-	_, err := s.db.ExecContext(ctx, "UPDATE orders SET status = ? WHERE id = ?", status, id)
+	var err error
+	if status == "completed" {
+		_, err = s.db.ExecContext(ctx, "UPDATE orders SET status = ?, completed_at = ? WHERE id = ?", status, time.Now().UTC(), id)
+	} else {
+		_, err = s.db.ExecContext(ctx, "UPDATE orders SET status = ? WHERE id = ?", status, id)
+	}
 	return err
 }
 
 // GetOrders returns a list of Orders from the SQLite instance
 func (s *SQLiteDB) GetOrders(ctx context.Context, result *[]OrderStatus) error {
 	return s.db.SelectContext(ctx, result, "SELECT id, status, received_at FROM orders ORDER BY received_at DESC")
+}
+
+// CountCompletedOrdersInRange counts completed Orders in a given time range
+func (s *SQLiteDB) CountCompletedOrdersInRange(ctx context.Context, start time.Time, end time.Time) (int, error) {
+	var count int
+	err := s.db.GetContext(ctx, &count, "SELECT COUNT(*) FROM orders WHERE completed_at >= ? AND completed_at <= ?", start.UTC(), end.UTC())
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 // UpdateShipmentStatus updates a Shipment in the SQLite instance

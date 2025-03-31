@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"go.temporal.io/api/enums/v1"
@@ -70,6 +71,12 @@ type ChargeCustomerResult struct {
 	AuthCode string `json:"authCode"`
 }
 
+// ChargeStatsResult holds the stats for the Charge system.
+type ChargeStatsResult struct {
+	WorkerCount int64 `json:"workerCount"`
+	Backlog     int64 `json:"backlog"`
+}
+
 type handlers struct {
 	temporal client.Client
 	logger   *slog.Logger
@@ -80,6 +87,7 @@ func Router(c client.Client, logger *slog.Logger) http.Handler {
 	r := http.NewServeMux()
 	h := handlers{temporal: c, logger: logger}
 
+	r.HandleFunc("GET /charge/stats", h.handleGetStats)
 	r.HandleFunc("POST /charge", h.handleCharge)
 
 	return r
@@ -138,6 +146,47 @@ func (h *handlers) handleCharge(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(result)
 	if err != nil {
 		h.logger.Error("Failed to encode charge result", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
+	resp, err := h.temporal.DescribeTaskQueueEnhanced(context.Background(), client.DescribeTaskQueueEnhancedOptions{
+		TaskQueue:     TaskQueue,
+		ReportStats:   true,
+		ReportPollers: true,
+	})
+	if err != nil {
+		h.logger.Error("Failed to get task queue stats", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	recentPollerWindow := time.Now().Add(-1 * time.Minute)
+
+	var backlog int64
+	var workerCount int
+	for _, versionInfo := range resp.VersionsInfo {
+		for _, typeInfo := range versionInfo.TypesInfo {
+			for _, pollerInfo := range typeInfo.Pollers {
+				if pollerInfo.LastAccessTime.After(recentPollerWindow) {
+					workerCount++
+				}
+			}
+			if typeInfo.Stats != nil {
+				backlog += typeInfo.Stats.ApproximateBacklogCount
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	err = json.NewEncoder(w).Encode(ChargeStatsResult{
+		WorkerCount: int64(workerCount),
+		Backlog:     backlog,
+	})
+	if err != nil {
+		h.logger.Error("Failed to encode backlog", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

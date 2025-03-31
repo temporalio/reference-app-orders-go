@@ -3,7 +3,6 @@ package order
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -12,7 +11,6 @@ import (
 	"github.com/temporalio/reference-app-orders-go/app/db"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
-	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/log"
 )
@@ -198,10 +196,11 @@ type OrderResult struct {
 
 const statsInterval = 30
 
-// OrderStatsResult is the result of the Order stats request.
+// OrderStatsResult holds the stats for the Order system.
 type OrderStatsResult struct {
-	CompleteRate float64 `json:"completeRate"`
+	WorkerCount  int64   `json:"workerCount"`
 	Backlog      int64   `json:"backlog"`
+	CompleteRate float64 `json:"completeRate"`
 }
 
 type handlers struct {
@@ -376,8 +375,9 @@ func (h *handlers) handleCustomerAction(w http.ResponseWriter, r *http.Request) 
 
 func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
 	resp, err := h.temporal.DescribeTaskQueueEnhanced(context.Background(), client.DescribeTaskQueueEnhancedOptions{
-		TaskQueue:   TaskQueue,
-		ReportStats: true,
+		TaskQueue:     TaskQueue,
+		ReportStats:   true,
+		ReportPollers: true,
 	})
 	if err != nil {
 		h.logger.Error("Failed to get task queue stats", "error", err)
@@ -385,32 +385,37 @@ func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
+	recentPollerWindow := time.Now().Add(-1 * time.Minute)
+
 	var backlog int64
+	var workerCount int
 	for _, versionInfo := range resp.VersionsInfo {
 		for _, typeInfo := range versionInfo.TypesInfo {
+			for _, pollerInfo := range typeInfo.Pollers {
+				if pollerInfo.LastAccessTime.After(recentPollerWindow) {
+					workerCount++
+				}
+			}
 			if typeInfo.Stats != nil {
 				backlog += typeInfo.Stats.ApproximateBacklogCount
 			}
 		}
 	}
 
-	closedSince := time.Now().Add(-statsInterval * time.Second).Format(time.RFC3339)
-	countResp, err := h.temporal.CountWorkflow(context.Background(), &workflowservice.CountWorkflowExecutionsRequest{
-		Query: fmt.Sprintf("WorkflowType='Order' AND ExecutionStatus='Completed' AND CloseTime > %q", closedSince),
-	})
+	now := time.Now()
+	closedSince := now.Add(-statsInterval * time.Second)
+	completed, err := h.db.CountCompletedOrdersInRange(context.Background(), closedSince, now)
 	if err != nil {
 		h.logger.Error("Failed to count workflows", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var completeRate float64
-	if countResp.GetCount() > 0 {
-		completeRate = float64(countResp.GetCount()) / float64(statsInterval)
-	}
+	completeRate := float64(completed) / statsInterval
 
 	w.Header().Set("Content-Type", "application/json")
 
 	err = json.NewEncoder(w).Encode(OrderStatsResult{
+		WorkerCount:  int64(workerCount),
 		CompleteRate: completeRate,
 		Backlog:      backlog,
 	})
