@@ -146,8 +146,8 @@ func (m *MongoDB) GetOrders(ctx context.Context, result *[]OrderStatus) error {
 func (m *MongoDB) CountCompletedOrdersInRange(ctx context.Context, start time.Time, end time.Time) (int, error) {
 	count, err := m.db.Collection(OrdersCollection).CountDocuments(ctx, bson.M{
 		"completed_at": bson.M{
-			"$gte": start,
-			"$lte": end,
+			"$gte": start.UTC(),
+			"$lte": end.UTC(),
 		},
 	})
 	return int(count), err
