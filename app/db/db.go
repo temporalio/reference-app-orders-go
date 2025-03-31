@@ -252,7 +252,7 @@ func (s *SQLiteDB) GetOrders(ctx context.Context, result *[]OrderStatus) error {
 // CountCompletedOrdersInRange counts completed Orders in a given time range
 func (s *SQLiteDB) CountCompletedOrdersInRange(ctx context.Context, start time.Time, end time.Time) (int, error) {
 	var count int
-	err := s.db.GetContext(ctx, &count, "SELECT COUNT(*) FROM orders WHERE completed_at >= ? AND completed_at <= ?", start, end)
+	err := s.db.GetContext(ctx, &count, "SELECT COUNT(*) FROM orders WHERE completed_at >= ? AND completed_at <= ?", start.UTC(), end.UTC())
 	if err != nil {
 		return 0, err
 	}
