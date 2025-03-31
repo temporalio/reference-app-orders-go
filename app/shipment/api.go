@@ -3,7 +3,6 @@ package shipment
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/temporalio/reference-app-orders-go/app/db"
 	"go.temporal.io/api/serviceerror"
-	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 )
 
@@ -57,13 +55,10 @@ type ListShipmentEntry struct {
 	Status string `json:"status" db:"status" bson:"status"`
 }
 
-const statsInterval = 30
-
 // ShipmentStatsResult holds the stats for the Shipment system.
 type ShipmentStatsResult struct {
-	WorkerCount  int64   `json:"workerCount"`
-	CompleteRate float64 `json:"completeRate"`
-	Backlog      int64   `json:"backlog"`
+	WorkerCount int64 `json:"workerCount"`
+	Backlog     int64 `json:"backlog"`
 }
 
 // Router implements the http.Handler interface for the Shipment API
@@ -242,26 +237,11 @@ func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
 		}
 	}
 
-	closedSince := time.Now().Add(-statsInterval * time.Second).Format(time.RFC3339)
-	countResp, err := h.temporal.CountWorkflow(context.Background(), &workflowservice.CountWorkflowExecutionsRequest{
-		Query: fmt.Sprintf("WorkflowType='Shipment' AND ExecutionStatus='Completed' AND CloseTime > %q", closedSince),
-	})
-	if err != nil {
-		h.logger.Error("Failed to count workflows", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var completeRate float64
-	if countResp.GetCount() > 0 {
-		completeRate = float64(countResp.GetCount()) / float64(statsInterval)
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 
 	err = json.NewEncoder(w).Encode(ShipmentStatsResult{
-		WorkerCount:  int64(workerCount),
-		CompleteRate: completeRate,
-		Backlog:      backlog,
+		WorkerCount: int64(workerCount),
+		Backlog:     backlog,
 	})
 	if err != nil {
 		h.logger.Error("Failed to encode backlog", "error", err)

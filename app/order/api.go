@@ -3,7 +3,6 @@ package order
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -12,7 +11,6 @@ import (
 	"github.com/temporalio/reference-app-orders-go/app/db"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
-	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/log"
 )
@@ -201,8 +199,8 @@ const statsInterval = 30
 // OrderStatsResult holds the stats for the Order system.
 type OrderStatsResult struct {
 	WorkerCount  int64   `json:"workerCount"`
-	CompleteRate float64 `json:"completeRate"`
 	Backlog      int64   `json:"backlog"`
+	CompleteRate float64 `json:"completeRate"`
 }
 
 type handlers struct {
@@ -404,19 +402,15 @@ func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
 		}
 	}
 
-	closedSince := time.Now().Add(-statsInterval * time.Second).Format(time.RFC3339)
-	countResp, err := h.temporal.CountWorkflow(context.Background(), &workflowservice.CountWorkflowExecutionsRequest{
-		Query: fmt.Sprintf("WorkflowType='Order' AND ExecutionStatus='Completed' AND CloseTime > %q", closedSince),
-	})
+	now := time.Now()
+	closedSince := now.Add(-statsInterval * time.Second)
+	completed, err := h.db.CountCompletedOrdersInRange(context.Background(), closedSince, now)
 	if err != nil {
 		h.logger.Error("Failed to count workflows", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var completeRate float64
-	if countResp.GetCount() > 0 {
-		completeRate = float64(countResp.GetCount()) / float64(statsInterval)
-	}
+	completeRate := float64(completed) / statsInterval
 
 	w.Header().Set("Content-Type", "application/json")
 

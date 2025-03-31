@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"go.temporal.io/api/enums/v1"
-	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 )
 
@@ -72,13 +71,10 @@ type ChargeCustomerResult struct {
 	AuthCode string `json:"authCode"`
 }
 
-const statsInterval = 30
-
 // ChargeStatsResult holds the stats for the Charge system.
 type ChargeStatsResult struct {
-	WorkerCount  int64   `json:"workerCount"`
-	CompleteRate float64 `json:"completeRate"`
-	Backlog      int64   `json:"backlog"`
+	WorkerCount int64 `json:"workerCount"`
+	Backlog     int64 `json:"backlog"`
 }
 
 type handlers struct {
@@ -183,26 +179,11 @@ func (h *handlers) handleGetStats(w http.ResponseWriter, _ *http.Request) {
 		}
 	}
 
-	closedSince := time.Now().Add(-statsInterval * time.Second).Format(time.RFC3339)
-	countResp, err := h.temporal.CountWorkflow(context.Background(), &workflowservice.CountWorkflowExecutionsRequest{
-		Query: fmt.Sprintf("WorkflowType='Charge' AND ExecutionStatus='Completed' AND CloseTime > %q", closedSince),
-	})
-	if err != nil {
-		h.logger.Error("Failed to count workflows", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var completeRate float64
-	if countResp.GetCount() > 0 {
-		completeRate = float64(countResp.GetCount()) / float64(statsInterval)
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 
 	err = json.NewEncoder(w).Encode(ChargeStatsResult{
-		WorkerCount:  int64(workerCount),
-		CompleteRate: completeRate,
-		Backlog:      backlog,
+		WorkerCount: int64(workerCount),
+		Backlog:     backlog,
 	})
 	if err != nil {
 		h.logger.Error("Failed to encode backlog", "error", err)
