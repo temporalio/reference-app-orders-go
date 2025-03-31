@@ -1,9 +1,6 @@
 module github.com/temporalio/reference-app-orders-go
 
 go 1.22.0
-
-toolchain go1.22.2
-
 require (
 	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0
@@ -11,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go/modules/mongodb v0.33.0
 	go.mongodb.org/mongo-driver v1.17.0
-	go.temporal.io/api v1.43.0
+	go.temporal.io/api v1.44.1
 	go.temporal.io/sdk v1.31.0
 	golang.org/x/sync v0.10.0
 	modernc.org/sqlite v1.34.1
