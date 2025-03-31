@@ -1,6 +1,7 @@
 module github.com/temporalio/reference-app-orders-go
 
 go 1.22.0
+
 require (
 	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0
