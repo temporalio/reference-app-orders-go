@@ -81,7 +81,7 @@ func (m *MongoDB) Connect(ctx context.Context) error {
 func (m *MongoDB) Setup() error {
 	orders := m.db.Collection(OrdersCollection)
 	_, err := orders.Indexes().CreateOne(context.TODO(), mongodb.IndexModel{
-		Keys: map[string]interface{}{"received_at": 1, "completed_at": 1},
+		Keys: map[string]interface{}{"received_at": 1},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create orders received_at index: %w", err)
