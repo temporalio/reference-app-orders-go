@@ -9,14 +9,19 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
+	prom "github.com/prometheus/client_golang/prometheus"
 	"github.com/temporalio/reference-app-orders-go/app/billing"
 	"github.com/temporalio/reference-app-orders-go/app/config"
 	"github.com/temporalio/reference-app-orders-go/app/db"
 	"github.com/temporalio/reference-app-orders-go/app/fraud"
 	"github.com/temporalio/reference-app-orders-go/app/order"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
+	"github.com/uber-go/tally/v4"
+	"github.com/uber-go/tally/v4/prometheus"
 	"go.temporal.io/sdk/client"
+	sdktally "go.temporal.io/sdk/contrib/tally"
 	"go.temporal.io/sdk/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -35,6 +40,7 @@ import (
 func CreateClientOptionsFromEnv() (client.Options, error) {
 	hostPort := os.Getenv("TEMPORAL_ADDRESS")
 	namespaceName := os.Getenv("TEMPORAL_NAMESPACE")
+	logger := slog.Default()
 
 	// Must explicitly set the Namepace for non-cloud use.
 	if strings.Contains(hostPort, ".tmprl.cloud:") && namespaceName == "" {
@@ -49,7 +55,7 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	clientOpts := client.Options{
 		HostPort:  hostPort,
 		Namespace: namespaceName,
-		Logger:    log.NewStructuredLogger(slog.Default()),
+		Logger:    log.NewStructuredLogger(logger),
 	}
 
 	if certPath := os.Getenv("TEMPORAL_TLS_CERT"); certPath != "" {
@@ -63,7 +69,42 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 		}
 	}
 
+	endpoint := os.Getenv("TEMPORAL_METRICS_ENDPOINT")
+	if endpoint != "" {
+		scope, err := newPrometheusScope(prometheus.Configuration{
+			ListenAddress: endpoint,
+			TimerType:     "histogram",
+		}, logger)
+		if err != nil {
+			return clientOpts, fmt.Errorf("failed to create metrics scope: %w", err)
+		}
+		clientOpts.MetricsHandler = sdktally.NewMetricsHandler(scope)
+	}
+
 	return clientOpts, nil
+}
+
+func newPrometheusScope(c prometheus.Configuration, logger *slog.Logger) (tally.Scope, error) {
+	reporter, err := c.NewReporter(
+		prometheus.ConfigurationOptions{
+			Registry: prom.NewRegistry(),
+			OnError: func(err error) {
+				logger.Error("error in prometheus reporter", "error", err)
+			},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error creating prometheus reporter: %w", err)
+	}
+	scopeOpts := tally.ScopeOptions{
+		CachedReporter:  reporter,
+		Separator:       prometheus.DefaultSeparator,
+		SanitizeOptions: &sdktally.PrometheusSanitizeOptions,
+	}
+	scope, _ := tally.NewRootScope(scopeOpts, time.Second)
+	scope = sdktally.NewPrometheusNamingScope(scope)
+
+	return scope, nil
 }
 
 // RunWorkers runs workers for the requested services.
@@ -148,10 +189,6 @@ func runAPIServer(ctx context.Context, hostPort string, router http.Handler, log
 	}
 
 	return nil
-}
-
-func serverHostPort(config config.AppConfig, port int32) string {
-	return fmt.Sprintf("%s:%d", config.BindOnIP, port)
 }
 
 // RunAPIServers runs API servers for the requested services.
