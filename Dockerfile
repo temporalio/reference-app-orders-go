@@ -1,4 +1,4 @@
-FROM golang:1.22.2 AS oms-builder
+FROM golang:1.23.8 AS oms-builder
 
 WORKDIR /usr/src/oms
 
