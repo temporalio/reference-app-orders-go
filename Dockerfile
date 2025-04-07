@@ -1,4 +1,4 @@
-FROM golang:1.22.2 AS oms-builder
+FROM golang:1.23.8 AS oms-builder
 
 WORKDIR /usr/src/oms
 
@@ -20,7 +20,7 @@ COPY --from=oms-builder /usr/local/bin/oms /usr/local/bin/oms
 
 ENTRYPOINT ["/usr/local/bin/oms", "worker"]
 
-FROM busybox as oms-api
+FROM busybox AS oms-api
 
 EXPOSE 8081
 EXPOSE 8082
@@ -31,7 +31,7 @@ COPY --from=oms-builder /usr/local/bin/oms /usr/local/bin/oms
 
 ENTRYPOINT ["/usr/local/bin/oms", "api"]
 
-FROM busybox as oms-codec-server
+FROM busybox AS oms-codec-server
 
 EXPOSE 8089
 
