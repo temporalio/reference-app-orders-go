@@ -13,8 +13,8 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/mongodb v0.33.0
 	github.com/uber-go/tally/v4 v4.1.17
 	go.mongodb.org/mongo-driver v1.17.0
-	go.temporal.io/api v1.44.1
-	go.temporal.io/sdk v1.33.0
+	go.temporal.io/api v1.46.0
+	go.temporal.io/sdk v1.34.0
 	go.temporal.io/sdk/contrib/tally v0.2.0
 	golang.org/x/sync v0.11.0
 	modernc.org/sqlite v1.34.1
@@ -67,7 +67,6 @@ require (
 	github.com/nexus-rpc/sdk-go v0.3.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
-	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
@@ -104,7 +103,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240827150818-7e3bb234dfed // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240827150818-7e3bb234dfed // indirect
 	google.golang.org/grpc v1.66.0 // indirect
-	google.golang.org/protobuf v1.35.2 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6 // indirect
 	modernc.org/libc v1.55.3 // indirect
