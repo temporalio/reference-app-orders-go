@@ -22,23 +22,40 @@ by setting environment variables. Therefore, moving from a local
 Temporal Service to one provided by Temporal Cloud requires no 
 change to application code.
 
-You must define four environment variables, which match those you'd 
-set when using the `temporal` command with Temporal Cloud. We recommend 
-defining them in a reusable script, since you'll need to set them 
-in multiple terminals:
+#### Authentication Options
+
+Temporal Cloud supports two authentication methods: mTLS (mutual TLS) and API Keys. You need to choose one of these methods when connecting to Temporal Cloud.
+
+##### Option 1: Using mTLS Authentication
+
+If using mTLS authentication, you must define the following environment variables. We recommend defining them in a reusable script, since you'll need to set them in multiple terminals:
 
 1. **`TEMPORAL_NAMESPACE`**: Set this to the name of your Namespace 
     in the Temporal Cloud Account
     * Example: `oms-demo.d6rd8`
 2. **`TEMPORAL_ADDRESS`**: Set this to the gRPC Endpoint for your 
-    Namespace
+    Namespace that uses the `tmprl.cloud` domain
     * Example: `oms-demo.d6rd8.tmprl.cloud:7233`
-4. **`TEMPORAL_TLS_CERT`**: Set this to the path of a TLS certificate 
+3. **`TEMPORAL_TLS_CERT`**: Set this to the path of a TLS certificate 
     file associated with your Namespace
     * Example: `/Users/tomwheeler/private/tls/oms-demo.pem`
-5. **`TEMPORAL_TLS_KEY`**: Set this to the path of the private key
+4. **`TEMPORAL_TLS_KEY`**: Set this to the path of the private key
     for your TLS certificate
     * Example: `/Users/tomwheeler/private/tls/oms-demo.key`
+
+##### Option 2: Using API Key Authentication
+
+If using API Key authentication, you must define the following environment variables.  We recommend defining them in a reusable script, since you'll need to set them in multiple terminals
+
+1. **`TEMPORAL_NAMESPACE`**: Set this to the name of your Namespace 
+    in the Temporal Cloud Account
+    * Example: `oms-demo.d6rd8`
+2. **`TEMPORAL_ADDRESS`**: Set this to the API Key gRPC Endpoint for your 
+    Namespace that uses the `temporal.io` domain (note the domain difference from mTLS)
+    * Example: `oms-demo.d6rd8.temporal.io:7233`
+3. **`TEMPORAL_API_KEY`**: Set this to your Temporal Cloud API Key
+
+You can find both the endpoint and API key in the Temporal Cloud UI under your namespace settings.
 
 Because you'll use Temporal Cloud, you won't need to run the 
 Temporal Service locally.
