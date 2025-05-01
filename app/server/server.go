@@ -32,6 +32,7 @@ import (
 //
 //	TEMPORAL_ADDRESS: Host and port (formatted as host:port) of the Temporal Frontend Service
 //	TEMPORAL_NAMESPACE: Namespace to be used by the Client
+//	TEMPORAL_API_KEY: API Key for Temporal Cloud
 //	TEMPORAL_TLS_CERT: Path to the x509 certificate
 //	TEMPORAL_TLS_KEY: Path to the private certificate key
 //
@@ -43,7 +44,7 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 	logger := slog.Default()
 
 	// Must explicitly set the Namepace for non-cloud use.
-	if strings.Contains(hostPort, ".tmprl.cloud:") && namespaceName == "" {
+	if (strings.Contains(hostPort, ".tmprl.cloud:") || strings.Contains(hostPort, ".temporal.io:")) && namespaceName == "" {
 		return client.Options{}, fmt.Errorf("Namespace name unspecified; required for Temporal Cloud")
 	}
 
@@ -56,6 +57,22 @@ func CreateClientOptionsFromEnv() (client.Options, error) {
 		HostPort:  hostPort,
 		Namespace: namespaceName,
 		Logger:    log.NewStructuredLogger(logger),
+	}
+
+	if apiKey := os.Getenv("TEMPORAL_API_KEY"); apiKey != "" {
+		// Warn if the API Key environment variable is defined, but the
+		// endpoint address is not valid for API key authentication with
+		// Temporal Cloud. The detail page for the Namespace in Temporal
+		// Cloud shows which endpoint to use with API keys (has a temporal.io
+		// domain) and which to use with mTLS (has a tmprl.cloud domain).
+		if strings.Contains(hostPort, ".tmprl.cloud:") {
+			logger.Warn("warning: using an API key with invalid Temporal Cloud endpoint")
+		}
+
+		clientOpts.Credentials = client.NewAPIKeyStaticCredentials(apiKey)
+		clientOpts.ConnectionOptions = client.ConnectionOptions{
+			TLS: &tls.Config{},
+		}
 	}
 
 	if certPath := os.Getenv("TEMPORAL_TLS_CERT"); certPath != "" {
