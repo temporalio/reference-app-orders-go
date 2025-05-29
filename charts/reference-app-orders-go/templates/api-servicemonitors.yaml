@@ -1,0 +1,29 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "reference-app-orders-go.fullname" . }}-main-api
+  labels:
+    {{- include "reference-app-orders-go.labels" (list . "main-api") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "reference-app-orders-go.selectorLabels" (list . "main-api") | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "reference-app-orders-go.fullname" . }}-billing-api
+  labels:
+    {{- include "reference-app-orders-go.labels" (list . "billing-api") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "reference-app-orders-go.selectorLabels" (list . "billing-api") | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+{{- end }} 

@@ -1,0 +1,94 @@
+# Default values for reference-app-orders-go
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+main:
+  worker:
+    replicaCount: 1
+    image:
+      repository: "ghcr.io/temporalio/reference-app-orders-go-worker"
+      tag: "1.0.0"
+    resources:
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+  api:
+    replicaCount: 1
+    image:
+      repository: "ghcr.io/temporalio/reference-app-orders-go-api"
+      tag: "1.0.0"
+    resources:
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+billing:
+  worker:
+    replicaCount: 1
+    image:
+      repository: "ghcr.io/temporalio/reference-app-orders-go-worker"
+      tag: "1.0.0"
+    resources:
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+  api:
+    replicaCount: 1
+    image:
+      repository: "ghcr.io/temporalio/reference-app-orders-go-api"
+      tag: "1.0.0"
+    resources:
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+# Temporal connection settings
+temporal:
+  address: "temporal-frontend.temporal.svc.cluster.local:7233"
+  namespace: "default"
+
+# API service ports
+services:
+  billing:
+    port: 8081
+  order:
+    port: 8082
+  shipment:
+    port: 8083
+  fraud:
+    port: 8084
+
+# Metrics settings
+metrics:
+  enabled: true
+  port: 9090
+
+# Optional encryption key ID for payload encryption
+# encryptionKeyID: ""
+
+# Service monitor settings for Prometheus
+serviceMonitor:
+  enabled: false
+  interval: 30s 

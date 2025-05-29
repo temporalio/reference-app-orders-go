@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "reference-app-orders-go.fullname" . }}-billing-api
+  labels:
+    {{- include "reference-app-orders-go.labels" (list . "billing-api") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: billing-api
+      port: {{ .Values.services.billing.port }}
+      targetPort: {{ .Values.services.billing.port }}
+    {{- if .Values.metrics.enabled }}
+    - name: metrics
+      port: {{ .Values.metrics.port }}
+      targetPort: {{ .Values.metrics.port }}
+    {{- end }}
+  selector:
+    {{- include "reference-app-orders-go.selectorLabels" (list . "billing-api") | nindent 4 }} 

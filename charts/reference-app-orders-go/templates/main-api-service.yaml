@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "reference-app-orders-go.fullname" . }}-main-api
+  labels:
+    {{- include "reference-app-orders-go.labels" (list . "main-api") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: order-api
+      port: {{ .Values.services.order.port }}
+      targetPort: {{ .Values.services.order.port }}
+    - name: shipment-api
+      port: {{ .Values.services.shipment.port }}
+      targetPort: {{ .Values.services.shipment.port }}
+    - name: fraud-api
+      port: {{ .Values.services.fraud.port }}
+      targetPort: {{ .Values.services.fraud.port }}
+    {{- if .Values.metrics.enabled }}
+    - name: metrics
+      port: {{ .Values.metrics.port }}
+      targetPort: {{ .Values.metrics.port }}
+    {{- end }}
+  selector:
+    {{- include "reference-app-orders-go.selectorLabels" (list . "main-api") | nindent 4 }} 

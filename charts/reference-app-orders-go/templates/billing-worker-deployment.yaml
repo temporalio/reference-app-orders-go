@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reference-app-orders-go.fullname" . }}-billing-worker
+  labels:
+    {{- include "reference-app-orders-go.labels" (list . "billing-worker") | nindent 4 }}
+spec:
+  replicas: {{ .Values.billing.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "reference-app-orders-go.selectorLabels" (list . "billing-worker") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "reference-app-orders-go.labels" (list . "billing-worker") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}-billing-worker
+          image: "{{ .Values.billing.worker.image.repository }}:{{ .Values.billing.worker.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            {{- if .Values.encryptionKeyID }}
+            - "-k"
+            - {{ .Values.encryptionKeyID }}
+            {{- end }}
+            - "-s"
+            - "billing"
+          {{- if .Values.metrics.enabled }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+              protocol: TCP
+          {{- end }}
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: {{ .Values.temporal.address | quote }}
+            - name: TEMPORAL_NAMESPACE
+              value: {{ .Values.temporal.namespace | quote }}
+            {{- if .Values.metrics.enabled }}
+            - name: TEMPORAL_METRICS_ENDPOINT
+              value: "0.0.0.0:{{ .Values.metrics.port }}"
+            {{- end }}
+          resources:
+            {{- toYaml .Values.billing.worker.resources | nindent 12 }} 
