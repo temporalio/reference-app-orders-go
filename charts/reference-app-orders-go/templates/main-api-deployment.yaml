@@ -23,7 +23,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-main-api
-          image: "{{ .Values.main.api.image.repository }}:{{ .Values.main.api.image.tag }}"
+          image: "{{ .Values.main.api.image.repository }}:{{ .Values.main.api.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             {{- if .Values.encryptionKeyID }}

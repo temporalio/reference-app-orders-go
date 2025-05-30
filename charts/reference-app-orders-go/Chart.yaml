@@ -5,4 +5,4 @@ description: A reference application for order management built with Temporal
 type: application
 
 version: 0.1.0
-appVersion: "latest" 
+appVersion: "1.0.0" 

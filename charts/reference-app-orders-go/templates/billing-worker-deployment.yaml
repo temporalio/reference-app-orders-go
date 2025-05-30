@@ -20,7 +20,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-billing-worker
-          image: "{{ .Values.billing.worker.image.repository }}:{{ .Values.billing.worker.image.tag }}"
+          image: "{{ .Values.billing.worker.image.repository }}:{{ .Values.billing.worker.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             {{- if .Values.encryptionKeyID }}

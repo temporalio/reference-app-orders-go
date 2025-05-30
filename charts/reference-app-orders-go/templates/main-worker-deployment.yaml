@@ -20,7 +20,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-main-worker
-          image: "{{ .Values.main.worker.image.repository }}:{{ .Values.main.worker.image.tag }}"
+          image: "{{ .Values.main.worker.image.repository }}:{{ .Values.main.worker.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             {{- if .Values.encryptionKeyID }}

@@ -37,12 +37,16 @@ The following table lists the configurable parameters and their default values:
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `main.worker.replicaCount` | Number of main worker replicas | `1` |
 | `main.worker.image.repository` | Main worker image repository | `ghcr.io/temporalio/reference-app-orders-go` |
-| `main.worker.image.tag` | Main worker image tag | `latest` |
+| `main.worker.image.tag` | Main worker image tag | `Chart.appVersion` |
 | `main.api.replicaCount` | Number of main API replicas (limited to 1) | `1` |
 | `main.api.image.repository` | Main API image repository | `ghcr.io/temporalio/reference-app-orders-go` |
-| `main.api.image.tag` | Main API image tag | `latest` |
+| `main.api.image.tag` | Main API image tag | `Chart.appVersion` |
 | `billing.worker.replicaCount` | Number of billing worker replicas | `1` |
+| `billing.worker.image.repository` | Billing worker image repository | `ghcr.io/temporalio/reference-app-orders-go` |
+| `billing.worker.image.tag` | Billing worker image tag | `Chart.appVersion` |
 | `billing.api.replicaCount` | Number of billing API replicas | `1` |
+| `billing.api.image.repository` | Billing API image repository | `ghcr.io/temporalio/reference-app-orders-go` |
+| `billing.api.image.tag` | Billing API image tag | `Chart.appVersion` |
 | `temporal.address` | Temporal frontend address | `temporal-frontend:7233` |
 | `temporal.namespace` | Temporal namespace | `default` |
 | `services.billing.port` | Billing API port | `8081` |

@@ -20,7 +20,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}-billing-api
-          image: "{{ .Values.billing.api.image.repository }}:{{ .Values.billing.api.image.tag }}"
+          image: "{{ .Values.billing.api.image.repository }}:{{ .Values.billing.api.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             {{- if .Values.encryptionKeyID }}
