@@ -13,13 +13,13 @@ A Helm chart for deploying the reference-app-orders-go application, which demons
 ### Install from OCI Registry
 
 ```bash
-helm install my-orders-app oci://ghcr.io/temporalio/charts/reference-app-orders-go
+helm install -n oms --create-namespace oms oci://ghcr.io/temporalio/charts/reference-app-orders-go
 ```
 
 ### Install from Local Chart
 
 ```bash
-helm install my-orders-app ./charts/reference-app-orders-go
+helm install -n oms --create-namespace oms ./charts/reference-app-orders-go
 ```
 
 ## Configuration
@@ -53,6 +53,9 @@ The following table lists the configurable parameters and their default values:
 | `billing.api.replicaCount` | Number of billing API replicas | `1` |
 | `billing.api.image.repository` | Billing API image repository | `ghcr.io/temporalio/reference-app-orders-go` |
 | `billing.api.image.tag` | Billing API image tag | `Chart.appVersion` |
+| `web.replicaCount` | Number of web application replicas | `1` |
+| `web.image.repository` | Web application image repository | `ghcr.io/temporalio/reference-app-orders-web` |
+| `web.image.tag` | Web application image tag | `latest` |
 | `temporal.address` | Temporal frontend address | `temporal-frontend:7233` |
 | `temporal.namespace` | Temporal namespace | `default` |
 | `services.billing.port` | Billing API port | `8081` |
@@ -80,6 +83,9 @@ This chart deploys the following services:
 - **Main API**: Exposes order, shipment, and fraud APIs
 - **Billing API**: Exposes billing API
 
+### Web Application
+- **Web**: Frontend web application that provides a user interface for the order management system
+
 ## Example Values
 
 ```yaml
@@ -87,6 +93,12 @@ This chart deploys the following services:
 main:
   api:
     replicaCount: 3
+
+# Enable web application
+web:
+  replicaCount: 2
+  image:
+    tag: "v2.0.0"
 
 # Custom MongoDB configuration
 mongodb:
@@ -130,7 +142,7 @@ When `serviceMonitor.enabled` is set to `true`, the chart creates ServiceMonitor
 ## Uninstallation
 
 ```bash
-helm uninstall my-orders-app
+helm uninstall oms
 ```
 
 **Note**: This will also remove the MongoDB StatefulSet and its associated PersistentVolumeClaim. Make sure to backup any important data before uninstalling. 
