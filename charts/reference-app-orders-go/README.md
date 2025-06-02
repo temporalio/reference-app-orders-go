@@ -22,10 +22,6 @@ helm install my-orders-app oci://ghcr.io/temporalio/charts/reference-app-orders-
 helm install my-orders-app ./charts/reference-app-orders-go
 ```
 
-## Limitations
-
-⚠️ **Important**: The `main.api.replicaCount` is currently limited to `1` until database support is implemented. Setting it higher will cause the chart installation to fail with an error message. This prevents potential data consistency issues when multiple API instances are running without proper database coordination.
-
 ## Configuration
 
 The following table lists the configurable parameters and their default values:
@@ -35,10 +31,20 @@ The following table lists the configurable parameters and their default values:
 | `nameOverride` | Override the name of the chart | `""` |
 | `fullnameOverride` | Override the full name of the chart | `""` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
+| `mongodb.enabled` | Enable MongoDB deployment | `true` |
+| `mongodb.image.repository` | MongoDB image repository | `mongo` |
+| `mongodb.image.tag` | MongoDB image tag | `6` |
+| `mongodb.resources.limits.cpu` | MongoDB CPU limit | `500m` |
+| `mongodb.resources.limits.memory` | MongoDB memory limit | `512Mi` |
+| `mongodb.resources.requests.cpu` | MongoDB CPU request | `250m` |
+| `mongodb.resources.requests.memory` | MongoDB memory request | `256Mi` |
+| `mongodb.persistence.enabled` | Enable MongoDB persistent storage | `true` |
+| `mongodb.persistence.size` | MongoDB storage size | `100Mi` |
+| `mongodb.persistence.storageClass` | MongoDB storage class | `""` |
 | `main.worker.replicaCount` | Number of main worker replicas | `1` |
 | `main.worker.image.repository` | Main worker image repository | `ghcr.io/temporalio/reference-app-orders-go` |
 | `main.worker.image.tag` | Main worker image tag | `Chart.appVersion` |
-| `main.api.replicaCount` | Number of main API replicas (limited to 1) | `1` |
+| `main.api.replicaCount` | Number of main API replicas | `1` |
 | `main.api.image.repository` | Main API image repository | `ghcr.io/temporalio/reference-app-orders-go` |
 | `main.api.image.tag` | Main API image tag | `Chart.appVersion` |
 | `billing.worker.replicaCount` | Number of billing worker replicas | `1` |
@@ -63,6 +69,9 @@ The following table lists the configurable parameters and their default values:
 
 This chart deploys the following services:
 
+### Database
+- **MongoDB**: Provides a shared cache for the main API service
+
 ### Workers
 - **Main Worker**: Handles order and shipment workflows
 - **Billing Worker**: Handles billing workflows
@@ -74,6 +83,21 @@ This chart deploys the following services:
 ## Example Values
 
 ```yaml
+# Scale API services horizontally
+main:
+  api:
+    replicaCount: 3
+
+# Custom MongoDB configuration
+mongodb:
+  resources:
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+  persistence:
+    size: 1Gi
+    storageClass: "fast-ssd"
+
 # Custom image
 main:
   worker:
@@ -95,6 +119,10 @@ temporal:
 encryptionKeyID: "my-encryption-key"
 ```
 
+## Database
+
+The chart includes a MongoDB deployment that serves as a cache for the main API.
+
 ## Monitoring
 
 When `serviceMonitor.enabled` is set to `true`, the chart creates ServiceMonitor resources for Prometheus to scrape metrics from the application endpoints. ServiceMonitors are deployed in the same namespace as the application services.
@@ -103,4 +131,6 @@ When `serviceMonitor.enabled` is set to `true`, the chart creates ServiceMonitor
 
 ```bash
 helm uninstall my-orders-app
-``` 
+```
+
+**Note**: This will also remove the MongoDB StatefulSet and its associated PersistentVolumeClaim. Make sure to backup any important data before uninstalling. 

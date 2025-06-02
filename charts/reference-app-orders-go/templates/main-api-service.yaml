@@ -13,9 +13,6 @@ spec:
     - name: shipment-api
       port: {{ .Values.services.shipment.port }}
       targetPort: {{ .Values.services.shipment.port }}
-    - name: fraud-api
-      port: {{ .Values.services.fraud.port }}
-      targetPort: {{ .Values.services.fraud.port }}
     {{- if .Values.metrics.enabled }}
     - name: metrics
       port: {{ .Values.metrics.port }}

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reference-app-orders-go.fullname" . }}-web
+  labels:
+    {{- include "reference-app-orders-go.labels" (list . "web") | nindent 4 }}
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "reference-app-orders-go.selectorLabels" (list . "web") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "reference-app-orders-go.labels" (list . "web") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}-web
+          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: BILLING_API_URL
+              value: "http://{{ include "reference-app-orders-go.fullname" . }}-billing-api:{{ .Values.services.billing.port }}"
+            - name: FRAUD_API_URL
+              value: "http://{{ include "reference-app-orders-go.fullname" . }}-billing-api:{{ .Values.services.fraud.port }}"
+            - name: ORDER_API_URL
+              value: "http://{{ include "reference-app-orders-go.fullname" . }}-main-api:{{ .Values.services.order.port }}"
+            - name: SHIPMENT_API_URL
+              value: "http://{{ include "reference-app-orders-go.fullname" . }}-main-api:{{ .Values.services.shipment.port }}"
+            - name: ORIGIN
+              value: "http://localhost:3000"
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+      enableServiceLinks: false 

@@ -28,10 +28,13 @@ spec:
             - {{ .Values.encryptionKeyID }}
             {{- end }}
             - "-s"
-            - "billing"
+            - "billing,fraud"
           ports:
             - name: billing
               containerPort: {{ .Values.services.billing.port }}
+              protocol: TCP
+            - name: fraud
+              containerPort: {{ .Values.services.fraud.port }}
               protocol: TCP
             {{- if .Values.metrics.enabled }}
             - name: metrics
@@ -47,7 +50,11 @@ spec:
             - name: TEMPORAL_METRICS_ENDPOINT
               value: "0.0.0.0:{{ .Values.metrics.port }}"
             {{- end }}
+            - name: BIND_ON_IP
+              value: "0.0.0.0"
             - name: BILLING_API_PORT
               value: {{ .Values.services.billing.port | quote }}
+            - name: FRAUD_API_PORT
+              value: {{ .Values.services.fraud.port | quote }}
           resources:
             {{- toYaml .Values.billing.api.resources | nindent 12 }} 

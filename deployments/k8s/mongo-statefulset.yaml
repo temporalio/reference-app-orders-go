@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: mongo
     app.kubernetes.io/name: oms
-  name: mongo
+  name: oms-mongo
   namespace: oms
 spec:
   replicas: 1
@@ -12,7 +12,7 @@ spec:
     matchLabels:
       app.kubernetes.io/component: mongo
       app.kubernetes.io/name: oms
-  serviceName: mongo
+  serviceName: oms-mongo
   template:
     metadata:
       labels:
@@ -31,13 +31,13 @@ spec:
       volumes:
         - name: mongo
           persistentVolumeClaim:
-            claimName: mongo
+            claimName: oms-mongo
   volumeClaimTemplates:
     - metadata:
         labels:
           app.kubernetes.io/component: mongo
           app.kubernetes.io/name: oms
-        name: mongo
+        name: oms-mongo
       spec:
         accessModes:
           - ReadWriteOnce

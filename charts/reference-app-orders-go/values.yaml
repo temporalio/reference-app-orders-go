@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 nameOverride: ""
-fullnameOverride: ""
+fullnameOverride: "oms"
 
 image:
   pullPolicy: IfNotPresent
@@ -64,6 +64,20 @@ billing:
         cpu: "100m"
         memory: "128Mi"
 
+# Web application configuration
+web:
+  replicaCount: 1
+  image:
+    repository: "ghcr.io/temporalio/reference-app-orders-web"
+    tag: "latest"
+  resources:
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+
 # Temporal connection settings
 temporal:
   address: "temporal-frontend.temporal.svc.cluster.local:7233"
@@ -92,3 +106,20 @@ metrics:
 serviceMonitor:
   enabled: false
   interval: 30s 
+
+# MongoDB configuration
+mongodb:
+  image:
+    repository: mongo
+    tag: "8.0"
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+  persistence:
+    enabled: true
+    size: 100Mi
+    storageClass: ""

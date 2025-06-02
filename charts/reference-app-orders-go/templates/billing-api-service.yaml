@@ -10,6 +10,9 @@ spec:
     - name: billing-api
       port: {{ .Values.services.billing.port }}
       targetPort: {{ .Values.services.billing.port }}
+    - name: fraud-api
+      port: {{ .Values.services.fraud.port }}
+      targetPort: {{ .Values.services.fraud.port }}
     {{- if .Values.metrics.enabled }}
     - name: metrics
       port: {{ .Values.metrics.port }}

@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: main-api
     app.kubernetes.io/name: oms
-  name: main-api
+  name: oms-main-api
   namespace: oms
 spec:
   replicas: 1

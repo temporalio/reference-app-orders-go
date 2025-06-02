@@ -1,6 +1,3 @@
-{{- if gt (.Values.main.api.replicaCount | int) 1 }}
-{{- fail "main.api.replicaCount cannot be greater than 1 until database support is implemented. Please set main.api.replicaCount to 1." }}
-{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,16 +28,13 @@ spec:
             - {{ .Values.encryptionKeyID }}
             {{- end }}
             - "-s"
-            - "order,shipment,fraud"
+            - "order,shipment"
           ports:
             - name: order
               containerPort: {{ .Values.services.order.port }}
               protocol: TCP
             - name: shipment
               containerPort: {{ .Values.services.shipment.port }}
-              protocol: TCP
-            - name: fraud
-              containerPort: {{ .Values.services.fraud.port }}
               protocol: TCP
             {{- if .Values.metrics.enabled }}
             - name: metrics
@@ -56,11 +50,13 @@ spec:
             - name: TEMPORAL_METRICS_ENDPOINT
               value: "0.0.0.0:{{ .Values.metrics.port }}"
             {{- end }}
+            - name: MONGO_URL
+              value: "mongodb://{{ include "reference-app-orders-go.fullname" . }}-mongodb:27017"
+            - name: BIND_ON_IP
+              value: "0.0.0.0"
             - name: ORDER_API_PORT
               value: {{ .Values.services.order.port | quote }}
             - name: SHIPMENT_API_PORT
               value: {{ .Values.services.shipment.port | quote }}
-            - name: FRAUD_API_PORT
-              value: {{ .Values.services.fraud.port | quote }}
           resources:
             {{- toYaml .Values.main.api.resources | nindent 12 }} 

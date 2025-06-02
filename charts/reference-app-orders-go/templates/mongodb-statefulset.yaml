@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "reference-app-orders-go.fullname" . }}-mongodb
+  labels:
+    {{- include "reference-app-orders-go.labels" (list . "mongodb") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "reference-app-orders-go.selectorLabels" (list . "mongodb") | nindent 6 }}
+  serviceName: {{ include "reference-app-orders-go.fullname" . }}-mongodb
+  template:
+    metadata:
+      labels:
+        {{- include "reference-app-orders-go.labels" (list . "mongodb") | nindent 8 }}
+    spec:
+      containers:
+        - name: mongodb
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 27017
+              protocol: TCP
+          {{- if .Values.mongodb.persistence.enabled }}
+          volumeMounts:
+            - mountPath: /data/db
+              name: mongodb-data
+          {{- end }}
+          resources:
+            {{- toYaml .Values.mongodb.resources | nindent 12 }}
+  {{- if .Values.mongodb.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-data
+        labels:
+          {{- include "reference-app-orders-go.labels" (list . "mongodb") | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.mongodb.persistence.size }}
+        {{- if .Values.mongodb.persistence.storageClass }}
+        storageClassName: {{ .Values.mongodb.persistence.storageClass }}
+        {{- end }}
+  {{- end }}

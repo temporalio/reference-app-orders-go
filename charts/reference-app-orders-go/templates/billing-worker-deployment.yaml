@@ -36,6 +36,8 @@ spec:
               protocol: TCP
           {{- end }}
           env:
+            - name: FRAUD_API_URL
+              value: "http://{{ include "reference-app-orders-go.fullname" . }}-billing-api:{{ .Values.services.fraud.port }}"
             - name: TEMPORAL_ADDRESS
               value: {{ .Values.temporal.address | quote }}
             - name: TEMPORAL_NAMESPACE

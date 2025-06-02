@@ -1,3 +1,3 @@
 #!/bin/sh
 
-kubectl port-forward -n oms deployment/web 3000
+kubectl port-forward -n oms deployment/oms-web 3000
