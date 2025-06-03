@@ -124,7 +124,7 @@ serviceMonitor:
 
 # Connect to external Temporal Service
 temporal:
-  address: my-temporal-cluster:7233
+  address: hostname.example.com:7233
   namespace: orders
 
 # Enable payload encryption
