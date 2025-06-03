@@ -6,7 +6,7 @@ A Helm chart for deploying the reference-app-orders-go application, which demons
 
 - Kubernetes 1.19+
 - Helm 3.0+
-- A running Temporal cluster
+- A running Temporal Service
 
 ## Installation
 
