@@ -122,7 +122,7 @@ serviceMonitor:
   enabled: true
   interval: 15s
 
-# Connect to external Temporal cluster
+# Connect to external Temporal Service
 temporal:
   address: my-temporal-cluster:7233
   namespace: orders
