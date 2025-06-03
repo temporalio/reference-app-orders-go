@@ -142,7 +142,7 @@ When `serviceMonitor.enabled` is set to `true`, the chart creates ServiceMonitor
 ## Uninstallation
 
 ```bash
-helm uninstall oms
+helm uninstall -n oms oms
 ```
 
 **Note**: This will also remove the MongoDB StatefulSet and its associated PersistentVolumeClaim. Make sure to backup any important data before uninstalling. 
