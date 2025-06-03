@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: billing-api
     app.kubernetes.io/name: oms
-  name: billing-api
+  name: oms-billing-api
   namespace: oms
 spec:
   ports:

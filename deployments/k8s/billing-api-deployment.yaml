@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: billing-api
     app.kubernetes.io/name: oms
-  name: billing-api
+  name: oms-billing-api
   namespace: oms
 spec:
   replicas: 1
@@ -31,8 +31,6 @@ spec:
               value: 0.0.0.0
             - name: FRAUD_API_PORT
               value: "8084"
-            - name: MONGO_URL
-              value: mongodb://mongo:27017
             - name: TEMPORAL_ADDRESS
               value: temporal-frontend.temporal:7233
           image: ghcr.io/temporalio/reference-app-orders-go-api:latest

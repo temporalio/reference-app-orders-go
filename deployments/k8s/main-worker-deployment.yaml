@@ -4,7 +4,7 @@ metadata:
   labels:
     app.kubernetes.io/component: main-worker
     app.kubernetes.io/name: oms
-  name: main-worker
+  name: oms-main-worker
   namespace: oms
 spec:
   replicas: 1

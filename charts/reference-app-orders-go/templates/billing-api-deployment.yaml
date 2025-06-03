@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reference-app-orders-go.fullname" . }}-billing-api
+  labels:
+    {{- include "reference-app-orders-go.labels" (list . "billing-api") | nindent 4 }}
+spec:
+  replicas: {{ .Values.billing.api.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "reference-app-orders-go.selectorLabels" (list . "billing-api") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "reference-app-orders-go.labels" (list . "billing-api") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}-billing-api
+          image: "{{ .Values.billing.api.image.repository }}:{{ .Values.billing.api.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            {{- if .Values.encryptionKeyID }}
+            - "-k"
+            - {{ .Values.encryptionKeyID }}
+            {{- end }}
+            - "-s"
+            - "billing,fraud"
+          ports:
+            - name: billing
+              containerPort: {{ .Values.services.billing.port }}
+              protocol: TCP
+            - name: fraud
+              containerPort: {{ .Values.services.fraud.port }}
+              protocol: TCP
+            {{- if .Values.metrics.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+              protocol: TCP
+            {{- end }}
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: {{ .Values.temporal.address | quote }}
+            - name: TEMPORAL_NAMESPACE
+              value: {{ .Values.temporal.namespace | quote }}
+            {{- if .Values.metrics.enabled }}
+            - name: TEMPORAL_METRICS_ENDPOINT
+              value: "0.0.0.0:{{ .Values.metrics.port }}"
+            {{- end }}
+            - name: BIND_ON_IP
+              value: "0.0.0.0"
+            - name: BILLING_API_PORT
+              value: {{ .Values.services.billing.port | quote }}
+            - name: FRAUD_API_PORT
+              value: {{ .Values.services.fraud.port | quote }}
+          resources:
+            {{- toYaml .Values.billing.api.resources | nindent 12 }} 

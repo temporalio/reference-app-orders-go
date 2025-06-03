@@ -1,0 +1,29 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "reference-app-orders-go.fullname" . }}-main-worker
+  labels:
+    {{- include "reference-app-orders-go.labels" (list . "main-worker") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "reference-app-orders-go.selectorLabels" (list . "main-worker") | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "reference-app-orders-go.fullname" . }}-billing-worker
+  labels:
+    {{- include "reference-app-orders-go.labels" (list . "billing-worker") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "reference-app-orders-go.selectorLabels" (list . "billing-worker") | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+{{- end }} 

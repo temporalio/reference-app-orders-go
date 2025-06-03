@@ -1,3 +1,3 @@
 #!/bin/sh
 
-kubectl port-forward -n oms deployment/codec-server 8089
+kubectl port-forward -n oms deployment/oms-codec-server 8089

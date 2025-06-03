@@ -13,6 +13,24 @@ yq \
     docker-compose-split.yaml | \
     kompose -f - -o k8s convert -n oms --with-kompose-annotation=false
 
+# Add "oms-" prefix to deployment and service names to align with Helm chart naming
+for f in ./k8s/*-deployment.yaml ./k8s/*-service.yaml ./k8s/*-statefulset.yaml ./k8s/*-persistentvolumeclaim.yaml; do
+    yq -i '.metadata.name |= "oms-" + .' "$f"
+done
+
+# Update PVC references in statefulsets to use the new prefixed names
+for f in ./k8s/*-statefulset.yaml; do
+    yq -i '(.spec.template.spec.volumes[]?.persistentVolumeClaim.claimName) |= "oms-" + .' "$f"
+done
+
+# Update service references in deployments to use the new prefixed service names
+for f in ./k8s/*-deployment.yaml; do
+    yq -i '
+    (.spec.template.spec.containers[0].env[]? | select(.name == "MONGO_URL").value) |= sub("mongo:27017"; "oms-mongo:27017") |
+    (.spec.template.spec.containers[0].env[]? | select(.value | test("http://[^/]+")).value) |= sub("http://([^:/]+)"; "http://oms-\1")
+    ' "$f"
+done
+
 # Translate kompose labels to more standard kubernetes labels
 for f in ./k8s/*.yaml; do
     yq -i \

@@ -1,0 +1,114 @@
+name: Package and Publish Helm Chart
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Type of version bump to perform'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      app_version:
+        description: 'Application version to set (e.g., 1.2.0, v2.1.0)'
+        required: true
+        type: string
+
+permissions:
+  packages: write
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Update Chart Version and App Version
+        id: update_versions
+        run: |
+          # Get current chart version from Chart.yaml
+          CURRENT_VERSION=$(grep 'version:' charts/reference-app-orders-go/Chart.yaml | awk '{print $2}')
+          echo "Current chart version: $CURRENT_VERSION"
+          
+          # Split version into parts
+          IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          # Increment chart version based on input
+          if [[ "${{ inputs.version_bump }}" == "major" ]]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif [[ "${{ inputs.version_bump }}" == "minor" ]]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+          
+          NEW_CHART_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "New chart version: $NEW_CHART_VERSION"
+          
+          # Get the app version from input
+          APP_VERSION="${{ inputs.app_version }}"
+          echo "App version: $APP_VERSION"
+          
+          # Update Chart.yaml with new chart version and app version
+          sed -i "s/version: $CURRENT_VERSION/version: $NEW_CHART_VERSION/g" charts/reference-app-orders-go/Chart.yaml
+          sed -i "s/appVersion: .*/appVersion: \"$APP_VERSION\"/g" charts/reference-app-orders-go/Chart.yaml
+          
+          # Set output variables for use in later steps
+          echo "chart_version=$NEW_CHART_VERSION" >> $GITHUB_OUTPUT
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          
+          # Show the changes
+          echo "Updated Chart.yaml:"
+          grep -E "(version:|appVersion:)" charts/reference-app-orders-go/Chart.yaml
+          
+          # Commit the changes
+          git add charts/reference-app-orders-go/Chart.yaml
+          git commit -m "Bump chart version to $NEW_CHART_VERSION and app version to $APP_VERSION [skip ci]"
+          git push
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package and Push Helm chart
+        run: |
+          # Use versions from previous step
+          CHART_VERSION=${{ steps.update_versions.outputs.chart_version }}
+          APP_VERSION=${{ steps.update_versions.outputs.app_version }}
+          echo "Chart version: $CHART_VERSION"
+          echo "App version: $APP_VERSION"
+          
+          # Package the chart
+          helm package charts/reference-app-orders-go
+          
+          # Push to GHCR
+          helm push reference-app-orders-go-${CHART_VERSION}.tgz oci://ghcr.io/temporalio/charts
+          
+          echo "✅ Chart pushed successfully to oci://ghcr.io/temporalio/charts/reference-app-orders-go:${CHART_VERSION}"
+          echo "📦 Application version set to: ${APP_VERSION}" 

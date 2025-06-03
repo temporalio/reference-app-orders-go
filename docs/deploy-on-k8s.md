@@ -50,6 +50,10 @@ application expects to use, unless configured otherwise.
 
 ## Deploy the OMS application to Kubernetes
 
+You have two options for deploying the OMS application: using the provided Kubernetes manifests or using the Helm chart.
+
+### Option 1: Using Kubernetes Manifests
+
 Once you have Temporal installed and running in your Kubernetes 
 cluster, it's time to install the OMS application. We have created 
 some manifests that will take care of installing the application for 
@@ -68,7 +72,19 @@ Once that has completed, you can then install all of the application:
 kubectl apply -f ./deployments/k8s
 ```
 
-You can check pod status to verify that the application is running:
+### Option 2: Using Helm Chart (Recommended)
+
+Alternatively, you can use the provided Helm chart for a more flexible and configurable deployment:
+
+```sh
+helm install --create-namespace -n oms oms ./charts/reference-app-orders-go
+```
+
+For detailed configuration options and examples, see the [Helm chart README](../charts/reference-app-orders-go/README.md).
+
+### Verifying the Deployment
+
+Regardless of the deployment method chosen, you can check pod status to verify that the application is running:
 
 ```sh
 kubectl get pods -n oms
@@ -90,27 +106,16 @@ mongo-0                           1/1     Running   0          24h
 You'll know that the application is up when the READY column shows
 "1/1" for every pod.
 
-Please note that, while in most regards the deployment is a standard 
-Kubernetes setup, there is one thing which is a little unusual. The 
-OMS application's API services make use of a cache to ensure that they 
-can quickly provide lists of all orders and shipments. This cache is
-implemented using a disk-based SQLite database, which makes these 
-API services stateful. If an API pod needs to be restarted (for example, 
-due to upgrade, node failure, etc.), then it must be brought back up 
-with the same disk as before to ensure it does not lose its cache. 
-For this reason, the API services use Statefulset instead of Deployment.
-The cache is mounted via a Kubernetes volume to ensure that the pod 
-will maintain its disk between runs.
+The deployment includes a MongoDB database that serves as a shared cache 
+for the OMS application's API services. This cache enables the APIs to 
+quickly provide lists of all orders and shipments. The MongoDB instance 
+is deployed as a StatefulSet with persistent storage to ensure data 
+persistence across pod restarts.
 
-As this cache uses the disk, which is not easily shared among pods, 
-this also means the API Statefulsets cannot be safely scaled. If there 
-were to be more than one `main-api` pod, for example, each pod would 
-see different order creations, and therefore have a different cache 
-of orders. This would result in unpredictable behavior.
-
-These are all limitations of our deliberately naive caching mechanism, 
-and would not occur should the APIs use a shared database such as 
-MySQL or PostgreSQL.
+The API services are deployed as standard Kubernetes Deployments and 
+connect to the shared MongoDB instance using the `mongo` service within 
+the Kubernetes cluster. Since the API services are stateless, they can be horizontally 
+scaled if needed.
 
 ## Using the Application
 
