@@ -114,7 +114,7 @@ persistence across pod restarts.
 
 The API services are deployed as standard Kubernetes Deployments and 
 connect to the shared MongoDB instance using the `mongo` service within 
-the cluster. Since the API services are stateless, they can be horizontally 
+the Kubernetes cluster. Since the API services are stateless, they can be horizontally 
 scaled if needed.
 
 ## Using the Application
