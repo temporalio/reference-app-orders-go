@@ -139,6 +139,14 @@ The chart includes a MongoDB deployment that serves as a cache for the main API.
 
 When `serviceMonitor.enabled` is set to `true`, the chart creates ServiceMonitor resources for Prometheus to scrape metrics from the application endpoints. ServiceMonitors are deployed in the same namespace as the application services.
 
+## Accessing the Web Application
+
+You can forward port 80 for the oms-web service to access the OMS web application from outside the Kubernetes cluster. For example, running the following command enables you to access the web application through http://localhost:8100/.
+
+```bash
+kubectl -n oms port-forward service/oms-web 8100:80
+```
+
 ## Uninstallation
 
 ```bash
