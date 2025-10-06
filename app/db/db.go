@@ -112,9 +112,14 @@ func (m *MongoDB) Setup() error {
 	return nil
 }
 
-// InsertOrder inserts an Order into the MongoDB instance
+// InsertOrder inserts an Order into the MongoDB instance (with upsert semantics for idempotency)
 func (m *MongoDB) InsertOrder(ctx context.Context, order *OrderStatus) error {
-	_, err := m.db.Collection(OrdersCollection).InsertOne(ctx, order)
+	_, err := m.db.Collection(OrdersCollection).UpdateOne(
+		ctx,
+		bson.M{"id": order.ID},
+		bson.M{"$setOnInsert": order},
+		options.Update().SetUpsert(true),
+	)
 	return err
 }
 

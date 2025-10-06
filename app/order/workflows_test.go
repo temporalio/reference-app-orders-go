@@ -19,6 +19,9 @@ func TestOrderWorkflow(t *testing.T) {
 	var a *order.Activities
 
 	env.RegisterActivity(a.ReserveItems)
+	env.OnActivity(a.InsertOrder, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusInsert) error {
+		return nil
+	})
 	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.ChargeInput) (*order.ChargeResult, error) {
 		return &order.ChargeResult{Success: true}, nil
 	})
@@ -56,13 +59,16 @@ func TestOrderShipmentStatus(t *testing.T) {
 	var a *order.Activities
 
 	env.RegisterActivity(a.ReserveItems)
-	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.ChargeInput) (*order.ChargeResult, error) {
-		return &order.ChargeResult{Success: true}, nil
-	})
-	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusUpdate) error {
+	env.OnActivity(a.InsertOrder, mock.Anything, mock.Anything).Return(func(_ctx context.Context, _input *order.OrderStatusInsert) error {
 		return nil
 	})
-	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
+	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(_ctx context.Context, _input *order.ChargeInput) (*order.ChargeResult, error) {
+		return &order.ChargeResult{Success: true}, nil
+	})
+	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(_ctx context.Context, _input *order.OrderStatusUpdate) error {
+		return nil
+	})
+	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(_ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
 		env.SignalWorkflow(
 			shipment.ShipmentStatusUpdatedSignalName,
 			shipment.ShipmentStatusUpdatedSignal{
@@ -109,13 +115,16 @@ func TestOrderAmendWithUnavailableItems(t *testing.T) {
 	var a *order.Activities
 
 	env.RegisterActivity(a.ReserveItems)
-	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.ChargeInput) (*order.ChargeResult, error) {
-		return &order.ChargeResult{Success: true}, nil
-	})
-	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusUpdate) error {
+	env.OnActivity(a.InsertOrder, mock.Anything, mock.Anything).Return(func(_ctx context.Context, _input *order.OrderStatusInsert) error {
 		return nil
 	})
-	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(ctx workflow.Context, input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
+	env.OnActivity(a.Charge, mock.Anything, mock.Anything).Return(func(_ctx context.Context, _input *order.ChargeInput) (*order.ChargeResult, error) {
+		return &order.ChargeResult{Success: true}, nil
+	})
+	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(_ctx context.Context, _input *order.OrderStatusUpdate) error {
+		return nil
+	})
+	env.OnWorkflow(shipment.Shipment, mock.Anything, mock.Anything).Return(func(_ctx workflow.Context, _input *shipment.ShipmentInput) (*shipment.ShipmentResult, error) {
 		return &shipment.ShipmentResult{CourierReference: "test"}, nil
 	})
 
@@ -134,28 +143,21 @@ func TestOrderAmendWithUnavailableItems(t *testing.T) {
 		assert.NoError(t, err)
 
 		err = v.Get(&status)
-		assert.Equal(t, order.OrderStatus{
-			ID:         "1234",
-			CustomerID: "1234",
-			Status:     order.OrderStatusCustomerActionRequired,
-			Fulfillments: []*order.Fulfillment{
-				{
-					ID:     "1234:1",
-					Status: order.FulfillmentStatusUnavailable,
-					Items: []*order.Item{
-						{SKU: "Adidas", Quantity: 1},
-					},
-				},
-				{
-					ID:       "1234:2",
-					Status:   order.FulfillmentStatusPending,
-					Location: "Warehouse A",
-					Items: []*order.Item{
-						{SKU: "test2", Quantity: 3},
-					},
-				},
-			},
-		}, status)
+		assert.NoError(t, err)
+		assert.Equal(t, "1234", status.ID)
+		assert.Equal(t, "1234", status.CustomerID)
+		assert.Equal(t, order.OrderStatusCustomerActionRequired, status.Status)
+		assert.NotZero(t, status.ReceivedAt)
+		assert.Len(t, status.Fulfillments, 2)
+
+		assert.Equal(t, "1234:1", status.Fulfillments[0].ID)
+		assert.Equal(t, order.FulfillmentStatusUnavailable, status.Fulfillments[0].Status)
+		assert.Equal(t, []*order.Item{{SKU: "Adidas", Quantity: 1}}, status.Fulfillments[0].Items)
+
+		assert.Equal(t, "1234:2", status.Fulfillments[1].ID)
+		assert.Equal(t, order.FulfillmentStatusPending, status.Fulfillments[1].Status)
+		assert.Equal(t, "Warehouse A", status.Fulfillments[1].Location)
+		assert.Equal(t, []*order.Item{{SKU: "test2", Quantity: 3}}, status.Fulfillments[1].Items)
 	}, time.Second*1)
 
 	env.RegisterDelayedCallback(func() {
@@ -200,7 +202,10 @@ func TestOrderCancelWithUnavailableItems(t *testing.T) {
 	var a *order.Activities
 
 	env.RegisterActivity(a.ReserveItems)
-	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusUpdate) error {
+	env.OnActivity(a.InsertOrder, mock.Anything, mock.Anything).Return(func(_ctx context.Context, _input *order.OrderStatusInsert) error {
+		return nil
+	})
+	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(_ctx context.Context, _input *order.OrderStatusUpdate) error {
 		return nil
 	})
 
@@ -238,6 +243,9 @@ func TestOrderCancelAfterTimeout(t *testing.T) {
 	var a *order.Activities
 
 	env.RegisterActivity(a.ReserveItems)
+	env.OnActivity(a.InsertOrder, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusInsert) error {
+		return nil
+	})
 	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(ctx context.Context, input *order.OrderStatusUpdate) error {
 		return nil
 	})

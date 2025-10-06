@@ -56,6 +56,14 @@ type OrderStatus struct {
 	Fulfillments []*Fulfillment `json:"fulfillments"`
 }
 
+// OrderStatusInsert is used to insert a new Order into the database.
+type OrderStatusInsert struct {
+	ID         string    `json:"id"`
+	CustomerID string    `json:"customerId"`
+	ReceivedAt time.Time `json:"receivedAt"`
+	Status     string    `json:"status"`
+}
+
 // OrderStatusUpdate is used to update an Order's status.
 type OrderStatusUpdate struct {
 	ID     string `json:"id"`
@@ -219,6 +227,7 @@ func Router(client client.Client, db db.DB, logger *slog.Logger) http.Handler {
 	r.HandleFunc("GET /orders", h.handleListOrders)
 	r.HandleFunc("GET /orders/stats", h.handleGetStats)
 	r.HandleFunc("GET /orders/{id}", h.handleGetOrder)
+	r.HandleFunc("POST /orders/{id}/insert", h.handleInsertOrder)
 	r.HandleFunc("POST /orders/{id}/status", h.handleUpdateOrderStatus)
 	r.HandleFunc("POST /orders/{id}/action", h.handleCustomerAction)
 
@@ -277,20 +286,6 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status := &db.OrderStatus{
-		ID:         input.ID,
-		CustomerID: input.CustomerID,
-		ReceivedAt: time.Now().UTC(),
-		Status:     OrderStatusPending,
-	}
-
-	err = h.db.InsertOrder(context.Background(), status)
-	if err != nil {
-		h.logger.Error("Failed to record workflow status", "error", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	w.Header().Set("Location", "/orders/"+input.ID)
 	w.WriteHeader(http.StatusCreated)
 }
@@ -324,6 +319,33 @@ func (h *handlers) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error("Failed to encode order status", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func (h *handlers) handleInsertOrder(w http.ResponseWriter, r *http.Request) {
+	var insert OrderStatusInsert
+
+	err := json.NewDecoder(r.Body).Decode(&insert)
+	if err != nil {
+		h.logger.Error("Failed to decode order insert", "error", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	status := &db.OrderStatus{
+		ID:         insert.ID,
+		CustomerID: insert.CustomerID,
+		ReceivedAt: insert.ReceivedAt,
+		Status:     insert.Status,
+	}
+
+	err = h.db.InsertOrder(context.Background(), status)
+	if err != nil {
+		h.logger.Error("Failed to insert order", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *handlers) handleUpdateOrderStatus(w http.ResponseWriter, r *http.Request) {

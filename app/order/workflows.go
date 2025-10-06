@@ -14,6 +14,7 @@ import (
 type orderImpl struct {
 	id           string
 	customerID   string
+	receivedAt   time.Time
 	status       string
 	fulfillments []*Fulfillment
 	logger       log.Logger
@@ -48,6 +49,8 @@ func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 
 	wf.id = input.ID
 	wf.customerID = input.CustomerID
+	wf.status = OrderStatusPending
+	wf.receivedAt = workflow.Now(ctx)
 
 	wf.logger = log.With(
 		workflow.GetLogger(ctx),
@@ -60,12 +63,18 @@ func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 			ID:           wf.id,
 			Status:       wf.status,
 			CustomerID:   wf.customerID,
+			ReceivedAt:   wf.receivedAt,
 			Fulfillments: wf.fulfillments,
 		}, nil
 	})
 }
 
 func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult, error) {
+	// Insert the initial order record into the database
+	if err := wf.insertOrder(ctx); err != nil {
+		return nil, err
+	}
+
 	err := wf.buildFulfillments(ctx, order.Items)
 	if err != nil {
 		return nil, err
@@ -123,6 +132,20 @@ func (wf *orderImpl) run(ctx workflow.Context, order *OrderInput) (*OrderResult,
 	}
 
 	return &OrderResult{Status: wf.status}, nil
+}
+
+func (wf *orderImpl) insertOrder(ctx workflow.Context) error {
+	insert := &OrderStatusInsert{
+		ID:         wf.id,
+		CustomerID: wf.customerID,
+		ReceivedAt: wf.receivedAt,
+		Status:     wf.status,
+	}
+
+	ctx = workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
+		ScheduleToCloseTimeout: 5 * time.Second,
+	})
+	return workflow.ExecuteLocalActivity(ctx, a.InsertOrder, insert).Get(ctx, nil)
 }
 
 func (wf *orderImpl) updateStatus(ctx workflow.Context, status string) error {
