@@ -21,6 +21,34 @@ type Activities struct {
 
 var a Activities
 
+// InsertOrder inserts a new Order record into the database.
+func (a *Activities) InsertOrder(ctx context.Context, insert *OrderStatusInsert) error {
+	jsonInput, err := json.Marshal(insert)
+	if err != nil {
+		return fmt.Errorf("unable to encode insert: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.OrderURL+"/orders/"+insert.ID+"/insert", bytes.NewReader(jsonInput))
+	if err != nil {
+		return fmt.Errorf("unable to build request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		body, _ := io.ReadAll(res.Body)
+		return fmt.Errorf("%s: %s", http.StatusText(res.StatusCode), body)
+	}
+
+	return nil
+}
+
 // UpdateOrderStatus stores the Order status to the database.
 func (a *Activities) UpdateOrderStatus(ctx context.Context, status *OrderStatusUpdate) error {
 	jsonInput, err := json.Marshal(status)
