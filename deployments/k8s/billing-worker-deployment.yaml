@@ -1,3 +1,4 @@
+# @@@SNIPSTART oms-billing-worker-deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,3 +34,4 @@ spec:
           name: billing-worker
           imagePullPolicy: Always
       enableServiceLinks: false
+# @@@SNIPEND
