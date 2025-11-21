@@ -1,3 +1,4 @@
+// @@@ SNIPSTART oms-billing-worker-go
 package billing
 
 import (
@@ -21,3 +22,4 @@ func RunWorker(ctx context.Context, config config.AppConfig, client client.Clien
 
 	return w.Run(temporalutil.WorkerInterruptFromContext(ctx))
 }
+// @@@ SNIPEND 

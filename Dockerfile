@@ -1,3 +1,4 @@
+# @@@ SNIPSTART oms-dockerfile-worker
 FROM golang:1.23.8 AS oms-builder
 
 WORKDIR /usr/src/oms
@@ -15,6 +16,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 go build -v -o /usr/local/bin/oms ./cmd/oms
 
 FROM busybox AS oms-worker
+# @@@ SNIPEND 
 
 COPY --from=oms-builder /usr/local/bin/oms /usr/local/bin/oms
 
