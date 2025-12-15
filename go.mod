@@ -1,6 +1,6 @@
 module github.com/temporalio/reference-app-orders-go
 
-go 1.23.0
+go 1.24.0
 
 toolchain go1.24.1
 
@@ -13,10 +13,10 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/mongodb v0.33.0
 	github.com/uber-go/tally/v4 v4.1.17
 	go.mongodb.org/mongo-driver v1.17.0
-	go.temporal.io/api v1.51.0
-	go.temporal.io/sdk v1.36.0
+	go.temporal.io/api v1.54.0
+	go.temporal.io/sdk v1.38.0
 	go.temporal.io/sdk/contrib/tally v0.2.0
-	golang.org/x/sync v0.13.0
+	golang.org/x/sync v0.18.0
 	modernc.org/sqlite v1.34.1
 )
 
@@ -63,7 +63,7 @@ require (
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
-	github.com/nexus-rpc/sdk-go v0.3.0 // indirect
+	github.com/nexus-rpc/sdk-go v0.5.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
