@@ -13,10 +13,10 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/mongodb v0.33.0
 	github.com/uber-go/tally/v4 v4.1.17
 	go.mongodb.org/mongo-driver v1.17.0
-	go.temporal.io/api v1.59.0
-	go.temporal.io/sdk v1.39.0
+	go.temporal.io/api v1.62.2
+	go.temporal.io/sdk v1.41.1
 	go.temporal.io/sdk/contrib/tally v0.2.0
-	golang.org/x/sync v0.18.0
+	golang.org/x/sync v0.19.0
 	modernc.org/sqlite v1.34.1
 )
 
@@ -64,7 +64,7 @@ require (
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
-	github.com/nexus-rpc/sdk-go v0.5.1 // indirect
+	github.com/nexus-rpc/sdk-go v0.6.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
