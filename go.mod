@@ -10,7 +10,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go/modules/mongodb v0.33.0
 	github.com/uber-go/tally/v4 v4.1.17
-	go.mongodb.org/mongo-driver v1.17.0
+	go.mongodb.org/mongo-driver v1.17.7
 	go.temporal.io/api v1.62.2
 	go.temporal.io/sdk v1.41.1
 	go.temporal.io/sdk/contrib/tally v0.2.0
