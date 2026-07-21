@@ -136,10 +136,28 @@ func (s *shipmentImpl) handleCarrierUpdates(ctx workflow.Context) error {
 
 		s.logger.Info("Received carrier update", "status", signal.Status)
 
+		if !validCarrierStatus(signal.Status) {
+			s.logger.Warn("Ignoring carrier update with unknown status", "status", signal.Status)
+			continue
+		}
+
 		s.updateStatus(ctx, signal.Status)
 	}
 
 	return nil
+}
+
+// validCarrierStatus reports whether a carrier-supplied status is one of the
+// statuses a carrier may set. Carrier updates arrive over a signal from an
+// external party, so the value is validated before being applied — otherwise
+// any string the carrier sends would become the shipment's status (and be
+// propagated to the requesting Order workflow).
+func validCarrierStatus(status string) bool {
+	switch status {
+	case ShipmentStatusBooked, ShipmentStatusDispatched, ShipmentStatusDelivered:
+		return true
+	}
+	return false
 }
 
 func (s *shipmentImpl) updateStatus(ctx workflow.Context, status string) error {
