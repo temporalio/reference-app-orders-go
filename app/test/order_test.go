@@ -154,7 +154,7 @@ func Test_Order(t *testing.T) {
 		res, err = getJSON(orderAPI.URL+"/orders/order123", &o)
 		require.NoError(t, err)
 
-		assert.Equal(c, "customerActionRequired", o.Status)
+		assert.Equal(c, order.OrderStatusCustomerActionRequired, o.Status)
 	}, 10*time.Second, 100*time.Millisecond)
 
 	res, err = postJSON(orderAPI.URL+"/orders/order123/action", &order.CustomerActionSignal{
@@ -171,15 +171,32 @@ func Test_Order(t *testing.T) {
 		require.Equal(c, order.OrderStatusProcessing, o.Status)
 	}, 3*time.Second, 100*time.Millisecond)
 
-	var o order.OrderStatus
-	res, err = getJSON(orderAPI.URL+"/orders/order123", &o)
-	require.NoError(t, err)
+	// The order reports "processing" before its fulfillments' shipments exist:
+	// each shipment is only created after that fulfillment's payment charge
+	// completes, asynchronously. Wait until every non-cancelled fulfillment has
+	// a shipment before capturing the IDs to deliver, otherwise we may miss one
+	// and the order will never complete.
+	var shipmentIDs []string
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		var o order.OrderStatus
+		res, err := getJSON(orderAPI.URL+"/orders/order123", &o)
+		require.NoError(c, err)
+		require.Equal(c, http.StatusOK, res.StatusCode)
 
-	for _, f := range o.Fulfillments {
-		if f.Shipment == nil {
-			continue
+		shipmentIDs = nil
+		for _, f := range o.Fulfillments {
+			if f.Status == order.FulfillmentStatusCancelled {
+				continue
+			}
+			require.NotNil(c, f.Shipment)
+			shipmentIDs = append(shipmentIDs, f.Shipment.ID)
 		}
-		res, err := postJSON(shipmentAPI.URL+"/shipments/"+f.Shipment.ID+"/status", &shipment.ShipmentCarrierUpdateSignal{Status: "delivered"})
+		require.NotEmpty(c, shipmentIDs)
+	}, 10*time.Second, 100*time.Millisecond)
+
+	for _, id := range shipmentIDs {
+		res, err := postJSON(shipmentAPI.URL+"/shipments/"+id+"/status", &shipment.ShipmentCarrierUpdateSignal{Status: "delivered"})
+		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, res.StatusCode)
 		require.NoError(t, err)
 	}
@@ -190,7 +207,7 @@ func Test_Order(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(c, http.StatusOK, res.StatusCode)
-		assert.Equal(c, "completed", o.Status)
+		assert.Equal(c, order.OrderStatusCompleted, o.Status)
 	}, 3*time.Second, 100*time.Millisecond)
 
 	cancel()
