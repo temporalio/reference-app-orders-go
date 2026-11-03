@@ -270,3 +270,65 @@ func TestOrderCancelAfterTimeout(t *testing.T) {
 
 	assert.Equal(t, order.OrderStatusTimedOut, result.Status)
 }
+
+func TestOrderIgnoresInvalidCustomerAction(t *testing.T) {
+	s := testsuite.WorkflowTestSuite{}
+	env := s.NewTestWorkflowEnvironment()
+	var a *order.Activities
+
+	env.RegisterActivity(a.ReserveItems)
+	env.OnActivity(a.InsertOrder, mock.Anything, mock.Anything).Return(func(_ctx context.Context, _input *order.OrderStatusInsert) error {
+		return nil
+	})
+	env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(func(_ctx context.Context, _input *order.OrderStatusUpdate) error {
+		return nil
+	})
+
+	orderInput := order.OrderInput{
+		ID:         "1234",
+		CustomerID: "1234",
+		Items: []*order.Item{
+			{SKU: "Adidas", Quantity: 1},
+			{SKU: "test2", Quantity: 3},
+		},
+	}
+
+	// A customer action outside the known set must be ignored: the order
+	// must keep waiting for a valid action instead of failing.
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(
+			order.CustomerActionSignalName,
+			order.CustomerActionSignal{
+				Action: "refund",
+			},
+		)
+	}, time.Second*1)
+
+	env.RegisterDelayedCallback(func() {
+		v, err := env.QueryWorkflow(order.StatusQuery)
+		assert.NoError(t, err)
+		var status order.OrderStatus
+		assert.NoError(t, v.Get(&status))
+		assert.Equal(t, order.OrderStatusCustomerActionRequired, status.Status)
+	}, time.Second*2)
+
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(
+			order.CustomerActionSignalName,
+			order.CustomerActionSignal{
+				Action: order.CustomerActionCancel,
+			},
+		)
+	}, time.Second*3)
+
+	env.ExecuteWorkflow(
+		order.Order,
+		&orderInput,
+	)
+
+	var result order.OrderResult
+	err := env.GetWorkflowResult(&result)
+	assert.NoError(t, err)
+
+	assert.Equal(t, order.OrderStatusCancelled, result.Status)
+}
