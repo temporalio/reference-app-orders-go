@@ -269,26 +269,38 @@ func (wf *orderImpl) waitForCustomer(ctx workflow.Context) (string, error) {
 
 		wf.logger.Info("Received customer action", "action", signal.Action)
 
+		if !validCustomerAction(signal.Action) {
+			wf.logger.Warn("Ignoring invalid customer action", "action", signal.Action)
+			signal.Action = ""
+			return
+		}
+
 		cancelTimer()
 	})
 
 	wf.logger.Info("Waiting for customer action")
 
-	s.Select(ctx)
+	for signal.Action == "" {
+		s.Select(ctx)
 
-	if err != nil {
-		return "", err
-	}
-
-	switch signal.Action {
-	case CustomerActionAmend:
-	case CustomerActionCancel:
-	case CustomerActionTimedOut:
-	default:
-		return "", fmt.Errorf("invalid customer action %q", signal.Action)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return signal.Action, nil
+}
+
+// validCustomerAction reports whether an action received from the customer
+// over a signal is one the workflow can handle. The signal carries
+// client-supplied input, so anything else is ignored rather than failing
+// the order.
+func validCustomerAction(action string) bool {
+	switch action {
+	case CustomerActionAmend, CustomerActionCancel:
+		return true
+	}
+	return false
 }
 
 func (wf *orderImpl) handleShipmentStatusUpdates(ctx workflow.Context) {
