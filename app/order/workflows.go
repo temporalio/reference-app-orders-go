@@ -50,7 +50,15 @@ func (wf *orderImpl) setup(ctx workflow.Context, input *OrderInput) error {
 	wf.id = input.ID
 	wf.customerID = input.CustomerID
 	wf.status = OrderStatusPending
-	wf.receivedAt = workflow.Now(ctx)
+	wf.receivedAt = input.ReceivedAt
+	if wf.receivedAt.IsZero() {
+		// Preserve replay of histories created before ReceivedAt was part of the input.
+		if workflow.GetVersion(ctx, "order-received-at", workflow.DefaultVersion, 1) == workflow.DefaultVersion {
+			wf.receivedAt = workflow.Now(ctx)
+		} else {
+			wf.receivedAt = workflow.GetInfo(ctx).WorkflowStartTime
+		}
+	}
 
 	wf.logger = log.With(
 		workflow.GetLogger(ctx),
