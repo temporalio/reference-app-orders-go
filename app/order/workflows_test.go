@@ -7,11 +7,59 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/temporalio/reference-app-orders-go/app/order"
 	"github.com/temporalio/reference-app-orders-go/app/shipment"
 	"go.temporal.io/sdk/testsuite"
 	"go.temporal.io/sdk/workflow"
 )
+
+func TestOrderReceivedAt(t *testing.T) {
+	startTime := time.Date(2026, time.January, 2, 12, 0, 0, 0, time.UTC)
+	receivedAt := startTime.Add(-time.Hour)
+	for _, test := range []struct {
+		name       string
+		receivedAt time.Time
+		expected   time.Time
+		legacy     bool
+	}{
+		{name: "supplied receipt time", receivedAt: receivedAt, expected: receivedAt},
+		{name: "input without receipt time", expected: startTime},
+		{name: "legacy workflow history", expected: startTime, legacy: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			s := testsuite.WorkflowTestSuite{}
+			env := s.NewTestWorkflowEnvironment()
+			env.SetStartTime(startTime)
+			if test.legacy {
+				env.OnGetVersion("order-received-at", workflow.DefaultVersion, 1).Return(workflow.DefaultVersion)
+			}
+			var a *order.Activities
+			var insertedAt time.Time
+			env.OnActivity(a.InsertOrder, mock.Anything, mock.Anything).
+				Return(func(_ context.Context, input *order.OrderStatusInsert) error {
+					insertedAt = input.ReceivedAt
+					return nil
+				}).Once()
+			env.OnActivity(a.ReserveItems, mock.Anything, mock.Anything).
+				Return(&order.ReserveItemsResult{}, nil).Once()
+			env.OnActivity(a.UpdateOrderStatus, mock.Anything, mock.Anything).Return(nil)
+
+			env.ExecuteWorkflow(order.Order, &order.OrderInput{
+				ID: "order-1", CustomerID: "customer-1",
+				Items: []*order.Item{{SKU: "test", Quantity: 1}}, ReceivedAt: test.receivedAt,
+			})
+			require.NoError(t, env.GetWorkflowError())
+			result, err := env.QueryWorkflow(order.StatusQuery)
+			require.NoError(t, err)
+			var status order.OrderStatus
+			require.NoError(t, result.Get(&status))
+			require.WithinDuration(t, test.expected, insertedAt, 0)
+			require.WithinDuration(t, insertedAt, status.ReceivedAt, 0)
+			env.AssertExpectations(t)
+		})
+	}
+}
 
 func TestOrderWorkflow(t *testing.T) {
 	s := testsuite.WorkflowTestSuite{}

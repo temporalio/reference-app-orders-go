@@ -43,6 +43,8 @@ type OrderInput struct {
 	ID         string  `json:"id"`
 	CustomerID string  `json:"customerId"`
 	Items      []*Item `json:"items"`
+	// ReceivedAt is assigned by the create-order handler before starting the workflow.
+	ReceivedAt time.Time `json:"receivedAt"`
 }
 
 // OrderStatus holds the status of an Order workflow.
@@ -270,6 +272,8 @@ func (h *handlers) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	input.ReceivedAt = time.Now().UTC()
 
 	_, err = h.temporal.ExecuteWorkflow(context.Background(),
 		client.StartWorkflowOptions{
