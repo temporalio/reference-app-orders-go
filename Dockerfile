@@ -1,5 +1,5 @@
 # @@@SNIPSTART oms-dockerfile-worker
-FROM golang:1.25.4 AS oms-builder
+FROM golang:1.26.0 AS oms-builder
 
 WORKDIR /usr/src/oms
 
